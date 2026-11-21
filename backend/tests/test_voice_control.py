@@ -389,7 +389,7 @@ def test_router_evidence_and_failure_fallback(client, monkeypatch):
     assert say(client, "how much protein do I need for muscle")["intent"] == "router"
     monkeypatch.setattr(vc, "run_agent", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")))
     j = say(client, "what is the meaning of life")
-    assert j["intent"] == "fallback" and "I ate" in j["reply"]
+    assert j["intent"] == "fallback" and "again" in j["reply"]          # the model failed: a human sentence, not the offline feature list
 
 
 def test_router_ambient_unaddressed_ignored(client, monkeypatch):

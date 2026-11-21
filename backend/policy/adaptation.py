@@ -72,10 +72,26 @@ def recommended_change(signal: Signal, max_fraction: float, recent_changes: int 
     return round(magnitude * max_fraction, 4)
 
 
+import re as _re
+
+# English flags match WHOLE words (with their usual endings): "number" is not "numb", "Spain" is not "pain", "sharpen" is not "sharp".
+# The Hindi / Haryanvi flags are matched as substrings (Devanagari words carry their endings attached).
+_EN_FLAG_RE = {
+    "pain": r"pain(?:s|ful)?", "injury": r"injur(?:y|ies|ed)", "illness": r"illness", "dizzy": r"dizz(?:y|iness)", "chest_pain": r"chest pain",
+    "hurt": r"hurt(?:s|ing)?", "tweak": r"tweak(?:ed|s|ing)?", "strain": r"strain(?:ed|s|ing)?", "numb": r"numb(?:ness)?", "tingl": r"tingl(?:e|es|ed|ing|y)",
+    "popped": r"popped", "sharp": r"sharp", "pinch": r"pinch(?:ed|es|ing)?",
+}
+_EN_FLAGS = {f: _re.compile(r"(?<![a-z])" + p + r"(?![a-z])") for f, p in _EN_FLAG_RE.items()}
+
+
 def has_safety_flag(text: str) -> str | None:
     t = text.lower()
     for flag in SAFETY_FLAGS:
-        if flag.replace("_", " ") in t:
+        rx = _EN_FLAGS.get(flag)
+        if rx is not None:
+            if rx.search(t):
+                return flag
+        elif flag.replace("_", " ") in t:
             return flag
     return None
 

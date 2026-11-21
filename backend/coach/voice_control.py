@@ -919,7 +919,8 @@ def _router(text: str, screen: str, ambient: bool, addressed: bool) -> dict:
         finally:
             pool.shutdown(wait=False)
     except Exception:
-        return _out("fallback", OFFLINE_HINT)
+        # the model is there (we have a key) but this call failed or timed out: say so in a human way, not the offline feature list
+        return _out("fallback", "Sorry, I lost my train of thought on that one. Say it again?")
     p = _pend_get("confirm")
     if p:
         say = p["say"]

@@ -22,6 +22,8 @@ def test_clean(raw, want):
 
 @pytest.mark.parametrize("text,frag", [
     ("I did like", True), ("I did like uhh", True), ("and then", True), ("so I", True), ("I just", True), ("my", True),
+    ("can you just tell me", True), ("should I go till", True), ("okay can you tell me", True), ("what is the", True), ("how do I", True), ("give me", True),
+    ("what is next", False), ("tell me how much protein", False), ("can you skip this", False), ("I am done", False),
     ("I did bench press", False), ("bench press 60 for 8", False), ("I did like one set of overhead press", False), ("what's next", False),
     ("sixty", False), ("done", False), ("skip this", False), ("I am done with bench", False), ("I did like 15", False),
 ])
@@ -59,3 +61,11 @@ def test_the_router_only_gets_the_tools_a_sentence_can_need():
     plan = names("remove squat from my split")
     assert "remove_exercise" in plan and "set_calories" not in plan
     assert 5 < len(names("blah blah")) < 12                        # unknown: a small core, never the whole catalogue
+
+
+@pytest.mark.parametrize("text,flag", [("the number", None), ("what is the number", None), ("Spain is nice", None), ("sharpen the pencil", None), ("this is so bad", None),
+                                       ("my knee hurts", "hurt"), ("numbness in my hand", "numb"), ("it is numb", "numb"), ("I am dizzy", "dizzy"), ("I strained my back", "strain"),
+                                       ("tingling in my fingers", "tingl"), ("my elbow popped", "popped"), ("sharp pain in my shoulder", "pain")])
+def test_pain_words_match_whole_words_only(text, flag):
+    from backend.policy.adaptation import has_safety_flag
+    assert has_safety_flag(text) == flag

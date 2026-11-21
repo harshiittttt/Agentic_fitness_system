@@ -40,7 +40,7 @@ const STABLE_MS = 1600;           // wake mode: phrase heard + no new words for 
 const BUBBLE_MS = 7000;
 const TICK_MS = 120;              // how often the end-of-speech decision is checked
 const MUTE_GRACE_MS = 650;        // after the coach stops talking, ignore the microphone a little longer (echo, late partial results)
-const FILLER_AFTER_MS = 1300;     // a slower answer than this gets a short spoken "one sec"
+const FILLER_AFTER_MS = 3200;     // an answer slower than this gets a short spoken "one sec" (normal answers take 1.5-3 s: no filler for those)
 const SESSION_QUIET_MS = 5 * 60 * 1000;   // a session ends by itself after this long with nothing said (battery), and says so
 const CARRY_MS = 25000;           // an unfinished sentence is held this long and joined to the next one
 
@@ -298,10 +298,12 @@ export default function WakeCoach() {
         expects = r?.expects ?? null;
         setTalkState({ note: did }); showBubble(reply); setTalkState({ phase: 'speaking' }); speaking.current = true;
         const premium = shouldUsePremium(!!r.moment) && (!inSession || !!r.pr || r.intent === 'start' || r.intent === 'end');   // premium audio costs seconds of download: only for the big moments
+        const spoke0 = Date.now();
         await new Promise<void>((done) => {
           const cap = setTimeout(done, Math.min(40000, 6000 + reply.length * 90));   // never wait forever on a speech engine that forgot to say "done"
           speak(reply, ttsCfg.current, () => { clearTimeout(cap); done(); }, { persona: persona.current, premium }).catch(() => { clearTimeout(cap); done(); });
         });
+        dlog('spoke', { ms: Date.now() - spoke0, chars: reply.length, premium });
       } else if (did) { setTalkState({ note: did }); showBubble(did); }
       else if (!inSession) showBubble("I didn't catch a command in that. Tap the mic and try again.");
     } catch (e) {
