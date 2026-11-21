@@ -373,8 +373,15 @@ export const previewMeal = async (text: string, day?: string): Promise<{ items: 
 
 /** Voice command brain (server decides intent + UI actions). A 404 means an older server: callers fall back to liveSay. */
 export type VoiceCommandResult = { reply: string; intent?: string; actions?: any[]; expects?: null | 'set_details' | 'food_amount' | 'confirm' | 'answer'; moment?: boolean; pr?: boolean; state?: any; saved?: any };
-export const voiceCommand = (transcript: string, screen: string, day: string | null, followup: boolean): Promise<VoiceCommandResult> =>
-  post('/voice/command', { transcript, screen, day, ambient: false, followup });
+export const voiceCommand = async (transcript: string, screen: string, day: string | null, followup: boolean): Promise<VoiceCommandResult> => {
+  // A stalled request (slow tunnel, model busy) must end in an error the user sees, never leave the mic stuck on "On it…".
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 40000);
+  try {
+    const r = await fetch(`${API}/voice/command`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ transcript, screen, day, ambient: false, followup }), signal: ctl.signal });
+    if (!r.ok) throw await apiError(r, '/voice/command');
+    return r.json();
+  } catch (e: any) { if (e?.name === 'AbortError') throw new Error('Your coach took too long to answer. Tap the mic and try again.'); throw e; } finally { clearTimeout(t); }
+};
 
 // ---- diet consultant ----
 export type DietItem = { food: string; grams: number; label: string; kcal: number; protein: number; carbs: number; fat: number };

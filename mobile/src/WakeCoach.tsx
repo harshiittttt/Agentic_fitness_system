@@ -70,6 +70,8 @@ export default function WakeCoach() {
   const appActive = useRef(AppState.currentState === 'active');
   const speaking = useRef(false);
   const busy = useRef(false);                       // a command is being sent / spoken
+  const busyAt = useRef(0);
+  const cmdSeq = useRef(0);                         // a cancelled command's late answer is ignored
   const running = useRef(false);                    // the WAKE recognizer session is running
   const talking = useRef(false);                    // a TALK turn owns the recognizer
   const talkText = useRef('');                      // latest words of the talk turn
@@ -186,8 +188,9 @@ export default function WakeCoach() {
   const startTalkRef = useRef<(followup?: boolean) => void>(() => {});
 
   const handleCommand = useCallback(async (command: string, followup = false) => {
-    if (busy.current) return;
-    busy.current = true; setTalkState({ phase: 'thinking', heard: command, note: '', error: false }); showBubble('');
+    if (busy.current && Date.now() - busyAt.current < 45000) return;
+    const seq = ++cmdSeq.current;
+    busy.current = true; busyAt.current = Date.now(); setTalkState({ phase: 'thinking', heard: command, note: '', error: false }); showBubble('');
     dlog('cmd_send', { followup, screen: getVoiceScreen(), text: command.slice(0, 80) });
     stopRun();
     let expects: string | null = null;
@@ -199,6 +202,7 @@ export default function WakeCoach() {
         if (e instanceof ApiError && e.status === 404) r = await liveSay(command, false);   // older server without /voice/command
         else throw e;
       }
+      if (seq !== cmdSeq.current) return;                    // cancelled while waiting: say nothing, touch nothing
       const reply: string = r?.reply ?? '';
       dlog('cmd_reply', { intent: r?.intent, acts: (r?.actions ?? []).length, expects: r?.expects, reply: reply.slice(0, 80) });
       const acts = (Array.isArray(r?.actions) ? r.actions : []).map(parseAction).filter(Boolean) as VoiceAction[];
@@ -210,16 +214,19 @@ export default function WakeCoach() {
         expects = r?.expects ?? null;
         setTalkState({ note: did }); showBubble(reply); setTalkState({ phase: 'speaking' }); speaking.current = true;
         await new Promise<void>((done) => {
-          speak(reply, ttsCfg.current, () => done(), { persona: persona.current, premium: shouldUsePremium(!!r.moment) }).catch(() => done());
+          const cap = setTimeout(done, Math.min(40000, 6000 + reply.length * 90));   // never wait forever on a speech engine that forgot to say "done"
+          speak(reply, ttsCfg.current, () => { clearTimeout(cap); done(); }, { persona: persona.current, premium: shouldUsePremium(!!r.moment) }).catch(() => { clearTimeout(cap); done(); });
         });
       } else if (did) { setTalkState({ note: did }); showBubble(did); }
       else showBubble("I didn't catch a command in that. Tap the mic and try again.");
     } catch (e) {
+      if (seq !== cmdSeq.current) return;
       expects = null;
       dlog('cmd_error', String((e as any)?.message ?? e).slice(0, 120));
       const m = e instanceof ApiError && e.status !== 404 && e.message ? e.message : "Couldn't reach your coach. Check the connection and try again.";
       showError(m);
     }
+    if (seq !== cmdSeq.current) return;
     speaking.current = false; busy.current = false;
     if (!alive.current) return;
     setTalkState({ phase: 'idle' });
@@ -255,9 +262,15 @@ export default function WakeCoach() {
 
   const startTalk = useCallback(async (followup = false) => {
     if (!MOD) { setTalkState({ phase: 'idle', error: true }); showBubble('Voice needs the installed app build, not Expo Go. Type to your coach instead.'); return; }
-    if (talking.current || busy.current) return;
+    if (busy.current && Date.now() - busyAt.current > 45000) { busy.current = false; speaking.current = false; dlog('busy_reset'); }   // a stuck turn must never lock the mic
+    if (talking.current || busy.current) { dlog('talk_blocked', { talking: talking.current, busy: busy.current }); return; }
     if (micOwner() === 'ui') { showBubble('The microphone is in use on this screen right now.'); return; }
     stopSpeaking(); speaking.current = false;
+    try {
+      const avail = MOD.isRecognitionAvailable?.();
+      dlog('recognition_available', avail);
+      if (avail === false) { showError('This phone has no speech-recognition service. Install or enable "Speech Recognition & Synthesis" (Google) from the Play Store, then try again.'); return; }
+    } catch { /* unknown: try anyway */ }
     try {
       if (perm.current !== 'granted') {
         const p = await MOD.requestPermissionsAsync();
@@ -284,9 +297,12 @@ export default function WakeCoach() {
 
   const stopTalkOrAnswer = useCallback(() => {
     if (talking.current) { finishTalk('tap'); return; }
-    if (speaking.current) { stopSpeaking(); return; }                // cut the coach off
-    setTalkState({ phase: 'idle' });
-  }, [finishTalk]);
+    // thinking or speaking: cancel it for real, so the next tap always starts a fresh turn
+    cmdSeq.current++; busy.current = false; speaking.current = false;
+    stopSpeaking();
+    setTalkState({ phase: 'idle', note: '' });
+    reconcile();
+  }, [finishTalk, reconcile]);
 
   // ---------------------------------------------------------------- wake mode: an utterance, a hit, a command
   const dispatch = useCallback((events: ReturnType<typeof tracker.current.feed>) => {
