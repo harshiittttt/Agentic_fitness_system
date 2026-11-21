@@ -55,3 +55,4 @@ deploy/local/shared.env
 
 # Expo access token (local only)
 .expo_token
+.github_token
