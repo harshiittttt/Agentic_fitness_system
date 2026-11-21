@@ -326,7 +326,9 @@ export default function WakeCoach() {
     if (!MOD) { status(); return () => { alive.current = false; unTalk(); unReg(); un(); unMic(); app.remove(); }; }
 
     const subs = [
-      SR.addSpeechRecognitionListener('result', (e: any) => {
+      // MOD.addListener, not SR.addSpeechRecognitionListener: the library exports that one as an UNBOUND method, so called through the package it
+      // attaches to nothing and no event ever arrives (this is why "Hey coach" and tap-to-talk never heard a word before 0.3.4).
+      MOD.addListener('result', (e: any) => {
         const t: string = e.results?.[0]?.transcript ?? '';
         if (!t) return;
         if (talking.current) {                                   // a tap-to-talk turn: show the words as they come, send when finished
@@ -347,7 +349,7 @@ export default function WakeCoach() {
           stableT.current = setTimeout(() => { stableT.current = null; dispatch(tracker.current.flush(Date.now())); }, STABLE_MS);
         }
       }),
-      SR.addSpeechRecognitionListener('end', () => {
+      MOD.addListener('end', () => {
         if (talking.current) {
           if (!talkLive.current || (Date.now() - talkStartedAt.current < 500 && !talkText.current)) { dlog('talk_stale_end'); return; }   // the wake session winding down, not ours
           dlog('talk_end');
@@ -359,7 +361,7 @@ export default function WakeCoach() {
         backoff.current = Date.now() - startedAt.current > 4000 ? 400 : Math.min(backoff.current * 2, 10000);
         status(); reconcile();
       }),
-      SR.addSpeechRecognitionListener('error', (e: any) => {
+      MOD.addListener('error', (e: any) => {
         const code = e?.error;
         if (talking.current) {
           if (!talkLive.current) { dlog('talk_stale_error', code); return; }

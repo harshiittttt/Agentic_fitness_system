@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, Switch, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getWakeState, onWakeState, resetDiag, setWakeEnabled, WakeState } from './wakeSettings';
+import { chooseRecognitionLang, getRecognitionLang, RecogLang } from './voiceSettings';
 import { colors, font } from './theme';
 import { Card, Txt } from './ui';
 
@@ -19,6 +20,7 @@ const ago = (t: number) => { if (!t) return 'never'; const s = Math.round((Date.
 export default function HandsFree() {
   const [ws, setWs] = useState<WakeState>(getWakeState());
   const [, tick] = useState(0);
+  const [lang, setLang] = useState<RecogLang>(getRecognitionLang());
   useEffect(() => onWakeState(setWs), []);
   useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 2000); return () => clearInterval(t); }, []);
   const st = STATUS[ws.status] ?? STATUS.off;
@@ -32,6 +34,18 @@ export default function HandsFree() {
           <Txt style={{ fontFamily: font.bold, fontSize: 16 }}>Talking to your coach</Txt>
           <Txt style={{ color: colors.dim, fontSize: 13.5, lineHeight: 19 }}>Tap the green mic next to the tabs, say it, done. It shows your words as you speak and the coach answers out loud.</Txt>
         </View>
+      </View>
+      <View style={{ gap: 6 }}>
+        <Txt style={{ fontFamily: font.semibold, fontSize: 15 }}>I speak</Txt>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {([['en-IN', 'English / Hinglish'], ['hi-IN', 'Hindi']] as [RecogLang, string][]).map(([k, label]) => (
+            <Pressable key={k} accessibilityRole="button" accessibilityState={{ selected: lang === k }} onPress={() => { setLang(k); chooseRecognitionLang(k); }}
+              style={{ minHeight: 44, paddingHorizontal: 16, borderRadius: 14, justifyContent: 'center', backgroundColor: lang === k ? colors.lime : 'rgba(255,255,255,0.07)' }}>
+              <Txt style={{ fontFamily: font.semibold, fontSize: 14, color: lang === k ? '#07080B' : colors.text }}>{label}</Txt>
+            </Pressable>
+          ))}
+        </View>
+        <Txt style={{ color: colors.dim, fontSize: 12.5, lineHeight: 18 }}>This is the language your phone listens for. Pick the one you actually talk in.</Txt>
       </View>
       <View style={{ height: 1, backgroundColor: colors.border }} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
