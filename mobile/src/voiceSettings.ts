@@ -3,12 +3,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type VoiceMode = 'all' | 'moments' | 'phone';
+// Live voice = audio streamed to the voice agent on your PC (it decides when you are done talking and answers as it speaks). On by default; it falls back
+// to the phone's own recogniser by itself when the PC agent is off. This switch forces the built-in one.
+const LIVE_KEY = 'live_voice_v1';
+let liveVoice = true;
+export const liveVoiceEnabled = () => liveVoice;
+// Talking over the coach needs the phone's echo canceller. Off = the coach is not interrupted by sound (a tap still does it).
+const BARGE_KEY = 'barge_in_v1';
+let bargeIn = true;
+export const bargeInEnabled = () => bargeIn;
+export async function setBargeIn(on: boolean): Promise<void> { bargeIn = on; try { await AsyncStorage.setItem(BARGE_KEY, on ? '1' : '0'); } catch { /* applies for this session */ } }
+export async function setLiveVoice(on: boolean): Promise<void> { liveVoice = on; try { await AsyncStorage.setItem(LIVE_KEY, on ? '1' : '0'); } catch { /* applies for this session */ } }
 const KEY = 'voice_mode_v1';
 let mode: VoiceMode = 'moments';
 
 export const getVoiceMode = () => mode;
 
 export async function loadVoiceSettings(): Promise<VoiceMode> {
+  try { const l = await AsyncStorage.getItem(LIVE_KEY); if (l === '0') liveVoice = false; } catch { /* keep default */ }
+  try { const b = await AsyncStorage.getItem(BARGE_KEY); if (b === '0') bargeIn = false; } catch { /* keep default */ }
   try {
     const v = await AsyncStorage.getItem(KEY);
     if (v === 'all' || v === 'moments' || v === 'phone') mode = v;

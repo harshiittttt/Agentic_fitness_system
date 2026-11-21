@@ -41,6 +41,21 @@ if (-not (Listening $gatewayPort)) {
 }
 if (Listening $gatewayPort) { Say "Gateway: up on port $gatewayPort" } else { Say "Gateway did not start. See deploy\local\logs\gateway.err.log"; exit 1 }
 
+# 3b. live voice agent (uses the GPU; optional: when it is off the app uses the phone's own recogniser). Setup: voice_agent\README.md
+$voicePy = "D:\voice-proto\venv\Scripts\python.exe"
+$voicePort = 8765
+if (Test-Path $voicePy) {
+  if (-not (Listening $voicePort)) {
+    Start-Process $voicePy -ArgumentList "voice_agent\server.py" -WindowStyle Hidden `
+      -RedirectStandardOutput "$logs\voice.out.log" -RedirectStandardError "$logs\voice.err.log" | Out-Null
+    $t = 0
+    while (-not (Listening $voicePort) -and $t -lt 90) { Start-Sleep 1; $t++ }
+  }
+  if (Listening $voicePort) { Say "Live voice agent: up on port $voicePort" } else { Say "Live voice agent did not start (see deploy\local\logs\voice.err.log). The app will use the phone's recogniser." }
+} else {
+  Say "Live voice agent: not installed (optional, see voice_agent\README.md)"
+}
+
 # 4. public address (free Cloudflare quick tunnel: the address CHANGES every time it starts)
 if ($SkipTunnel) {
   Say "Tunnel: skipped (keeping whatever is running)"

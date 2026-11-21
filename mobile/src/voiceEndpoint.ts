@@ -19,7 +19,7 @@ const REPS_PLURAL = /\b(?:wraps|raps|rapes|reaps)\b/gi;
 
 const DANGLING = new Set(['like', 'and', 'so', 'then', 'the', 'a', 'an', 'my', 'of', 'with', 'for', 'at', 'to', 'i', "i'm", 'im', 'just', 'about', 'was', 'is', 'have', 'had',
   'did', 'do', 'that', 'which', 'also', 'plus', 'but', 'because', 'when', 'if', 'or', 'on', 'in', 'it', 'its', "it's", 'some', 'around', 'kind', 'sort', 'basically',
-  'actually', 'well', 'okay', 'ok', 'yeah', 'by', 'from', 'than', 'let', "let's", 'lets', 'can', 'could', 'should', 'would', 'will', 'what', 'how', 'where', 'who', 'which', 'need', 'needs', 'want', 'wanna', 'gonna', 'going', 'supposed', 'have', 'why', 'whether', 'while', 'tell', 'explain', 'between', 'after', 'before']);
+  'actually', 'well', 'okay', 'ok', 'yeah', 'by', 'from', 'than', 'let', "let's", 'lets', 'can', 'could', 'should', 'would', 'will', 'what', 'how', 'where', 'who', 'which', 'need', 'needs', 'want', 'wanna', 'gonna', 'supposed', 'have', 'why', 'whether', 'while', 'tell', 'explain', 'between', 'after', 'before']);
 // endings that mean "and the rest is coming": "can you just tell me", "should I go till", "what is the"
 const OPEN_END = /(?:\b(?:tell|give|show|let|help|ask|get|take|teach|remind)\s+me|\b(?:can|could|would|should|will|do|does|did|am|is|are|was|were)\s+(?:you|i|we|it|that|this)(?:\s+just)?|\b(?:till|until|between|towards?|against|instead of|because of|according to|how do i|what is the|what's the|where is the))$/i;
 const SHORT_COMMANDS = /^(?:skip|skip this|next|next one|done|finished|finish|stop|yes|no|yeah|nope|okay|ok|cancel|undo|repeat|again|ready|go|start|pause|resume|continue|sure|thanks|thank you)\b/i;

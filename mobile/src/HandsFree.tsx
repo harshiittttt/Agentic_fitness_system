@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Pressable, Switch, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getWakeState, onWakeState, resetDiag, setWakeEnabled, WakeState } from './wakeSettings';
-import { chooseRecognitionLang, getRecognitionLang, RecogLang } from './voiceSettings';
+import { chooseRecognitionLang, getRecognitionLang, bargeInEnabled, liveVoiceEnabled, RecogLang, setBargeIn, setLiveVoice } from './voiceSettings';
 import { colors, font } from './theme';
 import { Card, Txt } from './ui';
 
@@ -21,6 +21,8 @@ export default function HandsFree() {
   const [ws, setWs] = useState<WakeState>(getWakeState());
   const [, tick] = useState(0);
   const [lang, setLang] = useState<RecogLang>(getRecognitionLang());
+  const [live, setLive] = useState(liveVoiceEnabled());
+  const [barge, setBarge] = useState(bargeInEnabled());
   useEffect(() => onWakeState(setWs), []);
   useEffect(() => { const t = setInterval(() => tick((n) => n + 1), 2000); return () => clearInterval(t); }, []);
   const st = STATUS[ws.status] ?? STATUS.off;
@@ -35,6 +37,21 @@ export default function HandsFree() {
           <Txt style={{ color: colors.dim, fontSize: 13.5, lineHeight: 19 }}>Tap the green mic next to the tabs, say it, done. It shows your words as you speak and the coach answers out loud.</Txt>
         </View>
       </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ flex: 1 }}>
+          <Txt style={{ fontFamily: font.semibold, fontSize: 15 }}>Live voice</Txt>
+          <Txt style={{ color: colors.dim, fontSize: 13, lineHeight: 18 }}>Your PC listens as you talk, waits while you think, and answers as it speaks. If the PC voice agent is off, the phone's own recognizer takes over by itself.</Txt>
+        </View>
+        <Switch accessibilityLabel="Live voice" value={live} trackColor={{ false: colors.cardHi, true: colors.lime }} thumbColor="#fff" onValueChange={(on) => { setLive(on); setLiveVoice(on); }} />
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ flex: 1 }}>
+          <Txt style={{ fontFamily: font.semibold, fontSize: 15 }}>Talk over the coach</Txt>
+          <Txt style={{ color: colors.dim, fontSize: 13, lineHeight: 18 }}>Start talking and the coach stops to listen. If it keeps cutting itself off or answers its own voice, turn this off (tapping the mic still skips a sentence).</Txt>
+        </View>
+        <Switch accessibilityLabel="Talk over the coach" value={barge} trackColor={{ false: colors.cardHi, true: colors.lime }} thumbColor="#fff" onValueChange={(on) => { setBarge(on); setBargeIn(on); }} />
+      </View>
+      <View style={{ height: 1, backgroundColor: colors.border }} />
       <View style={{ gap: 6 }}>
         <Txt style={{ fontFamily: font.semibold, fontSize: 15 }}>I speak</Txt>
         <View style={{ flexDirection: 'row', gap: 8 }}>

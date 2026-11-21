@@ -19,7 +19,9 @@ _REPS_PLURAL = re.compile(r"\b(?:wraps|raps|rapes|reaps)\b", re.I)
 # a sentence that stops on one of these is not finished
 _DANGLING = {"like", "and", "so", "then", "the", "a", "an", "my", "of", "with", "for", "at", "to", "i", "i'm", "im", "just", "about", "was", "is", "have", "had",
              "did", "do", "that", "which", "also", "plus", "but", "because", "when", "if", "or", "on", "in", "it", "its", "it's", "some", "around", "kind", "sort",
-             "basically", "actually", "well", "okay", "ok", "yeah", "need", "needs", "want", "wanna", "gonna", "going", "supposed", "why", "whether", "while", "explain", "between", "after", "before"}
+             "basically", "actually", "well", "okay", "ok", "yeah", "need", "needs", "want", "wanna", "gonna", "supposed", "why", "whether", "while", "between", "after", "before"}
+# verbs that cannot end a sentence: "do I need", "should I want" are always the start of a longer one, whatever word they begin with
+_NEVER_END = {"need", "needs", "wanna", "gonna", "supposed", "whether"}
 # endings that mean "and the rest is coming": "can you just tell me", "should I go till", "what is the"
 _OPEN_END = re.compile(r"(?:\b(?:tell|give|show|let|help|ask|get|take|teach|remind)\s+me|\b(?:can|could|would|should|will|do|does|did|am|is|are|was|were)\s+(?:you|i|we|it|that|this)(?:\s+just)?|"
                        r"\b(?:till|until|between|towards?|against|instead of|because of|according to|how do i|what is the|what's the|where is the))$", re.I)
@@ -48,8 +50,18 @@ _HI_PHRASES = [                                                # (pattern, Engli
 _HI_PHRASES_RE = [(re.compile(p, re.I), r) for p, r in _HI_PHRASES]
 
 
+_AGLA = re.compile(r"\ba{1,2}gl[ae]\b", re.I)
+_ASKING = re.compile(r"\b(?:batao|bitao|bataiye|bata\s+do|dikhao|kya|kaun\s*sa|kaunsa|kaun)\b", re.I)
+# the phone/Whisper hear these systematically wrong
+_MISHEARD = [(re.compile(r"\bsquads\b", re.I), "squats"), (re.compile(r"\bsquad\b", re.I), "squat"), (re.compile(r"\brapes\b", re.I), "reps")]
+
+
 def hinglish(t: str) -> str:
     """Roman-letter Hindi numbers and a few set-logging phrases -> what the English parsers understand. Plain English text passes through unchanged."""
+    if _AGLA.search(t) and _ASKING.search(t):
+        return "what is next"                        # "agla exercise batao / kaun sa hai" is a QUESTION about what is next, never an order to skip it
+    for rx, rep in _MISHEARD:
+        t = rx.sub(rep, t)
     t = _HI_AMBIG_RE.sub(lambda m: str(_HI_NUM_AMBIG[m.group(1).lower()]), t)
     t = _HI_NUM_RE.sub(lambda m: str(_HI_NUM[m.group(1).lower()]), t)
     t = _HI_REPS_RE.sub(lambda m: f"{m.group(1)} reps", t)
@@ -78,6 +90,8 @@ def is_fragment(text: str) -> bool:
         return False
     if any(w.replace(".", "").isdigit() for w in words):        # a number means there is content ('bench 60'): let the parsers see it
         return False
+    if len(words) <= 8 and words[-1] in _NEVER_END:
+        return True
     if len(words) <= 5 and words[-1] in _DANGLING and _STARTERS.match(t):     # 'undo that', 'what is that' are commands, not half-sentences
         return True
     if len(words) <= 8 and _OPEN_END.search(t.lower()):

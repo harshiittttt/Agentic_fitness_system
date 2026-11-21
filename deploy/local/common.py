@@ -44,6 +44,11 @@ def gateway_port() -> int:
     return int(os.environ.get("GATEWAY_PORT") or 8000)
 
 
+def voice_port() -> int:
+    """The live voice agent (voice_agent/server.py, GPU) listens here, on 127.0.0.1 only; the gateway is its public door."""
+    return int(os.environ.get("VOICE_PORT") or 8765)
+
+
 def load_users(directory: Path | None = None) -> dict[str, dict]:
     """name -> {name, port, token, data_dir}; skips unreadable/incomplete files."""
     out: dict[str, dict] = {}

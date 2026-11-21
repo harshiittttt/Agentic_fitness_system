@@ -4,13 +4,14 @@ Never logs tokens or Authorization headers; the backends additionally enforce th
 from __future__ import annotations
 
 import argparse
+import asyncio
 import hmac
 import os
 import sys
 from pathlib import Path
 
 import httpx
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -95,6 +96,55 @@ def create_app(users_dir=None, upstream_host: str = "127.0.0.1") -> FastAPI:
     @app.get("/health")
     async def health():
         return {"ok": True}
+
+    @app.websocket("/voice/ws")
+    async def voice_ws(ws: WebSocket):
+        """Live voice: the phone streams microphone audio, the PC's voice agent (GPU) answers with audio. The access key picks the person's
+        backend exactly as for the HTTP routes; the voice agent itself only listens on 127.0.0.1."""
+        import websockets
+        tok = ws.query_params.get("token", "").strip()
+        port = users.port_for(tok) if tok else None
+        if port is None:
+            await ws.close(code=4401)
+            return
+        try:
+            up = await websockets.connect(f"ws://{upstream_host}:{common.voice_port()}/ws?token={tok}&port={port}", max_size=None, open_timeout=5)
+        except Exception:
+            await ws.close(code=4503)            # the voice agent is not running: the app falls back to its built-in voice
+            return
+        await ws.accept()
+
+        async def down():
+            async for m in up:
+                if isinstance(m, bytes):
+                    await ws.send_bytes(m)
+                else:
+                    await ws.send_text(m)
+
+        async def upl():
+            try:
+                while True:
+                    m = await ws.receive()
+                    if m["type"] == "websocket.disconnect":
+                        break
+                    if m.get("bytes") is not None:
+                        await up.send(m["bytes"])
+                    elif m.get("text") is not None:
+                        await up.send(m["text"])
+            except WebSocketDisconnect:
+                pass
+
+        tasks = [asyncio.create_task(down()), asyncio.create_task(upl())]
+        try:
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for t in tasks:
+                t.cancel()
+            await up.close()
+            try:
+                await ws.close()
+            except Exception:
+                pass
 
     @app.options("/{path:path}")
     async def preflight(request: Request):

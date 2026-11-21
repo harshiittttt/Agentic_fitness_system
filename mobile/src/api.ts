@@ -9,6 +9,11 @@ export let API = DEFAULT_API;
 let apiToken = '';
 export function setApiConfig(url: string, token: string) { API = url || DEFAULT_API; apiToken = token; }
 export const getApiToken = () => apiToken;
+/** The live-voice socket (the PC's voice agent, through the same gateway and access key as everything else). null until a server is saved. */
+export const voiceWsUrl = (): string | null => {
+  if (!apiToken || !/^https?:\/\//i.test(API) || API === DEFAULT_API) return null;
+  return API.replace(/^http/i, 'ws').replace(/\/+$/, '') + '/voice/ws?token=' + encodeURIComponent(apiToken);
+};
 const authListeners = new Set<() => void>();
 /** Subscribe to "the server said 401" (wrong or missing access key). Returns the unsubscribe function. */
 export const onAuthFailure = (cb: () => void) => { authListeners.add(cb); return () => { authListeners.delete(cb); }; };

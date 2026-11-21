@@ -83,3 +83,24 @@ def test_pain_words_match_whole_words_only(text, flag):
 ])
 def test_hinglish_numbers_and_phrases(raw, want):
     assert sf.clean(raw) == want
+
+
+# ------------------------------------------------------------------ found by the live-voice test: a QUESTION about what is next must never skip it
+@pytest.mark.parametrize("raw", ["Agla exercise batao", "Aagla exercise bitao.", "agla exercise kaun sa hai", "agla wala kya hai"])
+def test_asking_what_is_next_in_hinglish_is_a_question_not_a_skip(raw):
+    assert sf.clean(raw) == "what is next"
+
+
+def test_a_bare_agla_still_means_next():
+    assert sf.clean("agla") == "next"
+
+
+@pytest.mark.parametrize("raw,want", [("how should I do the squad properly", "how should I do the squat properly"), ("6 rapes weight 50 kilos", "6 reps weight 50 kilos"),
+                                      ("three squads", "three squats")])
+def test_systematic_mishearings_are_repaired(raw, want):
+    assert sf.clean(raw) == want
+
+
+def test_do_i_need_is_an_unfinished_sentence_even_with_the_question_mark_whisper_adds():
+    assert sf.is_fragment("Do I need?") and sf.is_fragment("do I need")
+    assert not sf.is_fragment("how is it going")

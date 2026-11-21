@@ -8,6 +8,9 @@ Get-Process cloudflared -ErrorAction SilentlyContinue | Stop-Process -Force
 Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
   Where-Object { $_.CommandLine -like "*deploy\local\gateway.py*" } |
   ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-Write-Host "Tunnel and gateway stopped."
+Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+  Where-Object { $_.CommandLine -like "*voice_agent\server.py*" } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Write-Host "Tunnel, gateway and live voice agent stopped."
 docker compose stop 2>&1 | Select-Object -Last 3 | ForEach-Object { Write-Host "  $_" }
 Write-Host "Containers stopped. Data is kept in the Docker volumes. Start again with START_COACH.bat"

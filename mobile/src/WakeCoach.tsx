@@ -16,7 +16,10 @@ import { AppState, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from './haptics';
-import { ApiError, getCoach, liveSay, voiceCommand } from './api';
+import { ApiError, getCoach, liveSay, voiceCommand, voiceWsUrl } from './api';
+import { VoiceStream } from './streamVoice';
+import { makeDevice } from './streamAudioDevice';
+import { bargeInEnabled, liveVoiceEnabled } from './voiceSettings';
 import { emitVoiceActions, parseAction, VoiceAction } from './voiceBus';
 import { getVoiceDay, getVoiceScreen } from './voiceScreen';
 import { speak, stopSpeaking } from './tts';
@@ -70,6 +73,9 @@ export default function WakeCoach() {
   const bubbleT = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errAt = useRef(0);
   const skipped = useRef(false);                  // the user cut the coach's sentence short: listen again at once
+  const stream = useRef<VoiceStream | null>(null);        // live voice (streamed audio to the PC's voice agent) when it is reachable
+  const streamDownAt = useRef(0);                         // it was unreachable at this time: use the built-in recogniser for a while
+  const streamQuietT = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const enabled = useRef(getWakeState().enabled);
   const appActive = useRef(AppState.currentState === 'active');
@@ -212,6 +218,7 @@ export default function WakeCoach() {
   const stopSession = useCallback((msg?: string, isError = false) => {
     const was = session.current;
     session.current = false;
+    { const s = stream.current; stream.current = null; if (streamQuietT.current) { clearTimeout(streamQuietT.current); streamQuietT.current = null; } if (s) { try { s.close(); } catch { /* already closed */ } } }
     stopTicker();
     if (recT.current) { clearTimeout(recT.current); recT.current = null; }
     if (fillerT.current) { clearTimeout(fillerT.current); fillerT.current = null; }
@@ -226,6 +233,59 @@ export default function WakeCoach() {
   }, [reconcile]);
 
   const showError = (t: string) => { stopSession(t, true); };
+
+  // ---- live voice: one result from the PC's voice agent, applied exactly like a /voice/command answer (the agent speaks it itself)
+  const applyStreamResult = useCallback((r: any) => {
+    const reply: string = r?.reply ?? '';
+    dlog('s_bot', { intent: r?.intent, acts: (r?.actions ?? []).length, expects: r?.expects, reply: reply.slice(0, 80) });
+    const acts = (Array.isArray(r?.actions) ? r.actions : []).map(parseAction).filter(Boolean) as VoiceAction[];
+    const forLive = getVoiceScreen() === 'live' && hasReplyListener();
+    if (forLive) { try { emitVoiceReply(r); } catch { /* the workout screen applies sets / rest itself */ } }
+    const forBus = forLive ? acts.filter((a) => !['rest', 'rest_add', 'rest_skip', 'end'].includes(a.type)) : acts;
+    if (forBus.length) { try { emitVoiceActions(forBus as any); } catch { /* a UI listener bug must not stop the conversation */ } }
+    const did = describeActions(acts);
+    if (r?.pr) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    else if (acts.length) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTalkState({ note: did });
+    if (reply && r?.intent !== 'ignored') showBubble(reply); else if (did) showBubble(did);
+  }, []);
+
+  const armStreamQuiet = () => {
+    if (streamQuietT.current) clearTimeout(streamQuietT.current);
+    streamQuietT.current = setTimeout(() => { if (stream.current) stopSession('Voice paused after a few quiet minutes. Tap the mic to carry on.'); }, SESSION_QUIET_MS);
+  };
+
+  /** Try the live voice. true = it is running; false = not available (no server, Expo Go, agent off): the caller uses the built-in recogniser. */
+  const startStream = useCallback(async (): Promise<boolean> => {
+    if (!liveVoiceEnabled() || Date.now() - streamDownAt.current < 60000) return false;
+    const url = voiceWsUrl(); const dev = makeDevice();
+    if (!url || !dev) return false;
+    session.current = true; quietSince.current = Date.now();
+    acquireMic('ui'); if (running.current) stopRun();
+    setBubble(''); setTalkState({ phase: 'listening', heard: '', note: '', error: false, session: true });
+    const t0 = Date.now();
+    const vs = new VoiceStream(url, dev, {
+      onUser: (t) => { dlog('s_user', { text: t.slice(0, 80) }); armStreamQuiet(); setTalkState({ phase: 'thinking', heard: cleanSpeech(t), error: false }); },
+      onBot: (r) => { armStreamQuiet(); applyStreamResult(r); },
+      onPhase: (p) => { dlog('s_phase', p); setTalkState(p === 'listening' ? { phase: p, heard: '' } : { phase: p }); },
+      onClose: (why) => { if (stream.current !== vs) return; dlog('s_close', why); stream.current = null; if (why === 'denied') showError('The voice connection was refused. Check your access key in Profile.'); else if (why === 'closed') showError('Voice connection dropped. Tap the mic to reconnect.'); },
+    });
+    stream.current = vs;
+    try {
+      await vs.open(getVoiceScreen(), bargeInEnabled());
+    } catch (e) {
+      if (stream.current === vs) stream.current = null;
+      dlog('s_unavailable', String((e as any)?.message ?? e).slice(0, 80));
+      streamDownAt.current = Date.now();
+      if (session.current) { session.current = false; releaseMic('ui'); setTalkState({ phase: 'idle', heard: '', note: '', session: false, error: false }); }
+      return false;
+    }
+    if (!session.current) { try { vs.close(); } catch { /* stopped while connecting */ } return true; }
+    dlog('s_open', { ms: Date.now() - t0 });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    armStreamQuiet();
+    return true;
+  }, [applyStreamResult, stopRun]);
 
   /** Start (or restart after a break) the recognizer of the session. The session itself stays on. */
   const startRecognizer = useCallback(() => {
@@ -357,6 +417,8 @@ export default function WakeCoach() {
   }, [sendUtterance, stopSession]);
 
   const startSession = useCallback(async () => {
+    if (session.current) return;
+    if (await startStream()) return;
     if (!MOD) { setTalkState({ phase: 'idle', error: true }); showBubble('Voice needs the installed app build, not Expo Go. Type to your coach instead.'); return; }
     if (session.current) return;
     try {
@@ -390,12 +452,13 @@ export default function WakeCoach() {
 
   /** A tap while the coach is talking: cut the sentence short, keep the session, listen at once. */
   const skipSpeech = useCallback(() => {
+    if (stream.current) { dlog('skip_speech'); stream.current.interrupt(); setTalkState({ phase: 'listening' }); return; }
     if (!speaking.current) return;
     skipped.current = true; dlog('skip_speech'); stopSpeaking();
   }, []);
 
   /** A screen that speaks by itself (a button press) asks us to ignore the microphone for a while. */
-  const muteFor = useCallback((ms: number, exact = false) => { muteUntil.current = exact ? Date.now() + ms : Math.max(muteUntil.current, Date.now() + ms); }, []);
+  const muteFor = useCallback((ms: number, exact = false) => { stream.current?.mute(ms); muteUntil.current = exact ? Date.now() + ms : Math.max(muteUntil.current, Date.now() + ms); }, []);
 
   // ================================================================ "Hey coach": an utterance, a hit, a command
   const dispatch = useCallback((events: ReturnType<typeof tracker.current.feed>) => {
@@ -416,7 +479,7 @@ export default function WakeCoach() {
     const un = onWakeState((s) => { setWakeOn(s.status === 'listening'); if (s.enabled !== enabled.current) { enabled.current = s.enabled; reconcile(); } });
     const unMic = onMicChange(reconcile);
     const app = AppState.addEventListener('change', (s) => { appActive.current = s === 'active'; if (s !== 'active' && session.current) stopSession(); reconcile(); });
-    if (!MOD) { status(); return () => { alive.current = false; unTalk(); unReg(); un(); unMic(); app.remove(); }; }
+    if (!MOD) { status(); return () => { alive.current = false; unTalk(); unReg(); un(); unMic(); app.remove(); { const s = stream.current; stream.current = null; try { s?.close(); } catch { /* ignore */ } } }; }
 
     const subs = [
       // MOD.addListener, not SR.addSpeechRecognitionListener: the library exports that one as an UNBOUND method, so called through the package it
@@ -490,6 +553,7 @@ export default function WakeCoach() {
     ];
     return () => {
       alive.current = false; unTalk(); unReg(); un(); unMic(); app.remove(); subs.forEach((s) => s.remove());
+      { const s = stream.current; stream.current = null; if (streamQuietT.current) clearTimeout(streamQuietT.current); try { s?.close(); } catch { /* ignore */ } }
       clearTimers(); if (bubbleT.current) clearTimeout(bubbleT.current);
       stopTicker(); if (recT.current) clearTimeout(recT.current); if (fillerT.current) clearTimeout(fillerT.current);
       if (session.current) { session.current = false; try { MOD.abort?.(); } catch { /* ignore */ } releaseMic('ui'); }
