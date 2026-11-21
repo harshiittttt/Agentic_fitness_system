@@ -77,6 +77,30 @@ assert.deepStrictEqual(t.flush(600), []);
 t = createWakeTracker();
 assert.deepStrictEqual(t.feed('i think the coach is right', true, 0), []);
 
+// follow-up window: the answer to a coach question needs no wake phrase, one shot
+t = createWakeTracker(['coach']);
+t.expectFollowup(1000, 8000);
+assert.ok(t.followingUp(1500));
+assert.deepStrictEqual(t.feed('four', false, 2000), []);
+assert.deepStrictEqual(t.feed('four eggs', true, 2500), [{ kind: 'command', command: 'four eggs', followup: true }]);
+assert.deepStrictEqual(t.feed('and a toast', true, 3000), []);           // one-shot
+assert.ok(!t.followingUp(3000));
+// expires on silence
+t = createWakeTracker(['coach']); t.expectFollowup(0, 8000);
+assert.deepStrictEqual(t.feed('four eggs', true, 9000), []);
+// no final arrives: flush sends the last interim
+t = createWakeTracker(['coach']); t.expectFollowup(0, 8000);
+t.feed('three sets of eight', false, 1000);
+assert.deepStrictEqual(t.flush(2000), [{ kind: 'command', command: 'three sets of eight', followup: true }]);
+// saying the wake phrase inside a follow-up window takes the normal path
+t = createWakeTracker(['coach']); t.expectFollowup(0, 8000);
+assert.deepStrictEqual(t.feed('hey coach open fuel', true, 1000).filter((e) => e.kind === 'command'), [{ kind: 'command', command: 'open fuel' }]);
+// cancel and reset close the window
+t = createWakeTracker(['coach']); t.expectFollowup(0, 8000); t.cancelFollowup();
+assert.deepStrictEqual(t.feed('four eggs', true, 100), []);
+t = createWakeTracker(['coach']); t.expectFollowup(0, 8000); t.reset();
+assert.ok(!t.followingUp(100));
+
 // phrases for biasing include the persona
 assert.ok(wakePhrases('Max').includes('hey max') && wakePhrases('Max').includes('हे कोच'));
 

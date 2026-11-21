@@ -46,6 +46,8 @@ from fitness_os.push_api import router as push_router  # noqa: E402  (phone push
 app.include_router(push_router)
 from backend.routes_split_consult import router as split_consult_router  # noqa: E402  (the split consult after onboarding: talk it through, then confirm)
 app.include_router(split_consult_router)
+from backend.routes_voice import router as voice_router  # noqa: E402  (universal voice commands: food, navigation, settings, workout, tools)
+app.include_router(voice_router)
 
 
 def _run_agents_bg(event_type: str, payload: dict) -> None:

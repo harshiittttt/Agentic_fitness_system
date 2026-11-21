@@ -367,3 +367,8 @@ export const previewMeal = async (text: string, day?: string): Promise<{ items: 
   if (!r.ok) throw new Error(`preview ${r.status}`);
   return r.json();
 };
+
+/** Voice command brain (server decides intent + UI actions). A 404 means an older server: callers fall back to liveSay. */
+export type VoiceCommandResult = { reply: string; intent?: string; actions?: any[]; expects?: null | 'set_details' | 'food_amount' | 'confirm' | 'answer'; moment?: boolean; pr?: boolean; state?: any; saved?: any };
+export const voiceCommand = (transcript: string, screen: string, day: string | null, followup: boolean): Promise<VoiceCommandResult> =>
+  post('/voice/command', { transcript, screen, day, ambient: false, followup });

@@ -125,7 +125,7 @@ export default function Coach({ onOpenTeam }: { onOpenTeam?: () => void }) {
     }
     setTyping(false);
   };
-  const voice = useVoice((t) => send(t, undefined, true));
+  const voice = useVoice((t) => send(t, undefined, true), (m) => toast(m, { tone: 'warn' }));
 
   const regenerate = () => {
     const lastMine = [...msgs].reverse().find((m) => m.me);
@@ -262,7 +262,7 @@ export default function Coach({ onOpenTeam }: { onOpenTeam?: () => void }) {
         <TextInput value={text} onChangeText={setText} placeholder={online ? `Message ${persona.name}` : `Offline. ${persona.name} can't answer yet.`} placeholderTextColor={colors.faint}
           onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel={`Message ${persona.name}`} onFocus={() => setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 250)}
           style={{ flex: 1, minHeight: 52, backgroundColor: 'rgba(255,255,255,0.06)', color: colors.text, borderRadius: 26, paddingHorizontal: 20, paddingVertical: 14, fontFamily: font.medium, fontSize: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }} />
-        <Pressable onPress={() => (text.trim() ? send(text) : voice.available && (voice.listening ? voice.stop() : voice.start()))} disabled={typing}
+        <Pressable onPress={() => (text.trim() ? send(text) : (voice.listening ? voice.stop() : voice.start()))} disabled={typing}
           hitSlop={4} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.94 : 1 }] })}
           accessibilityRole="button" accessibilityLabel={text.trim() ? 'Send message' : voice.listening ? 'Stop listening' : voice.available ? 'Speak to your coach' : 'Type a message to send'}>
           <LinearGradient colors={voice.listening ? gradients.warm : gradients.lime} style={{ width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', opacity: typing ? 0.5 : 1, shadowColor: voice.listening ? colors.pink : colors.lime, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 }}>

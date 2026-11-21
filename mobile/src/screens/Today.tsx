@@ -13,6 +13,8 @@ import Live from './Live';
 import SwapSheet from '../SwapSheet';
 import SetLogger, { LogTarget } from '../SetLogger';
 import { useVoice } from '../useVoice';
+import { onVoiceAction, takePendingVoiceActions, VoiceAction } from '../voiceBus';
+import { setVoiceOverlay } from '../voiceScreen';
 import { isoOf } from '../dates';
 import { TEAM, colors, font, gradients } from '../theme';
 import { Avatar, Card, Chip, Confetti, CountUp, EmptyState, ErrorCard, FadeIn, IconButton, MicButton, Ring, SectionTitle, Skeleton, Txt, useOnline } from '../ui';
@@ -158,6 +160,29 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
     setLoaded(true); setRefreshing(false);
   }, []);
   useEffect(() => { refresh(); }, [refresh, epoch, planEpoch]);
+  // Tell the voice layer when the full-screen live session is open, so "log this set" etc. are understood in that context.
+  useEffect(() => { setVoiceOverlay(live ? 'live' : null); return () => setVoiceOverlay(null); }, [live]);
+
+  // Voice control ("Hey coach, start my workout / rest 90 seconds / skip rest"): handled here, also when queued before we mounted.
+  const refreshRef = useRef(refresh); refreshRef.current = refresh;
+  const startRestRef = useRef(startRest); startRestRef.current = startRest;
+  useEffect(() => {
+    const mineOf = (a: VoiceAction) => (a.type === 'open' && a.screen === 'live') || a.type === 'end' || a.type === 'rest' || a.type === 'rest_add' || a.type === 'rest_skip'
+      || (a.type === 'refresh' && (!a.what || a.what.some((w) => w === 'today' || w === 'plan' || w === 'all')));
+    const apply = (a: VoiceAction): boolean => {
+      switch (a.type) {
+        case 'open': if (a.screen !== 'live') return false; setLive(true); return true;
+        case 'end': setLive(false); refreshRef.current(); return true;
+        case 'rest': startRestRef.current(a.seconds); return true;
+        case 'rest_add': restTotal.current += a.seconds; setRest((r) => r + a.seconds); return true;
+        case 'rest_skip': if (tick.current) clearInterval(tick.current); setRest(0); return true;
+        case 'refresh': if (!mineOf(a)) return false; refreshRef.current(); return true;
+        default: return false;
+      }
+    };
+    takePendingVoiceActions(mineOf).forEach(apply);
+    return onVoiceAction(apply);
+  }, []);
 
   const ov = plan?.today_override;
   const day = ov?.day ?? plan?.days?.[plan?.today_index ?? 0];
@@ -443,11 +468,12 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
                 <View style={{ gap: 12 }}>
                   <View style={{ alignItems: 'center', gap: 8 }}>
                     {busy ? <ActivityIndicator color={colors.lime} style={{ height: 96 }} /> : (
-                      <MicButton listening={voice.listening} disabled={!voice.available} onPress={() => (voice.listening ? voice.stop() : voice.start())} />
+                      <MicButton listening={voice.listening} onPress={() => (voice.listening ? voice.stop() : voice.start())} />
                     )}
                     <Txt style={{ color: colors.dim, fontSize: 13 }}>
-                      {voice.available ? (voice.listening ? 'Listening…' : 'Tap and say "bench 80 for 8, felt easy"') : 'Voice needs a dev build. Type your set below.'}
+                      {voice.listening ? 'Listening…' : 'Tap and say "bench 80 for 8, felt easy"'}
                     </Txt>
+                    {!!voice.error && <Txt accessibilityRole="alert" style={{ color: colors.amber, fontSize: 12.5, textAlign: 'center' }}>{voice.error}</Txt>}
                   </View>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     <TextInput value={typed} onChangeText={setTyped} placeholder="bench press 80 for 8 rpe 8" placeholderTextColor={colors.faint}

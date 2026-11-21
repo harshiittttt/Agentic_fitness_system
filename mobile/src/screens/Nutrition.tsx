@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import { deleteMeal, getNutritionDay, getPortionInfo, getRecentMeals, getWeek, l
 import PortionSheet, { Macros } from '../PortionSheet';
 import { DAYS, parseIso, shortDate } from '../dates';
 import { useVoice } from '../useVoice';
+import { onVoiceAction, takePendingVoiceActions, VoiceAction } from '../voiceBus';
+import { setVoiceDay } from '../voiceScreen';
 import { colors, font, gradients } from '../theme';
 import { Card, CountUp, ErrorCard, FadeIn, IconButton, Ring, SectionTitle, Skeleton, Txt, useOnline, useToast } from '../ui';
 import AnimBar from '../ux/f_AnimBar';
@@ -127,8 +129,28 @@ export default function Nutrition() {
     setRefreshing(false);
   }, [loadDay]);
   useEffect(() => { loadAll(selected || undefined); }, [loadAll, epoch]);
+  // "Hey coach, I had two eggs" should land on the day shown here (and "yesterday" is relative to the real today on the server).
+  useEffect(() => { setVoiceDay(selected || null); return () => setVoiceDay(null); }, [selected]);
 
   const pickDay = (d: string) => { setSelected(d); setNote(''); loadDay(d); };
+
+  // Voice control: "Hey coach, show yesterday's food". Also drains actions queued before this tab mounted.
+  const voiceApply = useRef<(a: VoiceAction) => boolean>(() => false);
+  voiceApply.current = (a) => {
+    if (a.type === 'nutrition_day') {
+      if (week.length && !week.some((x: any) => x.day === a.day)) return false;   // not loaded yet or out of range: stay queued
+      pickDay(a.day); return true;
+    }
+    if (a.type === 'refresh' && (!a.what || a.what.some((w) => w === 'nutrition' || w === 'all'))) { loadAll(selected || undefined); return true; }
+    return false;
+  };
+  useEffect(() => {
+    const mine = (a: VoiceAction) => a.type === 'nutrition_day';
+    const off = onVoiceAction((a) => voiceApply.current(a));
+    const t = setInterval(() => { if (week.length) takePendingVoiceActions(mine).forEach((a) => voiceApply.current(a)); }, 400);
+    const stop = setTimeout(() => clearInterval(t), 12000);
+    return () => { off(); clearInterval(t); clearTimeout(stop); };
+  }, [week.length]);
 
   // "How much?" flow: items the user gave no amount for are asked one by one; the rest are kept as parsed.
   const [ask, setAsk] = useState<{ text: string; items: MealPreviewItem[]; unknown: string[]; missing: number[]; step: number; chosen: Record<number, number> } | null>(null);
@@ -192,7 +214,7 @@ export default function Nutrition() {
       });
     } catch { /* the meal is saved either way */ }
   };
-  const voice = useVoice(submit);
+  const voice = useVoice((t) => { setTyped(`Heard: ${t}`); setNote(''); submit(t).finally(() => { /* finishLog clears the composer on success; on failure keep what was heard */ setTyped((cur) => (cur === `Heard: ${t}` ? t : cur)); }); }, (m) => setNote(m));
 
   const quickAdd = async (id: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -479,7 +501,7 @@ export default function Nutrition() {
       <View style={{ paddingHorizontal: 14, paddingTop: 6, paddingBottom: 6, gap: 6 }}>
         {!!note && <Txt style={{ color: colors.amber, fontSize: 12.5, lineHeight: 18, paddingHorizontal: 6 }}>{note}</Txt>}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(22,26,36,0.96)', borderRadius: 30, borderWidth: 1, borderColor: focus ? 'rgba(198,255,61,0.45)' : 'rgba(255,255,255,0.10)', padding: 6 }}>
-          {voice.available && (
+          {(
             <Pressable onPress={() => (voice.listening ? voice.stop() : voice.start())} disabled={busy} accessibilityRole="button" accessibilityLabel={voice.listening ? 'Stop listening' : 'Say what you ate'}>
               <LinearGradient colors={voice.listening ? gradients.warm : ['#232838', '#1A1E28']} style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name={voice.listening ? 'stop' : 'mic'} size={20} color={voice.listening ? '#fff' : colors.lime} />

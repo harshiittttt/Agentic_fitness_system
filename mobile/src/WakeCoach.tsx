@@ -2,7 +2,9 @@
 //
 // How it works: continuous speech recognition (expo-speech-recognition) runs while the app is open on screen; every
 // transcript goes through wakeWord.ts. Nothing is stored or sent until the phrase is heard; then the command (same
-// breath, or the next utterance within ~6 s) goes to POST /live/say (ambient=false), the reply is spoken and shown.
+// breath, or the next utterance within ~6 s) goes to POST /voice/command (falls back to /live/say on an older
+// server), the reply is spoken and shown, and the returned actions (open a tab, rest timer...) go to voiceBus. When the coach
+// asks a question (expects set), a one-shot ~8 s window hears the answer without the wake phrase.
 //
 // REAL PLATFORM LIMITS (be honest with users):
 //  * Needs a development build / release build. Expo Go has no native speech-recognition module: this component then
@@ -25,7 +27,9 @@ import { AppState, Platform, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from './haptics';
-import { getCoach, liveSay } from './api';
+import { ApiError, getCoach, liveSay, voiceCommand } from './api';
+import { emitVoiceActions, parseAction, VoiceAction } from './voiceBus';
+import { getVoiceDay, getVoiceScreen } from './voiceScreen';
 import { speak, stopSpeaking } from './tts';
 import { shouldUsePremium, getRecognitionLang } from './voiceSettings';
 import { acquireMic, micOwner, onMicChange, releaseMic } from './micLock';
@@ -41,14 +45,38 @@ const MOD = SR?.ExpoSpeechRecognitionModule;
 const CMD_WINDOW_MS = 6000;       // a bare "hey coach" waits this long for the command
 const STABLE_MS = 1600;           // phrase heard + no new words for this long = utterance finished (Android may not send isFinal)
 const BUBBLE_MS = 6000;
+const FOLLOWUP_MS = 8000;         // after the coach asks something, the next utterance is the answer (no wake phrase)
 
-type Phase = 'idle' | 'heard' | 'thinking' | 'speaking';
+type Phase = 'idle' | 'heard' | 'thinking' | 'speaking' | 'followup';
+
+const TAB_NAME: Record<string, string> = { today: 'Today', coach: 'Coach', nutrition: 'Fuel', insights: 'Insights', setup: 'Setup' };
+/** One short human line for what the phone just did, from the actions the server sent ('Opened Fuel'). */
+export function describeActions(actions: VoiceAction[]): string {
+  const out: string[] = [];
+  for (const a of actions) {
+    if (a.type === 'navigate') out.push(`Opened ${TAB_NAME[a.tab] ?? a.tab}`);
+    else if (a.type === 'open') out.push(`Opened ${a.screen}`);
+    else if (a.type === 'close') out.push('Closed');
+    else if (a.type === 'rest') out.push(`Rest ${a.seconds}s`);
+    else if (a.type === 'rest_add') out.push(`+${a.seconds}s rest`);
+    else if (a.type === 'rest_skip') out.push('Rest skipped');
+    else if (a.type === 'end') out.push('Workout ended');
+    else if (a.type === 'nutrition_day') out.push(`Fuel: ${a.day}`);
+    else if (a.type === 'setting') out.push(`${a.key} set to ${String(a.value)}`);
+  }
+  return out.slice(0, 2).join(', ');
+}
 
 export default function WakeCoach() {
   const insets = useSafeAreaInsets();
   const [phase, setPhase] = useState<Phase>('idle');
   const [bubble, setBubble] = useState('');
   const [ws, setWs] = useState(getWakeState());
+  const [heard, setHeard] = useState('');
+  const [note, setNote] = useState('');          // what happened ('Opened Fuel'), shown in the pill
+  const [isErr, setIsErr] = useState(false);
+  const followT = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const errAt = useRef(0);
 
   const enabled = useRef(ws.enabled);
   const appActive = useRef(AppState.currentState === 'active');
@@ -73,9 +101,9 @@ export default function WakeCoach() {
   const shouldRun = () => !!MOD && enabled.current && appActive.current && !speaking.current && !busy.current && micOwner() !== 'ui' && perm.current !== 'denied';
 
   const showBubble = (t: string) => {
-    setBubble(t);
+    setBubble(t); setIsErr(false);
     if (bubbleT.current) clearTimeout(bubbleT.current);
-    bubbleT.current = setTimeout(() => { setBubble(''); }, BUBBLE_MS);
+    bubbleT.current = setTimeout(() => { setBubble(''); setHeard(''); setNote(''); setIsErr(false); }, BUBBLE_MS);
   };
 
   const refreshCoach = async () => {
@@ -85,8 +113,8 @@ export default function WakeCoach() {
       const c = await getCoach();
       persona.current = c.persona ?? persona.current; coachName.current = c.coach_name ?? coachName.current;
       ttsCfg.current = c.tts ?? ttsCfg.current;
-      names.current = wakeNames(coachName.current);
-      tracker.current = createWakeTracker(names.current, CMD_WINDOW_MS);
+      const nn = wakeNames(coachName.current);
+      if (nn.join('|') !== names.current.join('|')) { names.current = nn; tracker.current = createWakeTracker(nn, CMD_WINDOW_MS); }   // keep the tracker otherwise (it may hold a follow-up window)
     } catch { /* keep the last known persona */ }
   };
 
@@ -157,31 +185,60 @@ export default function WakeCoach() {
     else status();
   }, [scheduleRestart, stopRun, status]);
 
-  const handleCommand = useCallback(async (command: string) => {
+  const showError = (t: string) => { showBubble(t); setIsErr(true); setNote(''); };
+
+  const handleCommand = useCallback(async (command: string, followup = false) => {
     if (busy.current) return;
-    busy.current = true; setPhase('thinking'); showBubble(`"${command}"`);
+    busy.current = true; setPhase('thinking'); setHeard(command); setNote(''); showBubble('');
+    if (followT.current) { clearTimeout(followT.current); followT.current = null; }
     stopRun();
+    let expects: string | null = null;
     try {
-      const r = await liveSay(command, false);
+      let r: any;
+      try {
+        r = await voiceCommand(command, getVoiceScreen(), getVoiceDay(), followup);
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) r = await liveSay(command, false);   // older server without /voice/command
+        else throw e;
+      }
       const reply: string = r?.reply ?? '';
+      const acts = (Array.isArray(r?.actions) ? r.actions : []).map(parseAction).filter(Boolean) as VoiceAction[];
+      if (acts.length) { try { emitVoiceActions(r.actions); } catch { /* a UI listener bug must not stop the reply */ } }
+      const did = describeActions(acts);
+      if (r?.pr) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      else if (acts.length) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       if (reply && r?.intent !== 'ignored') {
-        if (r.pr) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        showBubble(reply); setPhase('speaking'); speaking.current = true;
+        expects = r?.expects ?? null;
+        setNote(did); showBubble(reply); setPhase('speaking'); speaking.current = true;
         await new Promise<void>((done) => {
           speak(reply, ttsCfg.current, () => done(), { persona: persona.current, premium: shouldUsePremium(!!r.moment) }).catch(() => done());
         });
-      } else setBubble('');
-    } catch {
-      showBubble("Couldn't reach your coach. Try again.");
+      } else if (did) { setNote(did); showBubble(did); }
+      else { showBubble("I didn't catch a command in that. Try again."); }
+    } catch (e) {
+      expects = null;
+      const m = e instanceof ApiError && e.status !== 404 && e.message ? e.message : "Couldn't reach your coach. Check the connection and try again.";
+      showError(m);
     }
     speaking.current = false; busy.current = false;
-    if (alive.current) { setPhase('idle'); backoff.current = 500; reconcile(); }
+    if (!alive.current) return;
+    if (expects) {
+      // one-shot window: the next thing said is the answer, no "Hey coach" needed
+      tracker.current.expectFollowup(Date.now(), FOLLOWUP_MS);
+      setPhase('followup'); setHeard('');
+      followT.current = setTimeout(() => {
+        followT.current = null;
+        if (busy.current) return;
+        tracker.current.cancelFollowup(); setPhase((p) => (p === 'followup' ? 'idle' : p));
+      }, FOLLOWUP_MS + 1200);
+    } else setPhase('idle');
+    backoff.current = 500; reconcile();
   }, [reconcile, stopRun]);
 
   const dispatch = useCallback((events: ReturnType<typeof tracker.current.feed>) => {
     for (const e of events) {
       if (e.kind === 'wake') { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setPhase('heard'); }
-      else if (e.kind === 'command') handleCommand(e.command);
+      else if (e.kind === 'command') handleCommand(e.command, !!e.followup);
     }
     if (events.length === 0) return;
     // a bare "hey coach": leave the indicator on for the command window, then drop it
@@ -204,7 +261,7 @@ export default function WakeCoach() {
         if (!t) return;
         dispatch(tracker.current.feed(t, !!e.isFinal, Date.now()));
         if (stableT.current) clearTimeout(stableT.current);
-        if (!e.isFinal && matchWake(t, names.current).hit) {
+        if (!e.isFinal && (matchWake(t, names.current).hit || tracker.current.followingUp(Date.now()))) {
           stableT.current = setTimeout(() => { stableT.current = null; dispatch(tracker.current.flush(Date.now())); }, STABLE_MS);
         }
       }),
@@ -218,38 +275,48 @@ export default function WakeCoach() {
       }),
       SR.addSpeechRecognitionListener('error', (e: any) => {
         const code = e?.error;
-        if (code === 'not-allowed') { perm.current = 'denied'; running.current = false; releaseMic('wake'); status(); return; }
+        if (code === 'not-allowed') { perm.current = 'denied'; running.current = false; releaseMic('wake'); status(); showError('Microphone or speech permission was refused. Allow it in your phone settings to use Hey coach.'); return; }
         if (code === 'language-not-supported' && onDevicePref.current) { onDevicePref.current = false; }
         if (code === 'no-speech' || code === 'aborted' || code === 'speech-timeout') return;   // normal; 'end' follows
         backoff.current = Math.min(backoff.current * 2, 10000);
+        if (Date.now() - errAt.current > 30000) { errAt.current = Date.now(); showError('Voice is having trouble hearing right now. Retrying. The mic button still works.'); }
       }),
     ];
     return () => {
       alive.current = false; un(); unMic(); app.remove(); subs.forEach((s) => s.remove());
-      clearTimers(); if (bubbleT.current) clearTimeout(bubbleT.current);
+      clearTimers(); if (followT.current) clearTimeout(followT.current); if (bubbleT.current) clearTimeout(bubbleT.current);
       if (running.current) { running.current = false; try { MOD.abort?.(); } catch { /* ignore */ } }
       releaseMic('wake'); stopSpeaking();
     };
   }, []);
 
-  if (!MOD || !ws.enabled || ws.status === 'denied') return null;
+  const bubbleView = () => (
+    <View accessibilityLiveRegion="polite" style={{ maxWidth: '88%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, backgroundColor: isErr ? '#3A1D22' : '#222838', borderWidth: 1, borderColor: isErr ? 'rgba(255,107,107,0.6)' : 'rgba(198,255,61,0.35)', shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 }}>
+      <Txt style={{ fontSize: 14, lineHeight: 19 }} numberOfLines={4}>{bubble}</Txt>
+    </View>
+  );
+  const top = { position: 'absolute' as const, top: insets.top + 6, left: 0, right: 0, alignItems: 'center' as const, gap: 8, zIndex: 50, elevation: 50 };
+
+  // Not available / off / denied: Setup explains it; only a failure bubble (never silent) may still be showing here.
+  if (!MOD || !ws.enabled || ws.status === 'denied') return bubble ? <View pointerEvents="none" style={top}>{bubbleView()}</View> : null;
   const show = phase !== 'idle' || ws.status === 'listening';
-  if (!show && !bubble) return null;
-  const label = phase === 'heard' ? 'Listening…' : phase === 'thinking' ? 'On it…' : phase === 'speaking' ? 'Coach' : ws.onDevice === false ? 'Say "Hey coach" (online)' : 'Say "Hey coach"';
-  const hot = phase !== 'idle';
+  if (!show && !bubble && !heard && !note) return null;
+  const label = phase === 'followup' ? 'Listening for your answer' : phase === 'heard' ? 'Listening…' : phase === 'thinking' ? 'On it…'
+    : phase === 'speaking' ? (note || 'Coach') : note ? note : ws.onDevice === false ? 'Say "Hey coach" (online)' : 'Say "Hey coach"';
+  const hot = phase !== 'idle' || !!note;
+  const ink = hot ? colors.lime : '#C5CCDA';
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 6, left: 0, right: 0, alignItems: 'center', gap: 8, zIndex: 50, elevation: 50 }}>
-      {ws.status === 'listening' || phase !== 'idle' ? (
-        <View accessibilityLabel={label} accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, maxWidth: '88%', backgroundColor: hot ? 'rgba(198,255,61,0.22)' : 'rgba(20,24,36,0.82)', borderWidth: 1, borderColor: hot ? colors.lime : colors.border }}>
-          <Ionicons name={hot ? 'mic' : 'mic-outline'} size={14} color={hot ? colors.lime : colors.faint} />
-          <Txt numberOfLines={1} style={{ fontFamily: font.semibold, fontSize: 12, color: hot ? colors.lime : colors.faint, flexShrink: 1 }}>{label}</Txt>
+    <View pointerEvents="none" style={top}>
+      {ws.status === 'listening' || phase !== 'idle' || !!note ? (
+        <View accessibilityLabel={label} accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18, maxWidth: '90%', backgroundColor: hot ? 'rgba(24,32,8,0.92)' : 'rgba(20,24,36,0.92)', borderWidth: 1, borderColor: hot ? colors.lime : colors.border }}>
+          <Ionicons name={hot ? 'mic' : 'mic-outline'} size={15} color={ink} />
+          <Txt numberOfLines={1} style={{ fontFamily: font.semibold, fontSize: 13, color: ink, flexShrink: 1 }}>{label}</Txt>
         </View>
       ) : null}
-      {!!bubble && (
-        <View accessibilityLiveRegion="polite" style={{ maxWidth: '88%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, backgroundColor: '#222838', borderWidth: 1, borderColor: 'rgba(198,255,61,0.35)', shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 }}>
-          <Txt style={{ fontSize: 14, lineHeight: 19 }} numberOfLines={4}>{bubble}</Txt>
-        </View>
+      {!!heard && (
+        <Txt numberOfLines={2} style={{ maxWidth: '88%', fontSize: 12, color: '#C5CCDA', backgroundColor: 'rgba(20,24,36,0.85)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, overflow: 'hidden' }}>{`Heard: "${heard}"`}</Txt>
       )}
+      {!!bubble && bubbleView()}
     </View>
   );
 }

@@ -417,8 +417,9 @@ def _addressed(low: str, coach_name: str) -> bool:
     return coach_name.lower() in low or bool(QUESTION_RE.match(low))
 
 
-def handle(transcript: str, ambient: bool = False) -> dict:
-    """ambient=True: the mic is always on. Sets, commands and pain are always handled;
+def handle(transcript: str, ambient: bool = False, allow_chat: bool = True) -> dict:
+    """allow_chat=False (the universal voice layer): never call the model; unrecognised talk returns intent 'fallback' with an empty reply.
+    ambient=True: the mic is always on. Sets, commands and pain are always handled;
     open chat only happens when the lifter addresses the coach, so gym chatter is ignored."""
     pid, name = _ctx()
     text = transcript.strip()
@@ -504,6 +505,9 @@ def handle(transcript: str, ambient: bool = False) -> dict:
 
     if ambient and not _addressed(low, P.get(pid)["name"]):
         return _result("ignored", "")
+
+    if not allow_chat:
+        return _result("fallback", "")
 
     if have_key():
         try:

@@ -8,6 +8,7 @@ import { TEAM, colors, font, gradients } from '../theme';
 import { Avatar, Card, EmptyState, ErrorCard, FadeIn, IconButton, SectionTitle, Segmented, Skeleton, Txt, useOnline } from '../ui';
 import * as Haptics from '../haptics';
 import Review from './Review';
+import { onVoiceAction, VoiceAction } from '../voiceBus';
 import Roundtable from './Roundtable';
 import SpeakButton from '../ux/SpeakButton';
 
@@ -280,6 +281,12 @@ export default function Decisions({ onPending }: { onPending?: (n: number) => vo
     const t = setInterval(load, 15000);
     return () => { alive.current = false; clearInterval(t); };
   }, [load, epoch]);
+
+  // Voice control: "Hey coach, refresh my team decisions".
+  useEffect(() => onVoiceAction((a: VoiceAction) => {
+    if (a.type === 'refresh' && a.what?.includes('decisions')) { load(); return true; }
+    return false;
+  }), [load]);
 
   const act = async (d: Decision, action: 'approve' | 'reject' | 'revert') => {
     const go = async () => {

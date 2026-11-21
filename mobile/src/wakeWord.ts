@@ -75,7 +75,7 @@ export function matchWake(transcript: string, names: string[] = []): WakeMatch {
   return { hit: false, command: '' };
 }
 
-export type WakeEvent = { kind: 'wake' } | { kind: 'command'; command: string };
+export type WakeEvent = { kind: 'wake' } | { kind: 'command'; command: string; followup?: boolean };
 
 /**
  * Stateful wrapper for the stream of recognizer results.
@@ -90,6 +90,8 @@ export function createWakeTracker(names: string[] = [], windowMs = 6000) {
   let awaitingUntil = 0;      // bare "hey coach" heard: next final utterance is the command
   let lastDone = '';          // last handled final text, to drop duplicate finals
   let lastDoneAt = 0;
+  let followUntil = 0;        // coach asked a question: the next utterance is the answer, no wake phrase needed
+  let followText = '';        // latest interim text of that answer (for flush when no final arrives)
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9ऀ-ॿ]+/g, ' ').trim();
 
   function settle(now: number, out: WakeEvent[]) {
@@ -107,7 +109,16 @@ export function createWakeTracker(names: string[] = [], windowMs = 6000) {
       if (!key) return out;
       if (isFinal && key === lastDone && now - lastDoneAt < 3000 && !armed) return out;
       const m = matchWake(transcript, names);
+      if (!m.hit && !armed && followUntil && now <= followUntil) {
+        // one-shot answer to the coach's question
+        if (!isFinal) { followText = transcript.trim(); return out; }
+        followUntil = 0; followText = '';
+        lastDone = key; lastDoneAt = now;
+        out.push({ kind: 'command', command: transcript.trim(), followup: true });
+        return out;
+      }
       if (m.hit) {
+        followUntil = 0; followText = '';
         if (!armed) out.push({ kind: 'wake' });
         armed = true; cmd = m.command;
         awaitingUntil = 0;
@@ -124,9 +135,18 @@ export function createWakeTracker(names: string[] = [], windowMs = 6000) {
       return out;
     },
     /** Call when recognition ends without a final result. */
-    flush(now: number): WakeEvent[] { const out: WakeEvent[] = []; settle(now, out); return out; },
+    flush(now: number): WakeEvent[] {
+      const out: WakeEvent[] = [];
+      settle(now, out);
+      if (followText && followUntil && now <= followUntil + 1500) { out.push({ kind: 'command', command: followText, followup: true }); followUntil = 0; followText = ''; }
+      return out;
+    },
+    /** Open a one-shot window: the next utterance within ms is a command even without the wake phrase. */
+    expectFollowup(now: number, ms = 8000) { followUntil = now + ms; followText = ''; armed = false; cmd = ''; awaitingUntil = 0; },
+    followingUp(now: number) { return followUntil > now; },
+    cancelFollowup() { followUntil = 0; followText = ''; },
     /** True while a bare "hey coach" is waiting for its command. */
     awaiting(now: number) { return awaitingUntil > now; },
-    reset() { armed = false; cmd = ''; awaitingUntil = 0; },
+    reset() { armed = false; cmd = ''; awaitingUntil = 0; followUntil = 0; followText = ''; },
   };
 }

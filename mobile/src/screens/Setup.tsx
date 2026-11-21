@@ -8,8 +8,10 @@ import { isoOf, weekStreak, weeklyBuckets } from '../dates';
 import { Form, INJURIES, TRAINING_KEYS, customInjuries, diff, hasInj, toForm, toggleInj } from '../profileForm';
 import { Choice, Group, Label, Row, Sheet, Stepper } from '../forms';
 import PersonaPicker from '../PersonaPicker';
-import { PersonaId, personaById } from '../personas';
+import { PERSONAS, PersonaId, personaById } from '../personas';
 import { hasVoiceFor, speak } from '../tts';
+import { onVoiceAction, takePendingVoiceActions, VoiceAction } from '../voiceBus';
+import { setWakeEnabled } from '../wakeSettings';
 import { VoiceMode, getVoiceMode, loadVoiceSettings, setRecognitionLang, setVoiceMode } from '../voiceSettings';
 import { colors, font } from '../theme';
 import { Bar, Card, FadeIn, GradientButton, SectionTitle, Segmented, Skeleton, Txt, useOnline } from '../ui';
@@ -230,6 +232,42 @@ export default function Profile({ onReset }: { onReset?: () => void }) {
   const [lastExport, setLastExport] = useState('');
   useEffect(() => { if (!knows) getMemoryOverview().then((o) => setKnowsPct(o.coverage_pct)).catch(() => setKnowsPct(null)); }, [knows]);
   useEffect(() => { getAccessLog().then((l) => { const e = l.find((x) => x.action === 'export'); if (e) setLastExport(e.ts.slice(0, 10)); }).catch(() => {}); }, []);
+
+  // Voice control: "Hey coach, open my calendar / turn vibration off / switch to the mentor". Also drains actions queued before this tab mounted.
+  const scrollRef = useRef<ScrollView>(null);
+  const choosePersona = (id: PersonaId) => { setPersona(id); updateProfile({ coach_persona: id }).then(load).catch(offline); };
+  const voiceRef = useRef<(a: VoiceAction) => boolean>(() => false);
+  voiceRef.current = (a) => {
+    if (a.type === 'open') {
+      switch (a.screen) {
+        case 'agenda': case 'intake': case 'research': case 'trace': setCoachTool(a.screen); return true;
+        case 'knows': setKnows(true); return true;
+        case 'server': setServerOpen(true); return true;
+        case 'push': scrollRef.current?.scrollToEnd({ animated: true }); return true;
+        default: return false;
+      }
+    }
+    if (a.type === 'close') {
+      if (!coachTool && !knows && !serverOpen && !sheet) return false;
+      setCoachTool(null); setKnows(false); setServerOpen(false); setSheet(null); return true;
+    }
+    if (a.type === 'refresh') { if (a.what && !a.what.some((w) => w === 'profile' || w === 'all')) return false; load(); return true; }
+    if (a.type === 'setting') {
+      const on = a.value === true || a.value === 'on' || a.value === 'true';
+      if (a.key === 'wake') { setWakeEnabled(on); return true; }
+      if (a.key === 'vibration') { setVibrate(on); Haptics.setHapticsEnabled(on).then(() => { if (on) Haptics.selectionAsync(); }); return true; }
+      if (a.key === 'voice_mode') { if (a.value === 'all' || a.value === 'moments' || a.value === 'phone') { setVMode(a.value); setVoiceMode(a.value); return true; } return false; }
+      if (a.key === 'persona') { if (typeof a.value === 'string' && PERSONAS.some((p) => p.id === a.value)) { choosePersona(a.value as PersonaId); return true; } return false; }
+    }
+    return false;
+  };
+  useEffect(() => {
+    const mine = (a: VoiceAction) => a.type === 'setting' || (a.type === 'open' && ['agenda', 'intake', 'research', 'trace', 'knows', 'server', 'push'].includes(a.screen));
+    // let the first layout happen so the push section has a position to scroll to
+    const t = setTimeout(() => takePendingVoiceActions(mine).forEach((a) => voiceRef.current(a)), 350);
+    const off = onVoiceAction((a) => voiceRef.current(a));
+    return () => { clearTimeout(t); off(); };
+  }, []);
   /** Everything stored about you, as one JSON file. On a phone it opens the share sheet; in a browser it downloads. */
   const exportData = async () => {
     setExporting(true);
@@ -278,7 +316,7 @@ export default function Profile({ onReset }: { onReset?: () => void }) {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 30 }} keyboardShouldPersistTaps="handled"
+      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 30 }} keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing && !!data} onRefresh={load} tintColor={colors.lime} />}>
 
         {loadFailed && !data ? (
@@ -551,7 +589,7 @@ export default function Profile({ onReset }: { onReset?: () => void }) {
 
       {/* ---------------- coach */}
       <Sheet visible={sheet === 'coach'} onClose={() => setSheet(null)} title="Your coach">
-        <PersonaPicker value={persona} onChange={(id) => { setPersona(id); updateProfile({ coach_persona: id }).then(load).catch(offline); }} />
+        <PersonaPicker value={persona} onChange={choosePersona} />
         {(persona === 'haryanvi' || persona === 'roast') && (
           <View style={{ gap: 8 }}>
             <Txt style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>
