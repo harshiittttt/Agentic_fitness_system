@@ -23,6 +23,15 @@ END_RE = re.compile(r"\b(wrap (it )?up|finish(ed)? (the |my )?(workout|session)|
 SKIP_RE = re.compile(r"\b(skip|skipping|next exercise|move on|can'?t do (this|that)|machine'?s (taken|busy))\b")
 STATUS_RE = re.compile(r"\b(what'?s next|how many (sets )?(left|more|to go)|where (am i|are we)|what do i do next|what now)\b")
 READY_RE = re.compile(r"^\W*(ready|i'?m ready|let'?s go|go|okay|ok)\W*$")
+# "let's start today's workout", "start the session", "can we begin training", "okay let's begin". Anchored to the whole utterance so
+# "I started late, bench 80 for 8" stays a set and "start the workout, I only have 30 minutes" still reaches the time-fit branch.
+START_RE = re.compile(
+    r"^\W*(?:(?:ok(?:ay)?|so|alright|right|hey|come on|yes|yeah)\W+)?"
+    r"(?:(?:let'?s|lets|let us|i (?:want|wanna|would like|'d like) to|i'?m ready to|ready to|time to|can we|could we|shall we|please|go ahead and)\s+)*"
+    r"(?:start|begin|kick ?off|get started(?: with)?|fire up|get going(?: with)?)\s+"
+    r"(?:on\s+)?(?:(?:today'?s|todays|the|my|our|this|a)\s+)*"
+    r"(?:workout|work out|session|training|lift(?:ing)?|gym(?: session)?|routine)\W*$")
+START_BARE_RE = re.compile(r"^\W*(?:(?:ok(?:ay)?|alright|right|so)\W+)?(?:let'?s|lets)\s+(?:start|begin|get started|get going)\W*$")
 TIME_CTX_RE = re.compile(r"(short on time|only (have|got)|in a rush|hurry|running late|time crunch)")
 MINUTES_RE = re.compile(r"(\d{2,3})\s*(min|minutes|mins)\b")
 
@@ -436,6 +445,9 @@ def handle(transcript: str, ambient: bool = False) -> dict:
 
     if END_RE.search(low):
         return end()
+
+    if START_RE.match(low) or START_BARE_RE.match(low):
+        return start()                     # "let's start today's workout": the same greeting, first exercise and warm-up as opening the session
 
     if TIME_CTX_RE.search(low) or (MINUTES_RE.search(low) and "only" in low):
         m = MINUTES_RE.search(low)

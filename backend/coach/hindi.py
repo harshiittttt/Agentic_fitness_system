@@ -30,6 +30,11 @@ for _pair in re.split(r"[|\n]", _NUM_WORDS):
 
 # Multi-word phrases first (longest first), applied before the single-token pass.
 PHRASES = [
+    # session / set commands ("workout shuru karo", "set ho gaya"): listed first so a trailing खत्म/करो never reads as another command
+    ("वर्कआउट शुरू करो", "start the workout"), ("वर्कआउट शुरू करें", "start the workout"), ("वर्कआउट शुरू", "start the workout"),
+    ("वर्क आउट शुरू", "start the workout"), ("कसरत शुरू", "start the workout"), ("सेशन शुरू", "start the session"),
+    ("ट्रेनिंग शुरू", "start the training"), ("चलो शुरू करते हैं", "let's start"), ("चलो शुरू करो", "let's start"),
+    ("सेट हो गया", "set done"), ("सेट पूरा हो गया", "set done"), ("सेट पूरा", "set done"), ("यह सेट लॉग करो", "log this set"), ("सेट लॉग करो", "log this set"),
     ("बेंच प्रेस", "bench press"), ("ओवरहेड प्रेस", "overhead press"), ("शोल्डर प्रेस", "overhead press"), ("इनक्लाइन प्रेस", "incline press"),
     ("लेग प्रेस", "leg press"), ("बारबेल रो", "barbell row"), ("लैट पुलडाउन", "lat pulldown"), ("पुल अप", "pull up"), ("डेड लिफ्ट", "deadlift"),
     ("रोमानियन डेडलिफ्ट", "romanian deadlift"), ("फ्रंट स्क्वाट", "front squat"), ("केबल रो", "cable row"), ("हैमर कर्ल", "hammer curls"),

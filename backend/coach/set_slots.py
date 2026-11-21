@@ -18,6 +18,9 @@ DONE_RE = re.compile(r"\b(done|finished|completed?|did|hit|knocked out|smashed|c
 VERB_RE = re.compile(r"\b(squatted|benched|deadlifted|pressed|rowed|curled|lunged)\b")
 SETWORD_RE = re.compile(r"\b(sets?|reps?)\b")
 BARE_DONE_RE = re.compile(r"^\W*(set )?(done|finished|completed?|that'?s (one|a set)|done with (that|the) set)\W*$")
+# "log this set", "log my set", "mark this set as done", "record that set", or just "log it" / "log that": a set report with no numbers yet
+LOG_SET_RE = re.compile(r"^\W*(?:(?:ok(?:ay)?|hey|please|alright|so)\W+)?(?:(?:log|record|save|count|mark|put down)\s+(?:(?:this|that|the|my|a|another|one|it)\s+)?sets?(?:\s+(?:as\s+)?(?:done|complete|completed|finished))?"
+                        r"|(?:log|record|save)\s+(?:it|that|this))\W*$")
 _UNIT_KG = r"(?:kgs?|kilos?|kilograms?)"
 _UNIT_LB = r"(?:lbs?|pounds?)"
 
@@ -191,7 +194,7 @@ def is_set_done(text: str, plan_names: list[str]) -> bool:
     low = words_to_digits(text.lower()).strip()
     if "?" in low or re.match(r"^(what|how|should|can|could|why|is|are|do|does|when|where|which)\b", low):
         return False
-    if BARE_DONE_RE.match(low):
+    if BARE_DONE_RE.match(low) or LOG_SET_RE.match(low):
         return True
     if not (DONE_RE.search(low) or VERB_RE.search(low)):
         return False
