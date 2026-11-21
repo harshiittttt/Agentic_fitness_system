@@ -504,3 +504,19 @@ def test_logging_food_still_logs_and_does_not_go_to_the_dietitian(client, monkey
 def test_diet_questions_without_a_key_fall_back_honestly(client):
     r = say(client, "what should I eat today")
     assert r["intent"] == "fallback" and r["reply"]
+
+
+def test_the_router_remembers_its_own_clarifying_question(client, monkeypatch):
+    """'three' -> 'What weight?' -> 'sixty' must reach the model together, not as a lone 'sixty'."""
+    monkeypatch.setenv("GEMINI_API_KEY", "x")
+    seen = []
+
+    def fake(system, user, tools, handlers, max_turns=6, max_tokens=1024, history=None, trace=None):
+        seen.append((user, list(history or [])))
+        return "What weight did you use?" if len(seen) == 1 else "Logged."
+
+    monkeypatch.setattr(vc, "run_agent", fake)
+    say(client, "what do I do with three")
+    say(client, "sixty", followup=True)
+    assert len(seen) == 2 and seen[0][1] == []
+    assert [h["role"] for h in seen[1][1]] == ["user", "assistant"] and "What weight" in seen[1][1][1]["content"]

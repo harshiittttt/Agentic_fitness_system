@@ -38,6 +38,7 @@ const CMD_WINDOW_MS = 6000;       // wake mode: a bare "hey coach" waits this lo
 const STABLE_MS = 1600;           // wake mode: phrase heard + no new words for this long = utterance finished
 const BUBBLE_MS = 7000;
 const TALK_MAX_MS = 15000;        // a talk turn never listens longer than this
+const SESSION_QUIET_MS = 5 * 60 * 1000;   // a voice session ends by itself after this long with nothing said (battery), and says so
 const TALK_SILENCE_MS = 1700;     // ... and ends this long after the last new word (recognizers on some phones never send a final result)
 
 const TAB_NAME: Record<string, string> = { today: 'Today', coach: 'Coach', nutrition: 'Fuel', insights: 'Insights', setup: 'Profile' };
@@ -71,6 +72,8 @@ export default function WakeCoach() {
   const speaking = useRef(false);
   const busy = useRef(false);                       // a command is being sent / spoken
   const busyAt = useRef(0);
+  const session = useRef(false);                    // a voice SESSION is on: after every turn the mic listens again by itself until the user taps stop
+  const quietSince = useRef(0);
   const cmdSeq = useRef(0);                         // a cancelled command's late answer is ignored
   const running = useRef(false);                    // the WAKE recognizer session is running
   const talking = useRef(false);                    // a TALK turn owns the recognizer
@@ -182,7 +185,7 @@ export default function WakeCoach() {
     else status();
   }, [scheduleRestart, stopRun, status]);
 
-  const showError = (t: string) => { showBubble(t); setTalkState({ error: true, note: '' }); };
+  const showError = (t: string) => { session.current = false; showBubble(t); setTalkState({ error: true, note: '', session: false }); };   // a real error ends the session
 
   // ---------------------------------------------------------------- one command to the coach
   const startTalkRef = useRef<(followup?: boolean) => void>(() => {});
@@ -229,6 +232,11 @@ export default function WakeCoach() {
     if (seq !== cmdSeq.current) return;
     speaking.current = false; busy.current = false;
     if (!alive.current) return;
+    if (session.current) {                                    // voice session: straight back to listening, no tap needed (the answer to a question, or the next command)
+      setTalkState({ phase: 'listening', heard: '' });
+      setTimeout(() => { if (session.current && alive.current && !busy.current && !talking.current) startTalkRef.current(!!expects); }, 350);
+      return;
+    }
     setTalkState({ phase: 'idle' });
     backoff.current = 500;
     if (expects) setTimeout(() => { if (alive.current && !busy.current && !talking.current) startTalkRef.current(true); }, 350);   // the coach asked something: listen for the answer
@@ -252,7 +260,13 @@ export default function WakeCoach() {
     dlog('talk_finish', { why, errCode, chars: text.length, text: text.slice(0, 80) });
     talkSent.current = true;
     endTalk(false);
-    if (text) { setTalkState({ heard: text }); handleCommand(text, follow); return; }
+    if (text) { quietSince.current = Date.now(); setTalkState({ heard: text }); handleCommand(text, follow); return; }
+    if (session.current && why !== 'tap') {                   // nothing said this round: stay in the session quietly, no error, no flicker
+      if (Date.now() - quietSince.current > SESSION_QUIET_MS) { session.current = false; dlog('session_quiet_end'); setTalkState({ phase: 'idle', heard: '', session: false }); showBubble('Voice paused after a few quiet minutes. Tap the mic to carry on.'); reconcile(); return; }
+      setTalkState({ phase: 'listening', heard: '' });
+      setTimeout(() => { if (session.current && alive.current && !busy.current && !talking.current) startTalkRef.current(false); }, 250);
+      return;
+    }
     setTalkState({ phase: 'idle', heard: '' });
     if (follow && why !== 'tap') { reconcile(); return; }          // a follow-up window that nobody answered: end quietly
     if (why === 'tap') { reconcile(); return; }
@@ -295,8 +309,16 @@ export default function WakeCoach() {
   }, [endTalk, finishTalk, reconcile, status, stopRun]);
   startTalkRef.current = (f) => { startTalk(!!f); };
 
+  const startSession = useCallback(() => {
+    session.current = true; quietSince.current = Date.now(); dlog('session_start');
+    setTalkState({ session: true });
+    startTalk(false);
+  }, [startTalk]);
+
   const stopTalkOrAnswer = useCallback(() => {
-    if (talking.current) { finishTalk('tap'); return; }
+    const was = session.current;
+    session.current = false; setTalkState({ session: false }); if (was) dlog('session_stop');
+    if (talking.current) { talkText.current = ''; finishTalk('tap'); return; }      // tapping stop discards a half-said sentence
     // thinking or speaking: cancel it for real, so the next tap always starts a fresh turn
     cmdSeq.current++; busy.current = false; speaking.current = false;
     stopSpeaking();
@@ -318,11 +340,11 @@ export default function WakeCoach() {
   useEffect(() => {
     alive.current = true;
     const unTalk = onTalkState(setTalk);
-    const unReg = registerTalk(() => { startTalk(false); }, stopTalkOrAnswer);
+    const unReg = registerTalk(() => { startSession(); }, stopTalkOrAnswer);
     loadWakeSetting().then((on) => { enabled.current = on; reconcile(); });
     const un = onWakeState((s) => { setWakeOn(s.status === 'listening'); if (s.enabled !== enabled.current) { enabled.current = s.enabled; reconcile(); } });
     const unMic = onMicChange(reconcile);
-    const app = AppState.addEventListener('change', (s) => { appActive.current = s === 'active'; if (s !== 'active' && talking.current) finishTalk('tap'); reconcile(); });
+    const app = AppState.addEventListener('change', (s) => { appActive.current = s === 'active'; if (s !== 'active') { session.current = false; setTalkState({ session: false }); if (talking.current) { talkText.current = ''; finishTalk('tap'); } } reconcile(); });
     if (!MOD) { status(); return () => { alive.current = false; unTalk(); unReg(); un(); unMic(); app.remove(); }; }
 
     const subs = [
@@ -384,13 +406,13 @@ export default function WakeCoach() {
       alive.current = false; unTalk(); unReg(); un(); unMic(); app.remove(); subs.forEach((s) => s.remove());
       clearTimers(); if (bubbleT.current) clearTimeout(bubbleT.current); endTalk(true);
       if (running.current) { running.current = false; try { MOD.abort?.(); } catch { /* ignore */ } }
-      if (micOwner() === 'wake') releaseMic('wake'); stopSpeaking(); setTalkState({ phase: 'idle', heard: '', note: '', error: false });
+      if (micOwner() === 'wake') releaseMic('wake'); stopSpeaking(); setTalkState({ phase: 'idle', heard: '', note: '', error: false, session: false });
     };
   }, []);
 
   // ---------------------------------------------------------------- what is shown (only while something is happening)
   const active = talk.phase !== 'idle';
-  const label = talk.phase === 'listening' ? 'Listening…' : talk.phase === 'followup' ? 'Your answer?' : talk.phase === 'thinking' ? 'On it…' : talk.phase === 'speaking' ? (talk.note || 'Coach') : talk.note;
+  const label = talk.phase === 'listening' ? (talk.session ? 'Voice on · tap the mic to stop' : 'Listening…') : talk.phase === 'followup' ? 'Your answer?' : talk.phase === 'thinking' ? 'On it…' : talk.phase === 'speaking' ? (talk.note || 'Coach') : talk.note;
   const top = { position: 'absolute' as const, top: insets.top + 6, left: 0, right: 0, alignItems: 'center' as const, gap: 8, zIndex: 50, elevation: 50 };
   const card = (err: boolean) => ({ maxWidth: '88%' as const, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, backgroundColor: err ? '#3A1D22' : '#222838', borderWidth: 1, borderColor: err ? 'rgba(255,107,107,0.6)' : 'rgba(198,255,61,0.35)', shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 });
   if (!active && !bubble && !talk.heard && !talk.note) {

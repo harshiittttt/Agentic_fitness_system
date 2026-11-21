@@ -52,14 +52,14 @@ function TalkButton() {
   }, [t.phase]);
   const hot = t.phase !== 'idle';
   const tint = t.phase === 'thinking' ? colors.amber : t.phase === 'speaking' ? colors.cyan : colors.lime;
-  const label = t.phase === 'idle' ? 'Talk to your coach' : t.phase === 'speaking' ? 'Stop the coach talking' : t.phase === 'thinking' ? 'Cancel' : 'Stop listening';
+  const label = t.session ? 'Stop the voice conversation' : t.phase === 'idle' ? 'Talk to your coach' : t.phase === 'speaking' ? 'Stop the coach talking' : t.phase === 'thinking' ? 'Cancel' : 'Stop listening';
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label}
       onPress={() => { const ok = toggleTalk(); dlog('talk_button', { ok, phase: t.phase }); if (!ok) toast('Voice needs the installed app, not Expo Go. Type to your coach instead.', { tone: 'warn' }); }}
       style={({ pressed }) => ({ width: 64, height: 64, marginLeft: 10, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }] })}>
       <Animated.View style={{ position: 'absolute', width: 64, height: 64, borderRadius: 32, backgroundColor: tint, opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0, 0.35] }), transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.25] }) }] }} />
       <View style={{ width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', backgroundColor: hot ? tint : colors.lime, shadowColor: tint, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 }}>
-        <Ionicons name={t.phase === 'speaking' ? 'volume-high' : t.phase === 'thinking' ? 'ellipsis-horizontal' : 'mic'} size={28} color="#07080B" />
+        <Ionicons name={t.phase === 'speaking' ? 'volume-high' : t.phase === 'thinking' ? 'ellipsis-horizontal' : t.session ? 'stop' : 'mic'} size={t.session && t.phase !== 'speaking' && t.phase !== 'thinking' ? 24 : 28} color="#07080B" />
       </View>
     </Pressable>
   );

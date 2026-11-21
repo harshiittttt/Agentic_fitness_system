@@ -49,7 +49,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const [line, setLine] = useState('');
   const [heard, setHeard] = useState('');
   const [rest, setRest] = useState(0);
-  const [handsFree, setHandsFree] = useState(false);
+  const [voiceOn, setVoiceOn] = useState(false);       // a voice session: tap the mic once, it keeps listening turn after turn until you tap stop
   const [sound, setSound] = useState(true);
   const [typing, setTyping] = useState(false);
   const [typed, setTyped] = useState('');
@@ -72,7 +72,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const personaRef = useRef('hype');
   const soundRef = useRef(true);
   const stopListenRef = useRef<() => void>(() => {});
-  const manual = useRef(false);            // the lifter tapped the mic (push-to-talk) instead of ambient listening
+  const quietSince = useRef(0);
   const restTotal = useRef(90);
   const restRunning = useRef(false);
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -161,9 +161,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
     catch { setPhase('idle'); setProblem("Couldn't reach your coach. Nothing was lost. Check your connection and try again."); return false; }
   }, [apply]);
 
-  const silent = useRef(0);               // hands-free rounds in a row where nothing was heard
-  const voice = useVoice((t) => { silent.current = 0; const ambient = !manual.current; manual.current = false; send(t, ambient); },
-    (m) => { if (/didn't hear/i.test(m)) silent.current += 1; });
+  const voice = useVoice((t) => { quietSince.current = Date.now(); send(t, false); });   // you started the session, so everything you say is for the coach
   const hintWords = () => [...GYM_WORDS, ...((state?.exercises ?? []).map((e: any) => e.name))];
   stopListenRef.current = voice.stop;
 
@@ -194,22 +192,27 @@ export default function Live({ onClose }: { onClose: () => void }) {
     }
   }, [rest, talk]);
 
-  // Hands-free (opt-in): whenever the coach is quiet, listen again.
+  // Voice session: whenever the coach is quiet and nothing is being sent, listen again. Silence is fine (rest between sets); it ends only when you tap stop,
+  // or after five quiet minutes (battery), and says so.
   const failures = useRef(0);
   useEffect(() => {
-    if (!handsFree || !voice.available || phase !== 'idle' || voice.listening || ended) return;
+    if (!voiceOn || !voice.available || phase !== 'idle' || voice.listening || ended) return;
     const t = setTimeout(async () => {
-      if (silent.current >= 3) { silent.current = 0; setHandsFree(false); setNote('Hands-free stopped because it heard nothing for a while. Tap the mic button to talk, or switch hands-free on again.'); return; }
+      if (Date.now() - quietSince.current > 5 * 60 * 1000) { setVoiceOn(false); setNote('Voice paused after a few quiet minutes. Tap the mic to carry on.'); return; }
       const ok = await voice.start(hintWords());
-      if (!ok && ++failures.current >= 3) { setHandsFree(false); setProblem('I could not use the microphone, so hands-free is off. Tap the mic to talk, or allow the microphone in your phone settings.'); }
+      if (!ok && ++failures.current >= 3) { setVoiceOn(false); setProblem('I could not use the microphone. Allow it in your phone settings, then tap the mic again.'); }
+      else if (ok) failures.current = 0;
     }, 450);
     return () => clearTimeout(t);
-  }, [handsFree, voice.available, phase, voice.listening, ended]);
+  }, [voiceOn, voice.available, phase, voice.listening, ended]);
 
-  const onMic = async () => {
+  /** One tap starts the voice session, the next tap stops it. */
+  const onMic = () => {
+    if (!voice.available) return;
+    Haptics.selectionAsync();
+    if (voiceOn) { setVoiceOn(false); if (phase === 'speaking') { token.current++; stopSpeaking(); setPhase('idle'); } voice.stop(); return; }
+    quietSince.current = Date.now(); failures.current = 0; setVoiceOn(true);
     if (phase === 'speaking') { token.current++; stopSpeaking(); setPhase('idle'); }
-    if (voice.listening) { voice.stop(); return; }
-    if (voice.available) { manual.current = true; silent.current = 0; await voice.start(hintWords()); }
   };
   const sendTyped = () => { const t = typed; if (!t.trim()) return; setTyped(''); send(t, false).then((ok) => { if (!ok) setTyped(t); }); };
 
@@ -242,7 +245,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const allDone = !!state?.finished && !ended;
   const hint = pre?.last ? `Last time: ${bw && !+pre.last.weight ? 'bodyweight' : `${fmt(+pre.last.weight)} kg`} × ${pre.last.reps}${pre.last.rpe ? ` @ RPE ${pre.last.rpe}` : ''}`
     : pre ? (bw ? 'Add weight only if you want to. 0 is just your bodyweight.' : 'First time on this lift: pick a weight you could do for a few more reps.') : '';
-  const status = display === 'listening' ? 'Listening… tap to stop' : display === 'thinking' ? 'Thinking…' : display === 'speaking' ? `${coachName} is talking` : '';
+  const status = voiceOn && display !== 'thinking' && display !== 'speaking' ? 'Voice on · tap the mic to stop' : display === 'listening' ? 'Listening… tap to stop' : display === 'thinking' ? 'Thinking…' : display === 'speaking' ? `${coachName} is talking` : '';
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -258,11 +261,6 @@ export default function Live({ onClose }: { onClose: () => void }) {
           style={{ width: 48, height: 52, alignItems: 'center', justifyContent: 'center', opacity: ended ? 0 : 1 }} disabled={ended}>
           <Ionicons name={sound ? 'volume-high' : 'volume-mute'} size={25} color={sound ? accent : colors.faint} />
         </Pressable>
-        <Pressable accessibilityRole="switch" accessibilityState={{ checked: handsFree && voice.available }} accessibilityLabel="Hands-free listening" disabled={!voice.available || ended}
-          onPress={() => { Haptics.selectionAsync(); silent.current = 0; setHandsFree((h) => !h); }} style={{ minWidth: 64, height: 52, alignItems: 'center', justifyContent: 'center', opacity: ended || !voice.available ? 0 : 1 }}>
-          <Ionicons name={handsFree ? 'ear' : 'ear-outline'} size={22} color={handsFree ? accent : colors.faint} />
-          <Txt style={{ fontSize: 10.5, fontFamily: font.bold, color: handsFree ? accent : colors.faint }}>{handsFree ? 'HANDS-FREE ON' : 'hands-free off'}</Txt>
-        </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
@@ -272,7 +270,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
           <>
             {/* the coach */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <Pressable onPress={onMic} accessibilityRole="button" accessibilityLabel={voice.listening ? 'Stop listening' : 'Talk to your coach'}>
+              <Pressable onPress={onMic} accessibilityRole="button" accessibilityLabel={voiceOn ? 'Stop the voice conversation' : 'Talk to your coach'}>
                 <Orb state={display} color={accent} size={76} />
               </Pressable>
               <View style={{ flex: 1, gap: 2 }}>
@@ -416,9 +414,9 @@ export default function Live({ onClose }: { onClose: () => void }) {
 
       {!ended && voice.available && (
         <View pointerEvents="box-none" style={{ position: 'absolute', right: 16, bottom: 18 }}>
-          <Pressable accessibilityRole="button" accessibilityLabel={voice.listening ? 'Stop listening' : 'Talk to your coach'} onPress={onMic}
-            style={({ pressed }) => ({ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: voice.listening ? colors.cyan : accent, transform: [{ scale: pressed ? 0.94 : 1 }], shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 10 })}>
-            <Ionicons name={voice.listening ? 'stop' : 'mic'} size={28} color="#07080B" />
+          <Pressable accessibilityRole="button" accessibilityLabel={voiceOn ? 'Stop the voice conversation' : 'Talk to your coach'} onPress={onMic}
+            style={({ pressed }) => ({ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: voiceOn ? colors.cyan : accent, transform: [{ scale: pressed ? 0.94 : 1 }], shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 10 })}>
+            <Ionicons name={voiceOn ? 'stop' : 'mic'} size={voiceOn ? 24 : 28} color="#07080B" />
           </Pressable>
         </View>
       )}

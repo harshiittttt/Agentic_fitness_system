@@ -32,7 +32,7 @@ def model(monkeypatch):
     m.calls = []
     monkeypatch.setattr(compose, "have_key", lambda role="main": True)
 
-    def fake(system, user, max_tokens=160, timeout=6.0, role="fast"):
+    def fake(system, user, max_tokens=160, timeout=6.0, role="fast", models=None):
         assert role == "compose"
         m.calls.append((system, user))
         r = m.reply

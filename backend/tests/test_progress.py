@@ -31,8 +31,10 @@ def test_demo_plateau_is_detected_and_review_runs(client):
 def test_today_index_rotates_with_sessions(client):
     from backend.tools.demo import PROFILE
     client.post("/onboard", json=PROFILE)
-    assert client.get("/plan").json()["today_index"] == 0
-    db.add_set("2020-01-01", "squat", 100, 5, 8)
+    plan = client.get("/plan").json()
+    assert plan["today_index"] == 0
+    first_lift = plan["days"][0]["exercises"][0]["name"]            # a lift that belongs to day 1 of the split (a session is recorded as the day whose lifts were trained)
+    db.add_set("2020-01-01", first_lift, 100, 5, 8)
     assert client.get("/plan").json()["today_index"] == 1
 
 

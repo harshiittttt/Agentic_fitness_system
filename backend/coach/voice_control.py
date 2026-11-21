@@ -37,9 +37,29 @@ _last_logged: dict = {"ids": [], "day": None, "ts": 0.0}
 _lock = threading.Lock()
 
 
+_turns: list[tuple[float, str, str]] = []     # (time, what the athlete said, what the coach answered): the router's short-term memory
+TURN_TTL = 240.0
+
+
+def _remember_turn(said: str, answered: str) -> None:
+    _turns.append((time.time(), said[:300], answered[:400]))
+    del _turns[:-6]
+
+
+def _history() -> list[dict]:
+    """The last few voice turns as chat history, so 'sixty' after 'What weight did you use?' still means something to the router."""
+    now = time.time()
+    out: list[dict] = []
+    for ts, said, ans in _turns:
+        if now - ts < TURN_TTL:
+            out += [{"role": "user", "content": said}, {"role": "assistant", "content": ans}]
+    return out
+
+
 def reset() -> None:
     """Forget every pending dialogue (tests, and a fresh app start)."""
     _pend.clear()
+    _turns.clear()
     _last_logged.update(ids=[], day=None, ts=0.0)
 
 
@@ -852,7 +872,7 @@ def _router(text: str, screen: str, ambient: bool, addressed: bool) -> dict:
         tools, handlers = build_tools(text)
         trace: list[dict] = []
         user = f"[Screen: {screen}. {live.live_context()}]\n{text}" if live.live_context() else f"[Screen: {screen}]\n{text}"
-        reply = run_agent(_system(pid, name), user, tools, handlers, max_turns=6, max_tokens=700, trace=trace)
+        reply = run_agent(_system(pid, name), user, tools, handlers, max_turns=6, max_tokens=700, trace=trace, history=_history())
     except Exception:
         return _out("fallback", OFFLINE_HINT)
     p = _pend_get("confirm")
@@ -865,6 +885,8 @@ def _router(text: str, screen: str, ambient: bool, addressed: bool) -> dict:
         from fitness_os import coach_tools
         reply = coach_tools.fallback_reply(trace, pid in lines.HI_PERSONAS) or next((str(t["result"].get("summary") or t["result"].get("message") or t["result"].get("error")) for t in reversed(trace) if isinstance(t.get("result"), dict) and (t["result"].get("summary") or t["result"].get("message") or t["result"].get("error"))), "") or OFFLINE_HINT
     expects = "answer" if reply.rstrip().endswith("?") else None
+    if reply:
+        _remember_turn(text, reply)
     return _out("router", reply, actions=acts, expects=expects, cards=_cards(trace))
 
 

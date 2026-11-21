@@ -25,10 +25,10 @@ load_dotenv(override=True)  # project .env wins over stale keys already set in t
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
 # Full-size Flash models have tiny / overloaded free quotas, so lite is the reliable default.
 _DEFAULT_MODEL = {"main": "gemini-3.5-flash-lite", "fast": "gemini-3.5-flash-lite", "critic": "gemini-3.5-flash-lite",
-                  "compose": "gemini-3.1-flash-lite"}   # the live coach's spoken replies: measured ~1.4 s vs 3-8 s for 3.5-flash-lite
+                  "compose": "gemini-3.5-flash-lite"}   # the live coach's spoken replies. Measured 2026-11-21: 3.5-flash-lite 1.4 s steady, 2.5-flash 1.5 s, 3.1-flash-lite flaky (errors / 2-3 s)
 # Per-role defaults: the live coach asks for a SMALL reasoning budget (fast, and no truncated replies from thinking models).
 _DEFAULT_REASONING = {"compose": "low"}
-_ROLE_FALLBACKS = {"compose": "gemini-3.5-flash-lite,gemini-2.5-flash"}
+_ROLE_FALLBACKS = {"compose": "gemini-2.5-flash,gemini-3.1-flash-lite"}
 _DEFAULT_FALLBACKS = "gemini-3.1-flash-lite,gemini-2.5-flash"  # tried in order on 429/5xx; LLM_FALLBACK_MODELS overrides
 
 
@@ -53,6 +53,12 @@ MODEL = _cfg("main")["model"]
 FAST_MODEL = _cfg("fast")["model"]
 
 
+def role_models(role: str) -> list[str]:
+    """The configured model for a role followed by its fallbacks (used to race two models when one hangs)."""
+    c = _cfg(role)
+    return [c["model"], *[m for m in c["fallbacks"] if m != c["model"]]]
+
+
 def have_key(role: str = "main") -> bool:
     return bool(_cfg(role)["api_key"])
 
@@ -71,15 +77,15 @@ def _count(role: str) -> None:
     USAGE["by_role"][role] = USAGE["by_role"].get(role, 0) + 1
 
 
-def _post(role: str, body: dict, timeout: float = 60.0, retries: int = 1) -> dict:
+def _post(role: str, body: dict, timeout: float = 60.0, retries: int = 1, models: list[str] | None = None) -> dict:
     """Traced wrapper (fitness_os.trace: duration, token usage, outcome; never raises on its own, never records prompt text)."""
     try:
         from fitness_os import trace
         span = trace.span("llm", kind="llm", role=role)
     except Exception:
-        return _post_raw(role, body, timeout, retries)
+        return _post_raw(role, body, timeout, retries, models) if models else _post_raw(role, body, timeout, retries)
     with span as sp:
-        r = _post_raw(role, body, timeout, retries)
+        r = _post_raw(role, body, timeout, retries, models) if models else _post_raw(role, body, timeout, retries)
         try:
             u = r.get("usage") or {}
             ti, to = u.get("prompt_tokens"), u.get("completion_tokens")
@@ -100,12 +106,12 @@ def _is_empty_reply(data: dict) -> bool:
     return not (msg.get("content") or "").strip() and not msg.get("tool_calls")
 
 
-def _post_raw(role: str, body: dict, timeout: float = 60.0, retries: int = 1) -> dict:
+def _post_raw(role: str, body: dict, timeout: float = 60.0, retries: int = 1, models: list[str] | None = None) -> dict:
     c = _cfg(role)
     if not c["api_key"]:
         raise LLMError(f"no API key configured for role '{role}' (set GEMINI_API_KEY or LLM_API_KEY in .env)")
     last = ""
-    for model in [c["model"], *[m for m in c["fallbacks"] if m != c["model"]]]:
+    for model in (models or [c["model"], *[m for m in c["fallbacks"] if m != c["model"]]]):
         req = {"model": model, **body}
         if c["reasoning"]:
             req["reasoning_effort"] = c["reasoning"]
@@ -219,8 +225,8 @@ def extract_structured(system: str, user: str, tool: dict, max_tokens: int = 102
     return _json_from_text(msg.get("content") or "")
 
 
-def quick_text(system: str, user: str, max_tokens: int = 160, timeout: float = 6.0, role: str = "fast") -> str:
+def quick_text(system: str, user: str, max_tokens: int = 160, timeout: float = 6.0, role: str = "fast", models: list[str] | None = None) -> str:
     """One fast, short completion for live coaching. Raises on failure; callers fall back to templates."""
     msg = _post(role, {"messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
-                         "max_tokens": max_tokens}, timeout=timeout, retries=0)["choices"][0]["message"]
+                         "max_tokens": max_tokens}, timeout=timeout, retries=0, models=models)["choices"][0]["message"]
     return (msg.get("content") or "").strip()
