@@ -13,7 +13,7 @@ assert.strictEqual(cleanSpeech('wrap it up'), 'wrap it up');
 assert.strictEqual(cleanSpeech('  hmm  '), '');
 
 // judging, from the user's real transcripts
-const incomplete = ['can you just tell me', 'should I go till', 'okay can you tell me', 'what is the', 'how do I', 'give me', 'I did like', 'I did like uhh', 'and then', 'so I', 'I just', 'my', 'I did the', 'bench press with', 'okay so'];
+const incomplete = ['can you just tell me', 'should I go till', 'okay can you tell me', 'what is the', 'how do I', 'give me', 'I did like', 'I did like uhh', 'and then', 'so I', 'I just', 'my', 'I did the', 'bench press with', 'okay so', 'do I need', 'what do I need', 'should I want', 'do I have to', 'am I supposed'];
 const complete = ['can you skip this', 'tell me how much protein', 'skip', 'next', 'done', 'what is next', "what's my protein left", 'bench press 60 for 8', 'I did 10 reps', 'ten reps', 'forty five kilos', 'sixty',
   'I did one set of overhead press 15 reps 20 kg', 'how much protein do I have left', 'change the time to 1 minute'];
 const maybe = ['I did bench press', 'I did a set of lat pulldown', 'done with that set'];

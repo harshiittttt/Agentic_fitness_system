@@ -19,7 +19,7 @@ _REPS_PLURAL = re.compile(r"\b(?:wraps|raps|rapes|reaps)\b", re.I)
 # a sentence that stops on one of these is not finished
 _DANGLING = {"like", "and", "so", "then", "the", "a", "an", "my", "of", "with", "for", "at", "to", "i", "i'm", "im", "just", "about", "was", "is", "have", "had",
              "did", "do", "that", "which", "also", "plus", "but", "because", "when", "if", "or", "on", "in", "it", "its", "it's", "some", "around", "kind", "sort",
-             "basically", "actually", "well", "okay", "ok", "yeah"}
+             "basically", "actually", "well", "okay", "ok", "yeah", "need", "needs", "want", "wanna", "gonna", "going", "supposed", "why", "whether", "while", "explain", "between", "after", "before"}
 # endings that mean "and the rest is coming": "can you just tell me", "should I go till", "what is the"
 _OPEN_END = re.compile(r"(?:\b(?:tell|give|show|let|help|ask|get|take|teach|remind)\s+me|\b(?:can|could|would|should|will|do|does|did|am|is|are|was|were)\s+(?:you|i|we|it|that|this)(?:\s+just)?|"
                        r"\b(?:till|until|between|towards?|against|instead of|because of|according to|how do i|what is the|what's the|where is the))$", re.I)
