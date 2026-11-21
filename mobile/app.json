@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "AI Coach",
+    "slug": "ai-fitness-coach",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "plugins": [
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Used to log sets by voice.",
+          "speechRecognitionPermission": "Used to transcribe your workout notes."
+        }
+      ],
+      "expo-asset",
+      "expo-notifications",
+      "expo-font"
+    ],
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#07080B"
+    },
+    "backgroundColor": "#07080B",
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#07080B"
+      }
+    },
+    "ios": {
+      "supportsTablet": false
+    }
+  }
+}
