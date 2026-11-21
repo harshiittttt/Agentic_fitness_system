@@ -23,6 +23,8 @@ const HOLD = new Set(['plank']);
 const RPE: { v: number; hint: string }[] = [{ v: 6, hint: 'Easy' }, { v: 7, hint: 'Solid' }, { v: 8, hint: 'Hard' }, { v: 9, hint: 'Grind' }, { v: 10, hint: 'Max' }];
 const cap = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 const fmt = (n: number) => String(+n.toFixed(2));
+/** The coach's opening can run to five sentences (a long monologue every time the screen opens): speak and show the first two. */
+const brief = (t: string, n = 2) => { const parts = (t || '').match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g); return parts && parts.length > n ? parts.slice(0, n).join('').trim() : (t || ''); };
 
 /** Small round action under the set card. */
 function Mini({ icon, label, onPress, color = colors.text, disabled }: { icon: string; label: string; onPress: () => void; color?: string; disabled?: boolean }) {
@@ -167,7 +169,8 @@ export default function Live({ onClose }: { onClose: () => void }) {
     try {
       const c = await getCoach();
       setCoachName(c.coach_name); setPersona(c.persona); personaRef.current = c.persona; tts.current = c.tts ?? tts.current; setRecognitionLang(c.tts?.lang);
-      apply(await liveStart());
+      const first = await liveStart();
+      apply({ ...first, reply: brief(first.reply) });
     } catch (e: any) { dlog('live_open_fail', String(e?.message ?? e).slice(0, 100)); setProblem("Can't reach your coach. Check your connection, then try again."); }
     setOpening(false);
   }, [apply]);

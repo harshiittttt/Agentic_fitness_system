@@ -165,10 +165,17 @@ def _result(intent: str, reply: str, **extra) -> dict:
 
 
 # ---------------------------------------------------------------- session lifecycle
+_last_start = {"label": None, "ts": 0.0}
+RESTART_SECS = 20 * 60
+
+
 def start() -> dict:
     compose.begin()
     _pending_clear()
     pid, name = _ctx()
+    key = (db.DB_PATH, session_flow.current_label())      # per database, so another user / test never inherits "you just started"
+    again = _last_start["label"] == key and time.time() - _last_start["ts"] < RESTART_SECS
+    _last_start.update(label=key, ts=time.time())
     try:
         session_flow.close_stale()      # a session from earlier that nobody ended gets closed now, so today starts from the right day
     except Exception:
@@ -179,6 +186,8 @@ def start() -> dict:
     if st["finished"] and any(r["done"] for r in st["exercises"]):
         return _result("start", _pick(pid, name, "already_done"))
     cur = st["current"]
+    if again and not any(r["done"] for r in st["exercises"]):   # reopened the screen a minute later: no second long intro, just where we are
+        return _result("start", _pick(pid, name, "ready_go", ex=cur["name"], n=cur["set_no"], tot=cur["sets"]))
     if any(r["done"] for r in st["exercises"]):   # already training today (left and came back): never greet like a fresh morning
         done = sum(r["done"] for r in st["exercises"])
         return _result("start", _reply(_pick(pid, name, "resume", done=done, ex=cur["name"], n=cur["set_no"], tot=cur["sets"]), pid, name), moment=True)
@@ -243,6 +252,15 @@ def _log_sets(text: str, pid: str, name: str, parsed: dict | None = None) -> dic
     names = _plan_names()
     for s in sets:
         s["exercise"] = ex.resolve_exercise(s["exercise"], names)
+    # A model's reading of "first set done" can come back as {bench press, no weight, 1 rep}. That is a guess, not a set: never save it (it also
+    # tags today as a day you did not train). Ask for the missing numbers instead.
+    good = [s for s in sets if s.get("reps") and (s.get("weight") is not None or s["exercise"] in set_slots.BODYWEIGHT)]
+    if not good:
+        b = sets[0]
+        pend = {"ex": b["exercise"], "w": b.get("weight"), "r": None if b.get("weight") is None else b.get("reps"), "sets": None, "rpe": None, "tries": 0,
+                "label": session_flow.current_label()}
+        return _ask(pid, name, pend)
+    sets = parsed["sets"] = good
     prs = [s for s in sets if is_pr(s["exercise"], s.get("weight"), s.get("reps"), s.get("rpe"))]
     res = orch.log_and_coach(session_flow.current_label(), text, parsed={**parsed, "sets": sets})
     last = sets[-1]

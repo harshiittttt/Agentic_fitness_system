@@ -316,3 +316,18 @@ def test_skip_by_name_skips_that_exercise_not_the_current_one(client):
     assert next(e for e in after["exercises"] if e["name"] == other)["skipped"] is True
     assert next(e for e in after["exercises"] if e["name"] == cur)["skipped"] is False
     assert after["current"]["name"] == cur
+
+
+def test_a_models_weightless_guess_is_never_saved_it_asks_for_the_numbers(client, monkeypatch):
+    from backend.tools import voice_parser
+    first = client.get("/live/state").json()["current"]["name"]
+    monkeypatch.setattr(voice_parser, "parse_voice_log", lambda t: {"sets": [{"exercise": first, "weight": None, "reps": 1}], "safety_note": ""})
+    monkeypatch.setattr(live, "parse_voice_log", voice_parser.parse_voice_log)
+    r = client.post("/live/say", json={"transcript": "first set done"}).json()
+    assert r["expects"] == "set_details" and not db.get_sets(first, 5)
+
+
+def test_reopening_the_session_soon_after_is_short_not_a_second_intro(client):
+    a = client.post("/live/start").json()
+    b = client.post("/live/start").json()
+    assert len(b["reply"]) < len(a["reply"]) and b["state"]["current"]["name"] in b["reply"].lower()

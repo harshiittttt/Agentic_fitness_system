@@ -98,6 +98,7 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
   const [busy, setBusy] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [done, setDone] = useState<Record<string, number>>({});
+  const [skipped, setSkipped] = useState<Record<string, boolean>>({});   // skipped in the live session: Today shows the same thing
   const [rest, setRest] = useState(0);
   const [swapping, setSwapping] = useState<string | null>(null);
   const [logging, setLogging] = useState<LogTarget | null>(null);
@@ -154,7 +155,7 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
       getCoach().then((c) => setCoachName(c.coach_name)).catch(() => {}),
       getProfile().then((p) => setName(p?.profile?.name ?? '')).catch(() => {}),
       getDecisions(8).then((d) => { setTeam(d); setTeamErr(false); }).catch(() => setTeamErr(true)),
-      getLiveState().then((st) => { if (st) setDone(Object.fromEntries(st.exercises.map((e: any) => [e.name, e.done]))); }).catch(() => {}),
+      getLiveState().then((st) => { if (st) { setDone(Object.fromEntries(st.exercises.map((e: any) => [e.name, e.done]))); setSkipped(Object.fromEntries(st.exercises.filter((e: any) => e.skipped).map((e: any) => [e.name, true]))); } }).catch(() => {}),
     ]);
     flushQueue();
     setLoaded(true); setRefreshing(false);
@@ -194,8 +195,8 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
   const restore = async () => { Haptics.selectionAsync(); try { setPlan(await restoreSession()); } catch {} };
   const score = ready?.readiness?.score;
   const rw = readinessWord(score);
-  const totalSets = day?.exercises.reduce((a: number, e: any) => a + e.sets, 0) ?? 0;
-  const doneSets = day ? day.exercises.reduce((a: number, e: any) => a + Math.min(e.sets, done[e.name] ?? 0), 0) : 0;
+  const totalSets = day?.exercises.reduce((a: number, e: any) => a + (skipped[e.name] ? 0 : e.sets), 0) ?? 0;
+  const doneSets = day ? day.exercises.reduce((a: number, e: any) => a + (skipped[e.name] ? 0 : Math.min(e.sets, done[e.name] ?? 0)), 0) : 0;
   const ringColor = score == null ? [colors.faint, colors.faint] : score < 50 ? [colors.amber, colors.red] : [colors.lime, colors.mint];
   const allDone = totalSets > 0 && doneSets >= totalSets;
   // Celebrate the moment a session finishes (not every time you open the app after it).
@@ -206,7 +207,7 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
   }, [allDone, loaded]);
   const weekDone = !!tstate?.week_done && !allDone && doneSets === 0;
   const nextUp = tstate?.next;
-  const nextEx = day?.exercises.find((e: any) => Math.min(e.sets, done[e.name] ?? 0) < e.sets);
+  const nextEx = day?.exercises.find((e: any) => !skipped[e.name] && Math.min(e.sets, done[e.name] ?? 0) < e.sets);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -399,20 +400,22 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
         {loaded && day && <SectionTitle>{allDone ? "Today's lifts" : 'Exercises'}</SectionTitle>}
         {day?.exercises.map((e: any, i: number) => {
           const n = Math.min(e.sets, done[e.name] ?? 0);
-          const complete = n >= e.sets;
-          const isNext = !complete && nextEx?.name === e.name && !allDone;
+          const sk = !!skipped[e.name];
+          const complete = n >= e.sets && !sk;
+          const isNext = !complete && !sk && nextEx?.name === e.name && !allDone;
           return (
             <FadeIn key={e.name} delay={140 + i * 70}>
               <Pressable onPress={() => { Haptics.selectionAsync(); setLogging({ name: e.name, sets: e.sets, reps: e.reps, target_rpe: e.target_rpe }); }}
                 accessibilityRole="button" accessibilityLabel={`${e.name}, ${n} of ${e.sets} sets done, ${e.reps} reps. Tap to log a set`}
                 style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }], opacity: pressed ? 0.92 : 1 })}>
-              <Card glow={isNext ? colors.lime : undefined} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, opacity: complete ? 0.72 : 1 }}>
+              <Card glow={isNext ? colors.lime : undefined} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, opacity: sk ? 0.5 : complete ? 0.72 : 1 }}>
                 <LinearGradient colors={complete ? gradients.lime : ['#232838', '#1A1E28']} style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}>
                   {complete ? <Ionicons name="checkmark" size={24} color="#07080B" /> : <Txt style={{ fontFamily: font.bold, color: colors.dim }}>{i + 1}</Txt>}
                 </LinearGradient>
                 <View style={{ flex: 1 }}>
                   {isNext && <Txt style={{ color: colors.lime, fontFamily: font.bold, fontSize: 10.5, letterSpacing: 1.1 }}>UP NEXT</Txt>}
-                  <Txt style={{ fontFamily: font.semibold, fontSize: 16, textTransform: 'capitalize' }} numberOfLines={2}>{e.name}</Txt>
+                  {sk && <Txt style={{ color: colors.amber, fontFamily: font.bold, fontSize: 10.5, letterSpacing: 1.1 }}>SKIPPED TODAY</Txt>}
+                  <Txt style={{ fontFamily: font.semibold, fontSize: 16, textTransform: 'capitalize', textDecorationLine: sk ? 'line-through' : 'none' }} numberOfLines={2}>{e.name}</Txt>
                   <Txt style={{ color: colors.dim, fontSize: 13 }}>{e.sets} × {e.reps} · RPE {e.target_rpe}</Txt>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 5, maxWidth: 90, flexWrap: 'wrap', justifyContent: 'flex-end' }}>

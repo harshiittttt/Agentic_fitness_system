@@ -357,3 +357,16 @@ def test_skip_before_any_session_moves_the_start_and_the_first_session_is_pinned
     assert sf.get(day_of(1))["day_name"] == n[1]
     set_today(monkeypatch, day_of(2))
     assert next_name() == n[2]
+
+
+def test_session_is_pinned_to_the_day_whose_lifts_were_trained(env, monkeypatch):
+    """Skipped Lower A, then lifted Upper A: the session is Upper A, not Lower A, so Today and the live screen agree."""
+    n = names()
+    plan = db.get_plan()
+    upper = next(i for i, d in enumerate(plan["days"]) if d["name"] != n[0])
+    set_today(monkeypatch, day_of(0))
+    assert next_name() == n[0]
+    db.add_set(day_of(0), plan["days"][upper]["exercises"][0]["name"], 50, 8, 8)
+    sf.sync()
+    assert sf.get(day_of(0))["day_name"] == n[upper]
+    assert next_name() == n[upper]

@@ -143,6 +143,7 @@ def sync(plan: dict | None = None) -> None:
                 else:
                     resolved = resolve(last, plan) if last else None
                     idx = ((resolved + 1 + _skips_between(plan, last["label"], lab)) % total) if resolved is not None else 0
+                idx = _day_by_exercises(c, plan, lab, idx)
                 name, exs, _ = _day_snapshot(plan, idx)
                 n_rot += 1
             fresh = lab == today or _age_hours(s["t1"]) < STALE_HOURS
@@ -152,6 +153,20 @@ def sync(plan: dict | None = None) -> None:
                       (lab, idx, name, exs, total if in_rotation else None, s["t0"], None if status == "active" else s["t1"], status, s["n"]))
             if in_rotation:
                 last = {"label": lab, "day_index": idx, "day_name": name, "day_exercises": json.loads(exs)}
+
+
+def _day_by_exercises(c, plan: dict, label: str, expected: int) -> int:
+    """The rotation says which day this session SHOULD be; the sets say what was trained. If none of the lifts logged belong to the expected day but
+    some belong to another one, the session was that other day (someone who skipped Lower A and lifted Upper A must not be recorded as Lower A)."""
+    done = {r[0].lower() for r in c.execute("SELECT DISTINCT exercise FROM sets WHERE session = ?", (label,)).fetchall() if r[0]}
+    days = plan.get("days") or []
+    if not done or not days:
+        return expected
+    names = [{e["name"].lower() for e in d["exercises"]} for d in days]
+    if done & names[expected]:
+        return expected
+    best = max(range(len(days)), key=lambda k: len(done & names[k]))
+    return best if done & names[best] else expected
 
 
 def _last_rotation_row() -> dict | None:
