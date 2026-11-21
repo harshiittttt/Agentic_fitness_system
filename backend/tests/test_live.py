@@ -321,7 +321,7 @@ def test_skip_by_name_skips_that_exercise_not_the_current_one(client):
 def test_a_models_weightless_guess_is_never_saved_it_asks_for_the_numbers(client, monkeypatch):
     from backend.tools import voice_parser
     first = client.get("/live/state").json()["current"]["name"]
-    monkeypatch.setattr(voice_parser, "parse_voice_log", lambda t: {"sets": [{"exercise": first, "weight": None, "reps": 1}], "safety_note": ""})
+    monkeypatch.setattr(voice_parser, "parse_voice_log", lambda t, fast=False: {"sets": [{"exercise": first, "weight": None, "reps": 1}], "safety_note": ""})
     monkeypatch.setattr(live, "parse_voice_log", voice_parser.parse_voice_log)
     r = client.post("/live/say", json={"transcript": "first set done"}).json()
     assert r["expects"] == "set_details" and not db.get_sets(first, 5)
@@ -337,7 +337,7 @@ def test_a_model_made_set_is_dropped_when_its_numbers_are_not_in_the_sentence(cl
     """The model once read 'tell me how much protein' as a set of 75 x 6 and the coach praised it. Numbers must be in the words."""
     from backend.tools import voice_parser
     first = client.get("/live/state").json()["current"]["name"]
-    fake = lambda t: {"sets": [{"exercise": first, "weight": 75, "reps": 6}], "safety_note": ""}
+    fake = lambda t, fast=False: {"sets": [{"exercise": first, "weight": 75, "reps": 6}], "safety_note": ""}
     monkeypatch.setattr(voice_parser, "parse_voice_log", fake)
     monkeypatch.setattr(live, "parse_voice_log", fake)
     for said in ("then tell me how much protein", "what should I eat for dinner", "okay I am done with the first exercise"):
@@ -346,3 +346,11 @@ def test_a_model_made_set_is_dropped_when_its_numbers_are_not_in_the_sentence(cl
     assert db.get_sets(first, 5) == []
     ok = client.post("/live/say", json={"transcript": f"{first} 75 for 6"}).json()          # the same numbers, actually said, are logged
     assert ok["intent"] == "set" and db.get_sets(first, 5)
+
+
+def test_a_sentence_without_numbers_never_calls_the_model_to_find_a_set(client, monkeypatch):
+    """'Yog Ustad' once cost 31 s: the model was asked to extract a set from it. No numbers, no set, no call."""
+    from backend.tools import voice_parser
+    monkeypatch.setattr(live, "parse_voice_log", lambda *a, **k: pytest.fail("the model must not be asked to find a set in a sentence without numbers"))
+    for said in ("Yog Ustad", "Ustad this is like so bad I can't even talk", "okay who said so"):
+        assert live._log_sets(said, "hype", "Alex") is None

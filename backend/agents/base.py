@@ -164,7 +164,7 @@ def _post_raw(role: str, body: dict, timeout: float = 60.0, retries: int = 1, mo
             req["reasoning_effort"] = c["reasoning"]
         for attempt in range(retries + 1):
             try:
-                r = httpx.post(f"{ep['base_url']}/chat/completions", json=req, timeout=timeout,
+                r = httpx.post(f"{ep['base_url']}/chat/completions", json=req, timeout=httpx.Timeout(timeout, connect=min(timeout, 3.0)),
                                headers={"Authorization": f"Bearer {ep['api_key']}"})
             except httpx.HTTPError as e:
                 last = f"{model}: {type(e).__name__}: {e}"
@@ -294,13 +294,13 @@ def _json_from_text(text: str) -> dict:
         return {}
 
 
-def extract_structured(system: str, user: str, tool: dict, max_tokens: int = 1024) -> dict:
+def extract_structured(system: str, user: str, tool: dict, max_tokens: int = 1024, fast: bool = False) -> dict:
     """Force the model to answer via a single tool call; return its arguments dict.
     Falls back to parsing JSON from plain text if the provider ignores forced tool choice."""
     body = {"messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
             "max_tokens": max_tokens, "tools": _openai_tools([tool]),
             "tool_choice": {"type": "function", "function": {"name": tool["name"]}}}
-    msg = _post("main", body)["choices"][0]["message"]
+    msg = (_post_fast("main", body, per_call=4.0, hedge=1.2, total=6.0) if fast else _post("main", body))["choices"][0]["message"]
     for tc in msg.get("tool_calls") or []:
         try:
             return json.loads(tc["function"].get("arguments") or "{}")

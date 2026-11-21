@@ -97,7 +97,7 @@ def _clean_rule_parse(transcript: str) -> dict | None:
     return _post_process(out, transcript)
 
 
-def parse_voice_log(transcript: str) -> dict:
+def parse_voice_log(transcript: str, fast: bool = False) -> dict:
     fast = _clean_rule_parse(transcript)       # no network round-trip for the common in-gym phrase (it used to cost 3+ s per set)
     if fast is not None:
         return fast
@@ -107,7 +107,7 @@ def parse_voice_log(transcript: str) -> dict:
                 "You parse gym voice logs into structured sets. Be literal; never invent sets. "
                 "Put effort words ('easy', 'hard', 'grinder') into that set's rpe field, not only the note. "
                 "If any pain or injury is mentioned, put it in safety_note.",
-                transcript, LOG_TOOL,
+                transcript, LOG_TOOL, fast=fast,
             )
         except Exception:  # provider down / rate-limited: the regex parser still works offline
             out = {}

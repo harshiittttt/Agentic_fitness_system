@@ -527,3 +527,13 @@ def test_how_much_protein_is_answered_from_the_app_without_a_model(client, monke
     for q in ("then tell me how much protein", "how much protein", "what's my protein today", "how many calories do I have"):
         r = say(client, q)
         assert r["intent"] == "meal_left" and "protein" in r["reply"], q
+
+
+def test_a_voice_request_never_hangs_past_its_deadline(client, monkeypatch):
+    import time as _t
+    from backend import routes_voice
+    monkeypatch.setattr(routes_voice, "DEADLINE_S", 0.4)
+    monkeypatch.setattr(vc, "handle", lambda *a, **k: (_t.sleep(2), {})[1])
+    t = _t.time()
+    r = client.post("/voice/command", json={"transcript": "anything", "screen": "today"}).json()
+    assert _t.time() - t < 1.5 and r["intent"] == "fallback" and "again" in r["reply"]

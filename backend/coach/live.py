@@ -251,7 +251,9 @@ def _numbers_in(text: str) -> set[float]:
 
 def _log_sets(text: str, pid: str, name: str, parsed: dict | None = None) -> dict | None:
     explicit = parsed is not None               # built by code from checked numbers (a slot answer, the dials), not read from speech
-    parsed = parsed if parsed is not None else parse_voice_log(text)
+    if parsed is None and not _numbers_in(text):
+        return None                              # a set needs numbers: no digits or number words, no set, and no model call to find out
+    parsed = parsed if parsed is not None else parse_voice_log(text, fast=True)
     sets = parsed.get("sets", [])
     if not sets:
         return None
