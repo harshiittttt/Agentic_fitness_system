@@ -1,5 +1,6 @@
 /** The live-voice client (src/streamVoice.ts): protocol, paced playback, interrupting. The last test talks to a REAL voice agent when VOICE_TEST_URL is set. */
-import { LEAD_MS, VoiceStream, PcmDevice } from '../src/streamVoice';
+import { LEAD_MS, NO_MIC_MS, VoiceStream, PcmDevice } from '../src/streamVoice';
+import { b64ToBytes, bytesToB64 } from '../src/b64';
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -16,8 +17,8 @@ class FakeWS {
 }
 
 function device() {
-  const d = { played: [] as Uint8Array[], mic: null as null | ((p: Uint8Array) => void), started: 0, stopped: 0 };
-  const dev: PcmDevice = { start: (cb) => { d.started++; d.mic = cb; }, stop: () => { d.stopped++; }, play: (p) => { d.played.push(p); } };
+  const d = { played: [] as Uint8Array[], mic: null as null | ((p: Uint8Array) => void), started: 0, stopped: 0, flushed: 0 };
+  const dev: PcmDevice = { start: (cb) => { d.started++; d.mic = cb; }, stop: () => { d.stopped++; }, play: (p) => { d.played.push(p); }, flush: () => { d.flushed++; }, status: () => 'recording=1;frames=0' };
   return { d, dev };
 }
 
@@ -61,6 +62,7 @@ test('speech is fed to the speaker a little at a time, so a "clear" can stop it 
   expect(fed).toBeGreaterThan(0);
   expect(phases).toContain('speaking');
   FakeWS.last.serverSays(JSON.stringify({ t: 'clear' }));              // you started talking
+  expect(d.flushed).toBe(1);                                           // and the speaker is emptied immediately
   const before = d.played.length;
   await wait(500);
   expect(d.played.length).toBe(before);                                // nothing more is fed
@@ -92,6 +94,7 @@ test('a tap interrupts: queue dropped and the server is told', async () => {
   FakeWS.last.serverSays(audioMsg(2000));
   await wait(30);
   v.interrupt();
+  expect(d.flushed).toBe(1);
   expect(FakeWS.last.texts().some((m) => m.type === 'interrupt')).toBe(true);
   const n = d.played.length;
   await wait(400);
@@ -157,3 +160,31 @@ const URL = process.env.VOICE_TEST_URL;
   console.log(`first coach audio ${(played[0] - ended)} ms after the last word`);
   expect(played[0] - ended).toBeLessThan(4500);
 }, 40000);
+
+test('if no microphone audio arrives after connecting, onNoMic is raised once with the native status; with audio it is not', async () => {
+  const { d, dev } = device();
+  const noMic: string[] = []; const first: number[] = [];
+  const v = new VoiceStream('ws://x', dev, { onNoMic: (s) => noMic.push(s), onFirstMic: (ms) => first.push(ms) }, FakeWS as any);
+  await v.open('live');
+  await wait(NO_MIC_MS + 150);
+  expect(noMic).toEqual(['recording=1;frames=0']);
+  v.close();
+  const { d: d2, dev: dev2 } = device();
+  const noMic2: string[] = [];
+  const v2 = new VoiceStream('ws://x', dev2, { onNoMic: (s) => noMic2.push(s), onFirstMic: (ms) => first.push(ms) }, FakeWS as any);
+  await v2.open('live');
+  d2.mic!(new Uint8Array(640));
+  await wait(NO_MIC_MS + 150);
+  expect(noMic2).toEqual([]);
+  expect(first).toHaveLength(1);
+  v2.close();
+}, 15000);
+
+test('base64 round trip for every length (the native module carries audio as text)', () => {
+  for (let n = 0; n < 40; n++) {
+    const a = new Uint8Array(n).map((_, i) => (i * 37 + n) & 255);
+    expect(Array.from(b64ToBytes(bytesToB64(a)))).toEqual(Array.from(a));
+  }
+  expect(bytesToB64(new Uint8Array([72, 101, 108, 108, 111]))).toBe('SGVsbG8=');
+  expect(Array.from(b64ToBytes('SGVsbG8='))).toEqual([72, 101, 108, 108, 111]);
+});

@@ -5,15 +5,23 @@ import { makeBackend } from './fakeBackend';
 
 jest.mock('../src/tts', () => ({ speak: jest.fn(async (_t: string, _c: any, done?: () => void) => { if (done) setTimeout(done, 0); }), stopSpeaking: jest.fn() }));
 jest.mock('../src/haptics', () => ({ impactAsync: jest.fn(), notificationAsync: jest.fn(), selectionAsync: jest.fn(), ImpactFeedbackStyle: {}, NotificationFeedbackType: {}, loadHaptics: jest.fn(), hapticsEnabled: () => true, setHapticsEnabled: jest.fn() }));
-const mockAudio: any = { mic: null, played: [] as any[], recording: false, torn: 0 };
-jest.mock('@speechmatics/expo-two-way-audio', () => ({
-  requestMicrophonePermissionsAsync: async () => ({ granted: true }),
-  initialize: async () => true,
-  addExpoTwoWayAudioEventListener: (_n: string, cb: any) => { mockAudio.mic = cb; return { remove: () => { mockAudio.mic = null; } }; },
-  toggleRecording: (v: boolean) => { mockAudio.recording = v; return v; },
-  tearDown: () => { mockAudio.torn++; mockAudio.recording = false; },
-  playPCMData: (p: any) => { mockAudio.played.push(p); },
-}), { virtual: true });
+const mockAudio: any = { mic: null, err: null, played: [] as any[], recording: false, stops: 0, flushes: 0, silent: false, startError: '' };
+jest.mock('../src/pcmNative', () => ({
+  pcmNative: () => ({
+    requestPermission: async () => ({ granted: true }),
+    addListener: (name: string, cb: any) => { if (name === 'mic') mockAudio.mic = cb; else mockAudio.err = cb; return { remove: () => { if (name === 'mic') mockAudio.mic = null; } }; },
+    start: () => {
+      if (mockAudio.startError) return mockAudio.startError;
+      mockAudio.recording = true;
+      if (!mockAudio.silent) mockAudio.timer = setTimeout(() => mockAudio.mic?.({ b64: 'AAAA' }), 30);        // a real microphone delivers audio right away
+      return '';
+    },
+    stop: () => { mockAudio.stops++; mockAudio.recording = false; },
+    play: (b64: string) => { mockAudio.played.push(b64); },
+    flush: () => { mockAudio.flushes++; },
+    status: () => 'recording=1;frames=0;aec=1;ns=1;queued=0;error=',
+  }),
+}));
 
 const SR = require('expo-speech-recognition');
 import WakeCoach from '../src/WakeCoach';
@@ -22,6 +30,7 @@ import { setVoiceOverlay } from '../src/voiceScreen';
 import { setApiConfig } from '../src/api';
 import { setLiveVoice } from '../src/voiceSettings';
 import { micOwner } from '../src/micLock';
+import { tuning } from '../src/voiceEndpoint';
 
 class FakeSocket {
   static all: FakeSocket[] = []; static failNext = false;
@@ -44,9 +53,12 @@ const mounted = async () => { const r = render(<WakeCoach />); await waitFor(() 
 const openLive = async () => { (global as any).__dlog.length = 0; await tap(); await waitFor(() => expect(mockAudio.recording).toBe(true)); await waitFor(() => expect((global as any).__dlog.some((e: any[]) => e[0] === 's_open')).toBe(true)); };
 const audio = (ms: number) => { const b = new Uint8Array(1 + ms * 32); b[0] = 1; return b.buffer; };
 
+afterAll(() => { tuning.scale = 1; });
 beforeEach(() => {
+  clearTimeout(mockAudio.timer);                                                      // a frame scheduled by the previous test must not leak into this one
+  tuning.scale = 0.02;                                                              // the real 1.8 s connecting guard would slow every test
   (global as any).WebSocket = FakeSocket; FakeSocket.all = []; FakeSocket.failNext = false;
-  mockAudio.mic = null; mockAudio.played = []; mockAudio.recording = false; mockAudio.torn = 0;
+  mockAudio.mic = null; mockAudio.err = null; mockAudio.played = []; mockAudio.recording = false; mockAudio.stops = 0; mockAudio.flushes = 0; mockAudio.silent = false; mockAudio.startError = '';
   setTalkState({ phase: 'idle', heard: '', note: '', error: false, session: false }); SR.__reset(); setVoiceOverlay(null);
   (global as any).fetch = makeBackend().fetch;
   setApiConfig('https://coach.example', 'tok');
@@ -61,11 +73,12 @@ test('one tap opens the live voice: a socket to the PC with the access key, the 
   expect(sock().texts()[0]).toMatchObject({ type: 'screen' });
   expect(mockAudio.recording).toBe(true);
   expect(SR.__state.starts.length).toBe(0);
-  act(() => { mockAudio.mic({ data: new Uint8Array(640) }); });
+  act(() => { mockAudio.mic({ b64: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' }); });
   expect(sock().sent.some((x) => typeof x !== 'string')).toBe(true);               // microphone audio is streamed
+  await wait(70);                                                                   // past the (scaled) connecting guard
   await tap();
   await waitFor(() => expect(getTalkState().session).toBe(false));
-  expect(mockAudio.torn).toBeGreaterThan(0);                                       // the phone's normal audio mode is given back
+  expect(mockAudio.stops).toBeGreaterThan(0);                                       // the phone's normal audio mode is given back
   expect(micOwner()).toBe(null);
 });
 
@@ -84,6 +97,7 @@ test('what you said shows at once, the coach result reaches the workout screen, 
   expect(mockAudio.played.length).toBeGreaterThan(0);
   await waitFor(() => expect(getTalkState().phase).toBe('listening'), { timeout: 3000 });
   off();
+  await wait(70);                                                                   // past the (scaled) connecting guard
   await tap();
   await waitFor(() => expect(getTalkState().session).toBe(false));
 });
@@ -95,7 +109,9 @@ test('a tap while the coach is talking cuts the sentence and keeps the session',
   await waitFor(() => expect(getTalkState().phase).toBe('speaking'));
   await tap();
   expect(sock().texts().some((m) => m.type === 'interrupt')).toBe(true);
+  expect(mockAudio.flushes).toBeGreaterThan(0);                                    // the speaker is emptied at once, not after its buffer drains
   expect(getTalkState()).toMatchObject({ phase: 'listening', session: true });
+  await wait(70);                                                                   // past the (scaled) connecting guard
   await tap();
   await waitFor(() => expect(getTalkState().session).toBe(false));
 });
@@ -106,6 +122,7 @@ test('when the PC voice agent is not reachable the phone recogniser takes over b
   await tap();
   await waitFor(() => expect(SR.__state.starts.length).toBe(1), { timeout: 4000 });
   expect(getTalkState()).toMatchObject({ session: true });
+  await wait(70);                                                                   // past the (scaled) connecting guard
   await tap();
   await waitFor(() => expect(getTalkState().session).toBe(false));
 });
@@ -116,6 +133,7 @@ test('switching Live voice off in Profile uses the phone recogniser straight awa
   await tap();
   await waitFor(() => expect(SR.__state.starts.length).toBe(1));
   expect(FakeSocket.all.length).toBe(0);
+  await wait(70);                                                                   // past the (scaled) connecting guard
   await tap();
   await waitFor(() => expect(getTalkState().session).toBe(false));
 });
@@ -125,4 +143,53 @@ test('the server dropping the connection mid-session ends it with a clear messag
   await openLive();
   act(() => { sock().onclose({ code: 1006 }); });
   await waitFor(() => expect(getTalkState()).toMatchObject({ session: false, error: true }));
+});
+
+test('connected but the phone delivers NO microphone audio: it is noticed within seconds and the phone recogniser takes over by itself', async () => {
+  mockAudio.silent = true;
+  await mounted();
+  await tap();
+  await waitFor(() => expect(SR.__state.starts.length).toBe(1), { timeout: 6000 });
+  expect((global as any).__dlog.some((e: any[]) => e[0] === 's_nomic')).toBe(true);
+  expect(getTalkState()).toMatchObject({ session: true });
+  expect(mockAudio.stops).toBeGreaterThan(0);                                      // the dead audio engine was released
+  await wait(70);                                                                   // past the (scaled) connecting guard
+  await tap();
+  await waitFor(() => expect(getTalkState().session).toBe(false));
+}, 15000);
+
+test('when the audio engine cannot start, the exact reason is logged and the phone recogniser is used', async () => {
+  mockAudio.startError = 'the microphone could not be opened (permission refused, or another app is using it)';
+  await mounted();
+  await tap();
+  await waitFor(() => expect(SR.__state.starts.length).toBe(1), { timeout: 4000 });
+  const why = (global as any).__dlog.find((e: any[]) => e[0] === 's_unavailable');
+  expect(why[1]).toContain('microphone could not be opened');
+  await wait(70);                                                                   // past the (scaled) connecting guard
+  await tap();
+  await waitFor(() => expect(getTalkState().session).toBe(false));
+});
+
+test('the first microphone audio is logged with its delay, so a silent phone is visible in the server log', async () => {
+  await mounted();
+  await tap();
+  await waitFor(() => expect((global as any).__dlog.some((e: any[]) => e[0] === 's_mic')).toBe(true));
+  await wait(70);                                                                   // past the (scaled) connecting guard
+  await tap();
+  await waitFor(() => expect(getTalkState().session).toBe(false));
+});
+
+test('extra taps while live voice is still connecting do not cancel it', async () => {
+  tuning.scale = 1;
+  await mounted();
+  await tap();
+  await tap();                                                                      // an impatient second tap
+  await tap();
+  await waitFor(() => expect((global as any).__dlog.some((e: any[]) => e[0] === 's_open')).toBe(true));
+  expect(getTalkState()).toMatchObject({ session: true });
+  expect(mockAudio.recording).toBe(true);
+  await wait(1900);                                                                 // after the connecting window a tap stops it as usual
+  await wait(70);                                                                   // past the (scaled) connecting guard
+  await tap();
+  await waitFor(() => expect(getTalkState().session).toBe(false));
 });

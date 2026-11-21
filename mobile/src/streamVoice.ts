@@ -12,6 +12,8 @@ export type PcmDevice = {
   start(onMic: (pcm: Uint8Array) => void): Promise<void> | void;
   stop(): void;
   play(pcm: Uint8Array): void;
+  flush?(): void;                                    // drop what is queued / playing right now (interrupting)
+  status?(): string;                                  // readable state of the native audio, for diagnostics
 };
 
 export type Phase = 'listening' | 'thinking' | 'speaking';
@@ -20,12 +22,15 @@ export type StreamEvents = {
   onBot?(result: any): void;                         // the same result object /voice/command returns (reply, intent, actions, expects, ...)
   onPhase?(p: Phase): void;
   onClose?(reason: 'closed' | 'unavailable' | 'denied'): void;
+  onFirstMic?(msAfterOpen: number): void;            // the first microphone audio arrived
+  onNoMic?(status: string): void;                    // connected, but NO microphone audio within NO_MIC_MS: the app should use another engine
 };
 
 const BYTES_PER_MS = 32;                              // 16 kHz * 2 bytes
 export const LEAD_MS = 260;                           // how far ahead of the speaker we feed audio (= the longest tail after an interruption)
 const SLICE_MS = 120;
 const OPEN_TIMEOUT_MS = 6000;
+export const NO_MIC_MS = 2500;
 
 export class VoiceStream {
   private ws: any = null;
@@ -38,6 +43,9 @@ export class VoiceStream {
   private opened = false;
   private pre: Uint8Array[] | null = null;             // microphone audio captured while the socket was still connecting
   private preBytes = 0;
+  private micFrames = 0;
+  private openedAt = 0;
+  private watchdog: any = null;
 
   constructor(private url: string, private dev: PcmDevice, private ev: StreamEvents = {}, private WS: any = (globalThis as any).WebSocket, private now: () => number = Date.now) {}
 
@@ -72,8 +80,15 @@ export class VoiceStream {
     this.pre = null;
     for (const c of held) this.send(c);
     this.feeder = setInterval(() => this.feed(), 40);
+    this.openedAt = this.now();
+    this.watchdog = setTimeout(() => {
+      this.watchdog = null;
+      if (this.micFrames === 0 && !this.closing) this.ev.onNoMic?.(this.micStatus());
+    }, NO_MIC_MS);
     this.setPhase('listening');
   }
+
+  micStatus(): string { try { return this.dev.status?.() ?? ''; } catch { return ''; } }
 
   setScreen(screen: string) { this.send(JSON.stringify({ type: 'screen', screen })); }
 
@@ -83,6 +98,7 @@ export class VoiceStream {
   /** The user cut the coach short (a tap): stop feeding the speaker and tell the server to stop too. */
   interrupt() {
     this.queue = [];
+    try { this.dev.flush?.(); } catch { /* nothing to flush */ }
     this.send(JSON.stringify({ type: 'interrupt' }));
   }
 
@@ -99,6 +115,7 @@ export class VoiceStream {
   }
 
   private onMic(pcm: Uint8Array) {
+    if (this.micFrames++ === 0) this.ev.onFirstMic?.(this.openedAt ? this.now() - this.openedAt : 0);
     if (this.closing || this.now() < this.muteUntil) return;
     if (this.pre) { if (this.preBytes < 8 * 16000 * 2) { this.pre.push(pcm.slice()); this.preBytes += pcm.length; } return; }       // still connecting: keep up to 8 s
     this.send(pcm.byteOffset === 0 && pcm.byteLength === pcm.buffer.byteLength ? pcm : pcm.slice().buffer);
@@ -109,7 +126,7 @@ export class VoiceStream {
       let d: any; try { d = JSON.parse(data); } catch { return; }
       if (d.t === 'user') { this.ev.onUser?.(String(d.text ?? '')); }
       else if (d.t === 'bot') { try { this.ev.onBot?.(d.result ?? { reply: d.text, intent: d.intent, actions: d.actions ?? [] }); } catch { /* a UI listener bug must not stop the audio */ } if (!d.text) this.setPhase('listening'); }
-      else if (d.t === 'clear') { this.queue = []; }
+      else if (d.t === 'clear') { this.queue = []; try { this.dev.flush?.(); } catch { /* nothing to flush */ } }
       else if (d.t === 'state') { if (d.s === 'thinking' && !this.speaking) this.setPhase('thinking'); else if (d.s === 'listening' && !this.speaking) this.setPhase('listening'); }
       return;
     }
@@ -141,6 +158,7 @@ export class VoiceStream {
 
   private teardown() {
     if (this.feeder) { clearInterval(this.feeder); this.feeder = null; }
+    if (this.watchdog) { clearTimeout(this.watchdog); this.watchdog = null; }
     this.queue = [];
     try { this.dev.stop(); } catch { /* already stopped */ }
     try { if (this.ws) { this.ws.onclose = null; this.ws.onmessage = null; this.ws.close(); } } catch { /* already closed */ }

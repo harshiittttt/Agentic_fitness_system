@@ -76,6 +76,7 @@ export default function WakeCoach() {
   const stream = useRef<VoiceStream | null>(null);        // live voice (streamed audio to the PC's voice agent) when it is reachable
   const streamDownAt = useRef(0);                         // it was unreachable at this time: use the built-in recogniser for a while
   const streamQuietT = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectUntil = useRef(0);                          // taps that arrive while live voice is still connecting are ignored (a second tap used to cancel it)
 
   const enabled = useRef(getWakeState().enabled);
   const appActive = useRef(AppState.currentState === 'active');
@@ -260,11 +261,23 @@ export default function WakeCoach() {
     if (!liveVoiceEnabled() || Date.now() - streamDownAt.current < 60000) return false;
     const url = voiceWsUrl(); const dev = makeDevice();
     if (!url || !dev) return false;
-    session.current = true; quietSince.current = Date.now();
+    session.current = true; quietSince.current = Date.now(); connectUntil.current = Date.now() + 1800 * tuning.scale;
     acquireMic('ui'); if (running.current) stopRun();
     setBubble(''); setTalkState({ phase: 'listening', heard: '', note: '', error: false, session: true });
     const t0 = Date.now();
     const vs = new VoiceStream(url, dev, {
+      onFirstMic: (ms) => dlog('s_mic', { ms }),
+      onNoMic: (status) => {                                  // connected but the phone delivered no microphone audio: do not leave the user talking to nothing
+        if (stream.current !== vs) return;
+        dlog('s_nomic', status.slice(0, 160));
+        streamDownAt.current = Date.now();
+        stream.current = null;
+        try { vs.close(); } catch { /* ignore */ }
+        if (streamQuietT.current) { clearTimeout(streamQuietT.current); streamQuietT.current = null; }
+        session.current = false; releaseMic('ui');
+        setTalkState({ phase: 'idle', heard: '', note: '', session: false, error: false });
+        setTimeout(() => { if (alive.current) startSessionRef.current(); }, 60);      // the phone's own recogniser takes over (live voice is skipped for a minute)
+      },
       onUser: (t) => { dlog('s_user', { text: t.slice(0, 80) }); armStreamQuiet(); setTalkState({ phase: 'thinking', heard: cleanSpeech(t), error: false }); },
       onBot: (r) => { armStreamQuiet(); applyStreamResult(r); },
       onPhase: (p) => { dlog('s_phase', p); setTalkState(p === 'listening' ? { phase: p, heard: '' } : { phase: p }); },
@@ -474,7 +487,7 @@ export default function WakeCoach() {
   useEffect(() => {
     alive.current = true;
     const unTalk = onTalkState(setTalk);
-    const unReg = registerTalk(() => { startSession(); }, () => stopSession(), muteFor, skipSpeech);
+    const unReg = registerTalk(() => { startSession(); }, () => { if (stream.current && Date.now() < connectUntil.current) { dlog('tap_ignored_connecting'); return; } stopSession(); }, muteFor, skipSpeech);
     loadWakeSetting().then((on) => { enabled.current = on; reconcile(); });
     const un = onWakeState((s) => { setWakeOn(s.status === 'listening'); if (s.enabled !== enabled.current) { enabled.current = s.enabled; reconcile(); } });
     const unMic = onMicChange(reconcile);
