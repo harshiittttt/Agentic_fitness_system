@@ -64,6 +64,8 @@ IN_RATE, OUT_RATE = 16000, int(os.environ.get("VOICE_OUT_RATE", "16000"))      #
 WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "small")
 VOICE = os.environ.get("VOICE_NAME", "af_heart")
 VAD_STOP_SECS = float(os.environ.get("VAD_STOP_SECS", "0.25"))
+CAPTURE = os.environ.get("VOICE_CAPTURE", "1") != "0"
+CAPTURE_DIR = os.environ.get("VOICE_CAPTURE_DIR", "D:/voice-proto/captures")
 # The turn model answers "finished" at once when the sentence sounds finished. When it says "not finished" it still gives up after this much silence
 # (library default 3 s made a short Hindi command wait ~5 s). Whatever it cuts off too early is caught by the coach brain ("fragment": held and joined to the next words).
 TURN_STOP_SECS = float(os.environ.get("VOICE_TURN_STOP_SECS", "1.3"))
@@ -154,6 +156,7 @@ class PcmSerializer(FrameSerializer):
     def __init__(self, **kw):
         super().__init__(**kw)
         self.rx = {"bytes": 0, "frames": 0, "peak": 0, "since": time.time()}
+        self.capture = bytearray()                       # the phone's audio, saved when the connection ends (debugging; VOICE_CAPTURE=0 turns it off)
 
     async def serialize(self, frame: Frame):
         if isinstance(frame, OutputAudioRawFrame):
@@ -167,6 +170,8 @@ class PcmSerializer(FrameSerializer):
     async def deserialize(self, data):
         if isinstance(data, (bytes, bytearray)):
             self.rx["bytes"] += len(data)
+            if CAPTURE and len(self.capture) < 16000 * 2 * 120:
+                self.capture += bytes(data)
             self.rx["frames"] += 1
             try:
                 self.rx["peak"] = max(self.rx["peak"], audioop.max(bytes(data[: len(data) // 2 * 2]), 2))
@@ -215,6 +220,25 @@ def is_echo(heard: str, said: str, age_s: float, window_s: float = 4.0) -> bool:
     if len(h) < 3 or age_s > window_s + len(said) / 14.0:
         return False
     return sum(1 for w in h if w in s) / len(h) >= 0.8
+
+
+class Spy(FrameProcessor):
+    """Prints the speech-detection steps, so "audio arrives but nothing is understood" shows exactly where it stops."""
+
+    def __init__(self, label: str, **kw):
+        super().__init__(**kw)
+        self.label = label
+
+    async def process_frame(self, frame: Frame, direction: FrameDirection):
+        await super().process_frame(frame, direction)
+        n = type(frame).__name__
+        if n in ("UserStartedSpeakingFrame", "UserStoppedSpeakingFrame", "VADUserStartedSpeakingFrame", "VADUserStoppedSpeakingFrame", "InterruptionFrame"):
+            print(f"[voice] {self.label}: {n}", flush=True)
+        elif isinstance(frame, TranscriptionFrame):
+            print(f"[voice] {self.label}: transcript {frame.text!r}", flush=True)
+        elif n == "ErrorFrame":
+            print(f"[voice] {self.label}: ERROR {getattr(frame, 'error', '')}", flush=True)
+        await self.push_frame(frame, direction)
 
 
 class Brain(FrameProcessor):
@@ -362,7 +386,7 @@ async def ws(websocket: WebSocket):
             last, rx["peak"] = rx["bytes"], 0
 
     reporter = asyncio.create_task(report())
-    pipe = Pipeline([transport.input(), Gate(), make_stt(), pair.user(), brain, make_tts(), transport.output()])
+    pipe = Pipeline([transport.input(), Gate(), Spy("in"), make_stt(), Spy("stt"), pair.user(), brain, make_tts(), transport.output()])
     task = PipelineTask(pipe, params=PipelineParams(audio_in_sample_rate=IN_RATE, audio_out_sample_rate=OUT_RATE, allow_interruptions=True))
 
     @transport.event_handler("on_client_disconnected")
@@ -373,6 +397,16 @@ async def ws(websocket: WebSocket):
         await PipelineRunner(handle_sigint=False).run(task)
     finally:
         reporter.cancel()
+        if CAPTURE and ser is not None and len(ser.capture) > 16000:
+            try:
+                import wave as _wave
+                os.makedirs(CAPTURE_DIR, exist_ok=True)
+                path = f"{CAPTURE_DIR}/conn_{int(time.time())}_{cid}.wav"
+                with _wave.open(path, "wb") as w:
+                    w.setnchannels(1); w.setsampwidth(2); w.setframerate(IN_RATE); w.writeframes(bytes(ser.capture))
+                print(f"[voice {cid}] saved the phone's audio: {path}", flush=True)
+            except Exception as e:
+                print(f"[voice {cid}] could not save audio: {e}", flush=True)
         print(f"[voice {cid}] closed", flush=True)
         await brain.http.aclose()
 
