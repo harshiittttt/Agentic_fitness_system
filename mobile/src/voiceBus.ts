@@ -10,7 +10,7 @@
 // Setup mounts). So unhandled actions wait in a short queue; a screen drains what it owns when it mounts (takePendingVoiceActions).
 
 export type Tab = 'today' | 'coach' | 'nutrition' | 'insights' | 'setup';
-export type OpenScreen = 'live' | 'agenda' | 'intake' | 'research' | 'trace' | 'knows' | 'decisions' | 'roundtable' | 'scorecard' | 'review' | 'server' | 'push';
+export type OpenScreen = 'live' | 'agenda' | 'intake' | 'research' | 'trace' | 'knows' | 'decisions' | 'roundtable' | 'scorecard' | 'review' | 'server' | 'push' | 'diet';
 export type SettingKey = 'wake' | 'vibration' | 'voice_mode' | 'persona';
 
 export type VoiceAction =
@@ -27,7 +27,7 @@ export type VoiceAction =
   | { type: 'setting'; key: SettingKey; value: string | boolean };
 
 export const TABS: Tab[] = ['today', 'coach', 'nutrition', 'insights', 'setup'];
-export const SCREENS: OpenScreen[] = ['live', 'agenda', 'intake', 'research', 'trace', 'knows', 'decisions', 'roundtable', 'scorecard', 'review', 'server', 'push'];
+export const SCREENS: OpenScreen[] = ['live', 'agenda', 'intake', 'research', 'trace', 'knows', 'decisions', 'roundtable', 'scorecard', 'review', 'server', 'push', 'diet'];
 
 /** Server JSON -> a VoiceAction, or null when it is unknown/malformed (never throw on server data). */
 export function parseAction(a: any): VoiceAction | null {

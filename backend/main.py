@@ -46,6 +46,8 @@ from fitness_os.push_api import router as push_router  # noqa: E402  (phone push
 app.include_router(push_router)
 from backend.routes_split_consult import router as split_consult_router  # noqa: E402  (the split consult after onboarding: talk it through, then confirm)
 app.include_router(split_consult_router)
+from backend.routes_diet import router as diet_router  # noqa: E402  (the diet consultant: chat, day/week plans, swaps, preferences)
+app.include_router(diet_router)
 from backend.routes_voice import router as voice_router  # noqa: E402  (universal voice commands: food, navigation, settings, workout, tools)
 app.include_router(voice_router)
 
@@ -180,6 +182,16 @@ class CoachSettings(BaseModel):
 class LiveSay(BaseModel):
     transcript: str
     ambient: bool = False
+    fast: bool = False       # a button press: answer with the instant template line instead of waiting for the composed one
+
+
+class LiveSet(BaseModel):
+    """One set from the workout screen's dials."""
+    exercise: str | None = Field(None, max_length=60)    # omitted = the exercise the session is on
+    weight: float = Field(0, ge=0, le=600)
+    reps: int = Field(ge=1, le=200)
+    rpe: float | None = Field(None, ge=1, le=10)
+    sets: int = Field(1, ge=1, le=10)
 
 
 class LiveCue(BaseModel):
@@ -253,7 +265,13 @@ def live_start():
 @app.post("/live/say")
 def live_say(r: LiveSay):
     from backend.coach import live
-    return live.handle(r.transcript, ambient=r.ambient)
+    return live.handle(r.transcript, ambient=r.ambient, fast=r.fast)
+
+
+@app.post("/live/log")
+def live_log(s: LiveSet):
+    from backend.coach import live
+    return live.log_set(s.exercise, s.weight, s.reps, s.rpe, s.sets)
 
 
 @app.post("/live/cue")

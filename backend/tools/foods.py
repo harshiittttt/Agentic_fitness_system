@@ -76,6 +76,10 @@ _EXTRA_FOODS = {
     "khichdi": (["khichri"], 130, 4.5, 22, 2.5, 250, "bowl"),
     "biryani": (["chicken biryani", "veg biryani", "mutton biryani", "egg biryani"], 165, 6.5, 22, 5.5, 250, "plate"),
     "samosa": (["samose"], 262, 4, 30, 14, 60, "samosa"),
+    "besan chilla": (["chilla", "cheela", "besan cheela", "moong chilla"], 190, 9, 22, 7, 80, "chilla"),
+    "moong sprouts": (["sprouts", "sprout", "moong sprouts", "sprouts chaat"], 30, 3, 6, 0.2, 100, "bowl"),
+    "soya chunks": (["soya", "soy chunks", "nutrela", "meal maker"], 345, 52, 33, 0.5, 30, "handful"),
+    "peanuts": (["peanut", "moongphali", "roasted peanuts", "mungfali"], 567, 25.8, 16, 49, 30, "handful"),
 }
 for _n, _v in _EXTRA_FOODS.items():
     FOODS[_n] = {"kcal": _v[1], "p": _v[2], "c": _v[3], "f": _v[4], "unit_g": _v[5], "unit": _v[6], "aliases": [_n] + _v[0]}

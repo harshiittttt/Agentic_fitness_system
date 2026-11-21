@@ -19,6 +19,7 @@ import { currentServer, installAuthFetch, loadServer, markLoaded } from './src/s
 import ServerForm from './src/screens/ServerForm';
 import { loadHaptics } from './src/haptics';
 import WakeCoach from './src/WakeCoach';
+import { getTalkState, onTalkState, toggleTalk, TalkState } from './src/voiceTalk';
 import { onVoiceAction } from './src/voiceBus';
 import { setVoiceTab } from './src/voiceScreen';
 import { loadVoiceSettings, setRecognitionLang } from './src/voiceSettings';
@@ -34,6 +35,35 @@ const TABS: { k: Tab; label: string; on: string; off: string }[] = [
   { k: 'setup', label: 'Profile', on: 'person', off: 'person-outline' },
 ];
 
+/** The mic: one tap = one spoken turn with the coach (the reliable voice path). Pulses while listening, spins to amber while the coach thinks. */
+function TalkButton() {
+  const toast = useToast();
+  const [t, setT] = useState<TalkState>(getTalkState());
+  const pulse = useRef(new Animated.Value(0)).current;
+  useEffect(() => onTalkState(setT), []);
+  useEffect(() => {
+    if (t.phase === 'listening' || t.phase === 'followup') {
+      const loop = Animated.loop(Animated.sequence([Animated.timing(pulse, { toValue: 1, duration: 700, useNativeDriver: true }), Animated.timing(pulse, { toValue: 0, duration: 700, useNativeDriver: true })]));
+      loop.start();
+      return () => { loop.stop(); pulse.setValue(0); };
+    }
+    pulse.setValue(0);
+  }, [t.phase]);
+  const hot = t.phase !== 'idle';
+  const tint = t.phase === 'thinking' ? colors.amber : t.phase === 'speaking' ? colors.cyan : colors.lime;
+  const label = t.phase === 'idle' ? 'Talk to your coach' : t.phase === 'speaking' ? 'Stop the coach talking' : t.phase === 'thinking' ? 'Cancel' : 'Stop listening';
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={label}
+      onPress={() => { if (!toggleTalk()) toast('Voice needs the installed app, not Expo Go. Type to your coach instead.', { tone: 'warn' }); }}
+      style={({ pressed }) => ({ width: 64, height: 64, marginLeft: 10, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }] })}>
+      <Animated.View style={{ position: 'absolute', width: 64, height: 64, borderRadius: 32, backgroundColor: tint, opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0, 0.35] }), transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.25] }) }] }} />
+      <View style={{ width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', backgroundColor: hot ? tint : colors.lime, shadowColor: tint, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 }}>
+        <Ionicons name={t.phase === 'speaking' ? 'volume-high' : t.phase === 'thinking' ? 'ellipsis-horizontal' : 'mic'} size={28} color="#07080B" />
+      </View>
+    </Pressable>
+  );
+}
+
 /** Floating pill tab bar; the highlight springs to the active tab. */
 function TabBar({ tab, onChange, badges = {} }: { tab: Tab; onChange: (t: Tab) => void; badges?: Partial<Record<Tab, number>> }) {
   const [w, setW] = useState(0);
@@ -43,8 +73,8 @@ function TabBar({ tab, onChange, badges = {} }: { tab: Tab; onChange: (t: Tab) =
     if (w) Animated.spring(x, { toValue: idx * (w / TABS.length), useNativeDriver: true, damping: 16, stiffness: 200, mass: 0.7 }).start();
   }, [idx, w]);
   return (
-    <View style={{ paddingHorizontal: 14, paddingTop: 6, paddingBottom: 8 }}>
-      <View accessibilityRole="tablist" style={{ backgroundColor: colors.card, borderRadius: 30, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 6, shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8 }}>
+    <View style={{ paddingHorizontal: 14, paddingTop: 6, paddingBottom: 8, flexDirection: 'row' }}>
+      <View accessibilityRole="tablist" style={{ flex: 1, backgroundColor: colors.card, borderRadius: 30, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 6, shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8 }}>
         <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ flexDirection: 'row' }}>
           {w > 0 && (
             <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, width: w / TABS.length, borderRadius: 24, backgroundColor: 'rgba(198,255,61,0.14)', borderWidth: 1, borderColor: 'rgba(198,255,61,0.28)', transform: [{ translateX: x }] }} />
@@ -68,6 +98,7 @@ function TabBar({ tab, onChange, badges = {} }: { tab: Tab; onChange: (t: Tab) =
           })}
         </View>
       </View>
+      <TalkButton />
     </View>
   );
 }
@@ -129,6 +160,7 @@ export default function App() {
       if (a.type === 'navigate') { if (a.tab !== 'insights') setInsightsSeg(undefined); setTab(a.tab as Tab); return true; }
       if (a.type === 'open' && a.screen === 'decisions') { setInsightsSeg('decisions'); setTab('insights'); return true; }
       if (a.type === 'open' && a.screen === 'roundtable') { setInsightsSeg('team'); setTab('insights'); return true; }
+      if (a.type === 'open' && a.screen === 'diet') { setTab('nutrition'); return false; }   // Fuel owns the Diet screen: it takes the action when it mounts
       if (a.type === 'close') return true;      // App owns no full-screen; the screen that has one listens too. Handled so it is not queued.
       return false;
     });

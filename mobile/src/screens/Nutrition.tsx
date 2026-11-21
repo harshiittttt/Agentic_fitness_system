@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from '../haptics';
@@ -12,6 +12,8 @@ import { setVoiceDay } from '../voiceScreen';
 import { colors, font, gradients } from '../theme';
 import { Card, CountUp, ErrorCard, FadeIn, IconButton, Ring, SectionTitle, Skeleton, Txt, useOnline, useToast } from '../ui';
 import AnimBar from '../ux/f_AnimBar';
+import Diet from './Diet';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const GROUPS = [
   { key: 'breakfast', label: 'Breakfast', icon: 'sunny-outline', color: colors.amber },
@@ -135,8 +137,11 @@ export default function Nutrition() {
   const pickDay = (d: string) => { setSelected(d); setNote(''); loadDay(d); };
 
   // Voice control: "Hey coach, show yesterday's food". Also drains actions queued before this tab mounted.
+  const [dietOpen, setDietOpen] = useState(false);
   const voiceApply = useRef<(a: VoiceAction) => boolean>(() => false);
   voiceApply.current = (a) => {
+    if (a.type === 'open' && a.screen === 'diet') { setDietOpen(true); return true; }
+    if (a.type === 'close' && dietOpen) { setDietOpen(false); return true; }
     if (a.type === 'nutrition_day') {
       if (week.length && !week.some((x: any) => x.day === a.day)) return false;   // not loaded yet or out of range: stay queued
       pickDay(a.day); return true;
@@ -145,9 +150,9 @@ export default function Nutrition() {
     return false;
   };
   useEffect(() => {
-    const mine = (a: VoiceAction) => a.type === 'nutrition_day';
+    const mine = (a: VoiceAction) => a.type === 'nutrition_day' || (a.type === 'open' && a.screen === 'diet');
     const off = onVoiceAction((a) => voiceApply.current(a));
-    const t = setInterval(() => { if (week.length) takePendingVoiceActions(mine).forEach((a) => voiceApply.current(a)); }, 400);
+    const t = setInterval(() => { takePendingVoiceActions(mine).forEach((a) => voiceApply.current(a)); }, 400);
     const stop = setTimeout(() => clearInterval(t), 12000);
     return () => { off(); clearInterval(t); clearTimeout(stop); };
   }, [week.length]);
@@ -314,6 +319,16 @@ export default function Nutrition() {
           <Txt style={{ color: colors.dim, fontFamily: font.semibold, fontSize: 12, letterSpacing: 1.1 }}>{(dayWord || 'Fuel').toUpperCase()}</Txt>
           <Txt style={{ fontFamily: font.black, fontSize: 30, letterSpacing: -0.7 }}>Fuel</Txt>
         </View>
+
+        <Pressable accessibilityRole="button" accessibilityLabel="Open your diet coach" onPress={() => { Haptics.selectionAsync(); setDietOpen(true); }}
+          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 22, backgroundColor: pressed ? 'rgba(198,255,61,0.16)' : 'rgba(198,255,61,0.09)', borderWidth: 1, borderColor: 'rgba(198,255,61,0.32)' })}>
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: colors.lime, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="nutrition" size={24} color="#07080B" /></View>
+          <View style={{ flex: 1 }}>
+            <Txt style={{ fontFamily: font.bold, fontSize: 16 }}>Diet coach</Txt>
+            <Txt style={{ color: colors.dim, fontSize: 13.5, lineHeight: 19 }}>What to eat, how much, meal plans and groceries.</Txt>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.lime} />
+        </Pressable>
 
         {week.length > 0 && <WeekStrip week={week} selected={selected} onSelect={pickDay} />}
 
@@ -521,6 +536,11 @@ export default function Nutrition() {
           </Pressable>
         </View>
       </View>
+      <Modal visible={dietOpen} animationType="slide" onRequestClose={() => setDietOpen(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom']}>
+          {dietOpen && <Diet onClose={() => setDietOpen(false)} onLoggedMeal={() => loadAll(selected)} />}
+        </SafeAreaView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }

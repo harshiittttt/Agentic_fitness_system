@@ -50,7 +50,7 @@ def py_valid(a):
     num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool)
     ok = {
         "navigate": lambda: a.get("tab") in ("today", "coach", "nutrition", "insights", "setup"),
-        "open": lambda: a.get("screen") in ("live", "agenda", "intake", "research", "trace", "knows", "decisions", "roundtable", "scorecard", "review", "server", "push"),
+        "open": lambda: a.get("screen") in ("live", "agenda", "intake", "research", "trace", "knows", "decisions", "roundtable", "scorecard", "review", "server", "push", "diet"),
         "close": lambda: True, "end": lambda: True, "rest_skip": lambda: True,
         "refresh": lambda: all(x in ("today", "nutrition", "plan", "decisions", "profile", "all") for x in a.get("what", [])),
         "nutrition_day": lambda: isinstance(a.get("day"), str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", a["day"]) is not None,
@@ -464,3 +464,43 @@ def test_non_food_had_sentences(client, s, monkeypatch):
 def test_ambient_non_food_had_is_ignored(client):
     j = say(client, "I had a great day at work", ambient=True)
     assert j["intent"] == "ignored" and j["reply"] == "" and meals() == []
+
+
+# ------------------------------------------------------------------ the diet consultant by voice
+def test_open_the_diet_coach(client):
+    for phrase in ("open my diet coach", "open the dietitian", "show me my meal plan", "go to diet plan"):
+        r = say(client, phrase)
+        assert r["intent"] == "navigate", phrase
+        assert {"type": "navigate", "tab": "nutrition"} in r["actions"] and {"type": "open", "screen": "diet"} in r["actions"], phrase
+    assert say(client, "open fuel")["actions"] == [{"type": "navigate", "tab": "nutrition"}]      # plain Fuel is unchanged
+
+
+def test_diet_questions_go_to_the_dietitian_and_plans_open_the_screen(client, monkeypatch):
+    from backend.diet import agent as diet_agent
+    monkeypatch.setenv("GEMINI_API_KEY", "x")
+    seen = []
+
+    def fake_chat(msg):
+        seen.append(msg)
+        return {"reply": "Here is your day. Protein lands near 140 g.", "actions": [], "plan": {"meals": []}, "week": None, "needs": []}
+
+    monkeypatch.setattr(diet_agent, "chat", fake_chat)
+    for q in ("what should I eat after my workout", "give me a meal plan", "how much protein in paneer", "hey coach what should I have for dinner"):
+        r = say(client, q)
+        assert r["intent"] == "diet", q
+        assert r["reply"].startswith("Here is your day")
+        assert {"type": "open", "screen": "diet"} in r["actions"]
+    assert len(seen) == 4
+
+
+def test_logging_food_still_logs_and_does_not_go_to_the_dietitian(client, monkeypatch):
+    from backend.diet import agent as diet_agent
+    monkeypatch.setenv("GEMINI_API_KEY", "x")
+    monkeypatch.setattr(diet_agent, "chat", lambda m: pytest.fail("a food log must not reach the dietitian"))
+    r = say(client, "I ate 4 eggs", screen="nutrition")
+    assert r["intent"] in ("food", "log_food", "meal") or "egg" in r["reply"].lower() or r["expects"] == "food_amount"
+
+
+def test_diet_questions_without_a_key_fall_back_honestly(client):
+    r = say(client, "what should I eat today")
+    assert r["intent"] == "fallback" and r["reply"]

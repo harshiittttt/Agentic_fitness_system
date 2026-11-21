@@ -340,3 +340,20 @@ def test_skip_then_train_the_same_day_trains_the_skipped_day(env, monkeypatch):
     train(day_of(1), 1)                                # changed their mind and trained the skipped day
     sf.sync()
     assert sf.get(day_of(1))["day_name"] == n[1]
+
+
+def test_skip_before_any_session_moves_the_start_and_the_first_session_is_pinned_to_it(env, monkeypatch):
+    """'I already trained legs yesterday': skipping on day one (nothing logged yet) must change today's day, and the session that
+    follows must be recorded as that day, not as day 1."""
+    n = names()
+    set_today(monkeypatch, day_of(0))
+    assert next_name() == n[0]
+    _skip_today("did legs yesterday")
+    assert next_name() == n[1]                         # Today now shows the next day, not the skipped one
+    set_today(monkeypatch, day_of(1))
+    assert next_name() == n[1]                         # and it stays that way tomorrow (the skip is not counted twice)
+    train(day_of(1))
+    sf.sync()
+    assert sf.get(day_of(1))["day_name"] == n[1]
+    set_today(monkeypatch, day_of(2))
+    assert next_name() == n[2]

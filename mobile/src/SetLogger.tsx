@@ -22,7 +22,7 @@ const fmt = (n: number) => String(+n.toFixed(2));
 const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
 
 /** Label, big editable number, −/+ either side. Tap the number to type an exact value. */
-function Dial({ label, unit, value, onChange, step, min, max, decimals }: {
+export function Dial({ label, unit, value, onChange, step, min, max, decimals }: {
   label: string; unit: string; value: number; onChange: (n: number) => void; step: number; min: number; max: number; decimals: boolean;
 }) {
   const [text, setText] = useState(fmt(value));

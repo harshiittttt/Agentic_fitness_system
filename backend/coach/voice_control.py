@@ -26,7 +26,7 @@ from backend.policy.adaptation import has_safety_flag
 from backend.tools import plan_edit as pe
 
 TABS = ("today", "coach", "nutrition", "insights", "setup")
-SCREENS = ("live", "agenda", "intake", "research", "trace", "knows", "decisions", "roundtable", "scorecard", "review", "server", "push")
+SCREENS = ("live", "agenda", "intake", "research", "trace", "knows", "decisions", "roundtable", "scorecard", "review", "server", "push", "diet")
 SETTING_KEYS = ("wake", "vibration", "voice_mode", "persona")
 REFRESH_WHAT = ("today", "nutrition", "plan", "decisions", "profile", "all")
 PEND_TTL = 120.0
@@ -483,6 +483,7 @@ NAV: list[tuple[str, list[dict], str]] = [
     (r"(weekly )?review", [{"type": "open", "screen": "review"}], "Opening your review."),
     (r"live( session)?|(the )?session screen", [{"type": "open", "screen": "live"}], "Opening your live session."),
     (r"profile|settings|setup|set up|preferences|my account|me", [{"type": "navigate", "tab": "setup"}], "Opening your profile and settings."),
+    (r"(diet|nutrition) (coach|consultant|consulting|advisor|adviser|expert|agent|assistant)|dietitian|dietician|nutritionist|(diet|meal|eating|food) plans?|plan my (meals|diet|food)", [{"type": "navigate", "tab": "nutrition"}, {"type": "open", "screen": "diet"}], "Opening your diet coach."),
     (r"fuel|food|nutrition|meals?|diet|macros|calories|what i ate|eating|food log", [{"type": "navigate", "tab": "nutrition"}], "Opening Fuel."),
     (r"progress|insights?|stats|statistics|charts?|graphs?|trends?|numbers|lifts?|my gains", [{"type": "navigate", "tab": "insights"}, {"type": "insights_segment", "seg": "trends"}], "Opening your progress."),
     (r"coach( chat)?|chat|talk to (the )?coach|messages", [{"type": "navigate", "tab": "coach"}], "Opening the coach chat."),
@@ -875,6 +876,32 @@ def _cards(trace):
         return []
 
 
+# ------------------------------------------------------------------ diet questions go to the dietitian, not the general router
+DIET_Q_RE = re.compile(
+    r"\b(?:meal plan|diet plan|diet chart|food plan|grocery list|dietitian|dietician|nutritionist)\b"
+    r"|^(?:what|which|how much|how many|should i|can i|is it ok(?:ay)? to|give me|suggest|tell me|any|plan)\b.{0,60}\b(?:eat|eating|food|foods|protein|carbs?|calories|meals?|snacks?|breakfast|lunch|dinner|diet|paneer|chicken|eggs?|dal|rice|roti|whey|sabzi|veg|non.?veg)\b"
+    r"|\bwhat (?:should|can|do) i (?:eat|have)\b|\b(?:high|more|good) protein (?:foods?|snacks?|meals?|options?|ideas?)\b")
+
+
+def _diet(text: str, low: str) -> dict | None:
+    """'what should I eat after the gym', 'give me a meal plan', 'how much paneer for 40 g protein': the diet consultant answers (it has the targets,
+    the saved preferences and the planner), and plans open on the Diet screen."""
+    if not DIET_Q_RE.search(low) or not have_key():
+        return None
+    if re.search(r"do i need|evidence|stud(?:y|ies)|research|science|myth|is it true|safe to", low):
+        return None                      # an evidence question: the router has the ask_evidence tool for those
+    try:
+        from backend.diet import agent as diet_agent
+        r = diet_agent.chat(text)
+    except Exception:
+        return None
+    reply = (r.get("reply") or "").strip()
+    if not reply:
+        return None
+    acts = [{"type": "navigate", "tab": "nutrition"}, {"type": "open", "screen": "diet"}] if (r.get("plan") or r.get("week")) else []
+    return _out("diet", reply, actions=acts, expects="answer" if reply.rstrip().endswith("?") else None, cards=r.get("actions") or [])
+
+
 # ------------------------------------------------------------------ entry point
 def handle(transcript: str, screen: str = "unknown", day: str | None = None, ambient: bool = False, followup: bool = False) -> dict:
     screen = screen if screen in ("today", "coach", "nutrition", "insights", "setup", "live") else "unknown"
@@ -954,5 +981,10 @@ def handle(transcript: str, screen: str = "unknown", day: str | None = None, amb
         return out
     if res.get("intent") == "ignored":
         return _out("ignored", "")
-    # 3/4. the LLM router, or an honest offline answer
+    # 3. diet questions: the diet consultant
+    if clear_cmd:
+        d = _diet(body, low)
+        if d:
+            return d
+    # 4. the LLM router, or an honest offline answer
     return _router(body, screen, ambient, addressed)

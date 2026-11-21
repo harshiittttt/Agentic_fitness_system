@@ -12,6 +12,7 @@ import { PERSONAS, PersonaId, personaById } from '../personas';
 import { hasVoiceFor, speak } from '../tts';
 import { onVoiceAction, takePendingVoiceActions, VoiceAction } from '../voiceBus';
 import { setWakeEnabled } from '../wakeSettings';
+import HandsFree from '../HandsFree';
 import { VoiceMode, getVoiceMode, loadVoiceSettings, setRecognitionLang, setVoiceMode } from '../voiceSettings';
 import { colors, font } from '../theme';
 import { Bar, Card, FadeIn, GradientButton, SectionTitle, Segmented, Skeleton, Txt, useOnline } from '../ui';
@@ -454,6 +455,7 @@ export default function Profile({ onReset }: { onReset?: () => void }) {
                 <Row icon={pers.icon} color={pers.color} title="Your coach" value={`${pers.name} · ${pers.short}`} onPress={() => setSheet('coach')} />
                 <Row icon="volume-high" color={colors.cyan} title="Coach voice" value={VOICE_LABEL[vMode]} onPress={() => setSheet('voice')} />
               </Group>
+              <HandsFree />
             </FadeIn>
 
             <FadeIn delay={260}>

@@ -203,7 +203,10 @@ export const getCoach = () => fetch(`${API}/coach`).then((r) => r.json());
 export const setCoachSettings = (body: { persona?: string; name?: string }) => post('/coach', body);
 export const getLiveState = () => fetch(`${API}/live/state`).then((r) => (r.ok ? r.json() : null));
 export const liveStart = () => post('/live/start', {});
-export const liveSay = (transcript: string, ambient: boolean) => post('/live/say', { transcript, ambient });
+export const liveSay = (transcript: string, ambient: boolean, fast = false) => post('/live/say', { transcript, ambient, fast });
+/** One set from the workout screen's dials. Answers at once (instant coach line); the exercise defaults to the one the session is on. */
+export const liveLog = (weight: number, reps: number, opts: { exercise?: string; rpe?: number | null } = {}) =>
+  post('/live/log', { weight, reps, ...(opts.exercise ? { exercise: opts.exercise } : {}), ...(opts.rpe != null ? { rpe: opts.rpe } : {}) });
 export const liveCue = (event: string) => post('/live/cue', { event });
 export const liveEnd = () => post('/live/end', {});
 export const getTtsStatus = (probe = false) => fetch(`${API}/tts/status${probe ? '?probe=true' : ''}`).then((r) => r.json());
@@ -372,3 +375,26 @@ export const previewMeal = async (text: string, day?: string): Promise<{ items: 
 export type VoiceCommandResult = { reply: string; intent?: string; actions?: any[]; expects?: null | 'set_details' | 'food_amount' | 'confirm' | 'answer'; moment?: boolean; pr?: boolean; state?: any; saved?: any };
 export const voiceCommand = (transcript: string, screen: string, day: string | null, followup: boolean): Promise<VoiceCommandResult> =>
   post('/voice/command', { transcript, screen, day, ambient: false, followup });
+
+// ---- diet consultant ----
+export type DietItem = { food: string; grams: number; label: string; kcal: number; protein: number; carbs: number; fat: number };
+export type DietMeal = { slot: string; title: string; items: DietItem[]; totals: { kcal: number; protein: number; carbs: number; fat: number }; target: { kcal: number; protein: number } };
+export type DietDay = { meals: DietMeal[]; totals: { kcal: number; protein: number; carbs: number; fat: number }; target: { kcal: number | null; protein: number | null; carbs: number | null; fat: number | null };
+  delta: { kcal: number; protein: number }; notes: string[]; diet_type?: string; variation?: number };
+export type DietPrefs = { diet_type: 'veg' | 'egg' | 'nonveg'; meals_per_day: number; dislikes: string[]; allergies: string[]; budget: string; notes: string; saved: boolean; diet_type_known: boolean; meals_known: boolean };
+export type GroceryItem = { food: string; grams: number; buy: string };
+export type DietReply = { reply: string; actions: CoachAction[]; plan: DietDay | null; week: DietDay[] | null; grocery: GroceryItem[] | null; prefs: DietPrefs | null; needs: string[] };
+export type DietState = { prefs: DietPrefs; needs: string[]; plan: DietDay | null; history: { role: 'user' | 'assistant'; text: string; ts: string }[]; targets: { kcal: number; protein: number; carbs: number; fat: number } | null };
+export const getDietState = (): Promise<DietState> => fetchTimeout(`${API}/diet/state`, 12000).then(async (r) => { if (!r.ok) throw await apiError(r, 'diet'); return r.json(); });
+export const dietChat = async (message: string): Promise<DietReply> => {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 60000);
+  try {
+    const r = await fetch(`${API}/diet/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message }), signal: ctl.signal });
+    if (!r.ok) throw await apiError(r, 'diet chat');
+    return r.json();
+  } catch (e: any) { if (e?.name === 'AbortError') throw new Error('The dietitian took too long. Try again.'); throw e; } finally { clearTimeout(t); }
+};
+export const saveDietPrefs = (p: { diet_type?: DietPrefs['diet_type']; meals_per_day?: number; budget?: string; dislikes?: string[]; allergies?: string[] }): Promise<DietPrefs> => post('/diet/prefs', p);
+export const getDietPlan = (variation = 0): Promise<DietDay> => fetchTimeout(`${API}/diet/plan?variation=${variation}`, 12000).then(async (r) => { if (!r.ok) throw await apiError(r, 'diet plan'); return r.json(); });
+export const getDietWeek = (): Promise<{ days: DietDay[]; grocery: GroceryItem[] }> => fetchTimeout(`${API}/diet/week`, 15000).then(async (r) => { if (!r.ok) throw await apiError(r, 'diet week'); return r.json(); });
+export const dietSwap = (slot: string, food: string, replacement?: string): Promise<DietDay> => post('/diet/swap', { slot, food, ...(replacement ? { replacement } : {}) });

@@ -274,3 +274,45 @@ def test_anything_the_rules_cannot_fully_explain_still_goes_to_the_model(monkeyp
     for t in ["squat 100 for 5 then 3 more", "bench 135 lbs for 8", "squat 100 for 5 my knee hurts", "did squats, one oh five for five"]:
         vp.parse_voice_log(t)
     assert len(calls) == 4
+
+
+# ---------------- the workout screen's dials: POST /live/log ----------------
+def test_live_log_saves_the_set_and_answers_at_once(client, monkeypatch):
+    from backend.coach import compose
+    monkeypatch.setattr(compose, "compose", lambda *a, **k: pytest.fail("a button tap must not wait for the composed line"))
+    st = client.get("/live/state").json()
+    first = st["current"]["name"]
+    r = client.post("/live/log", json={"weight": 60, "reps": 8, "rpe": 8})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["intent"] == "set" and body["reply"] and body["saved"][0]["exercise"] == first
+    assert body["state"]["exercises"][0]["done"] == 1
+    assert any(a["type"] == "rest" for a in body["actions"]) or body["state"]["finished"]
+    assert any(s["exercise"] == first and s["weight"] == 60 and s["reps"] == 8 for s in db.get_sets(first, 5))
+
+
+def test_live_log_for_a_chosen_exercise_and_validation(client):
+    st = client.get("/live/state").json()
+    other = st["exercises"][1]["name"]
+    r = client.post("/live/log", json={"exercise": other, "weight": 40, "reps": 10})
+    assert r.json()["saved"][0]["exercise"] == other
+    assert client.post("/live/log", json={"weight": 40, "reps": 0}).status_code == 422
+    assert client.post("/live/log", json={"weight": -5, "reps": 5}).status_code == 422
+
+
+def test_live_say_fast_skips_the_composer(client, monkeypatch):
+    from backend.coach import compose
+    monkeypatch.setattr(compose, "compose", lambda *a, **k: pytest.fail("fast must not compose"))
+    r = client.post("/live/say", json={"transcript": "skip this exercise", "fast": True}).json()
+    assert r["intent"] == "skip" and r["reply"]
+
+
+def test_skip_by_name_skips_that_exercise_not_the_current_one(client):
+    st = client.get("/live/state").json()
+    cur, other = st["exercises"][0]["name"], st["exercises"][2]["name"]
+    r = client.post("/live/say", json={"transcript": f"skip {other}", "fast": True}).json()
+    assert r["intent"] == "skip"
+    after = client.get("/live/state").json()
+    assert next(e for e in after["exercises"] if e["name"] == other)["skipped"] is True
+    assert next(e for e in after["exercises"] if e["name"] == cur)["skipped"] is False
+    assert after["current"]["name"] == cur

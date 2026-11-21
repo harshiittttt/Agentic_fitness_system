@@ -139,7 +139,7 @@ def sync(plan: dict | None = None) -> None:
             idx = name = exs = None
             if in_rotation:
                 if legacy:
-                    idx = n_rot % total
+                    idx = (n_rot + _skips_between(plan, last["label"] if last else None, lab)) % total
                 else:
                     resolved = resolve(last, plan) if last else None
                     idx = ((resolved + 1 + _skips_between(plan, last["label"], lab)) % total) if resolved is not None else 0
@@ -201,7 +201,7 @@ def rotation_index(plan: dict) -> int:
     sync(plan)
     last = _last_rotation_row()
     if not last:
-        return 0
+        return _skips_between(plan, None) % total     # nothing trained yet: each skipped day (e.g. "I already did legs yesterday") still moves the start on
     idx = resolve(last, plan)
     if idx is not None:
         name, exs, n = _day_snapshot(plan, idx)

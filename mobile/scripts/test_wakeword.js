@@ -105,3 +105,11 @@ assert.ok(!t.followingUp(100));
 assert.ok(wakePhrases('Max').includes('hey max') && wakePhrases('Max').includes('हे कोच'));
 
 console.log('wake word tests passed');
+
+// v0.3: more mishearings of the greeting / target
+assert.ok(matchWake('eh coach').hit);
+assert.ok(matchWake('hai coach squat 100').hit);
+assert.ok(matchWake('हय कोच').hit);
+assert.ok(matchWake('ए कोच bench').hit);
+assert.ok(!matchWake('my coach said hey coach is lazy').hit);
+console.log('wakeword v0.3 additions ok');

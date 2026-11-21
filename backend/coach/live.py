@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import re
+import threading
 import time
 from collections import Counter
 
@@ -142,10 +143,17 @@ def _brief(st: dict | None) -> str:
     return f"{st['day']}: {where}{st['remaining_sets']} sets left overall"
 
 
+_mode = threading.local()   # fast=True: a tap on a button, so the template line is returned at once instead of waiting seconds for the composed one
+
+
+def _fast() -> bool:
+    return bool(getattr(_mode, "fast", False))
+
+
 def _result(intent: str, reply: str, **extra) -> dict:
     st = session_state()
     beats = compose.take()
-    if reply and beats and intent not in compose.SAFETY_INTENTS:
+    if reply and beats and intent not in compose.SAFETY_INTENTS and not _fast():
         pid, name = _ctx()
         composed = compose.compose(pid, name, intent, getattr(compose._local, "said", ""), beats, _brief(st))
         if composed:
@@ -417,7 +425,42 @@ def _addressed(low: str, coach_name: str) -> bool:
     return coach_name.lower() in low or bool(QUESTION_RE.match(low))
 
 
-def handle(transcript: str, ambient: bool = False, allow_chat: bool = True) -> dict:
+def log_set(exercise: str | None, weight: float, reps: int, rpe: float | None = None, sets: int = 1) -> dict:
+    """A set entered with the dials on the workout screen: structured, nothing is parsed from speech, and the answer comes back at once
+    (template line; the spoken, composed version is for talking). Same result shape as handle(): reply, state, rest action, pr, safety_flag."""
+    _mode.fast = True
+    try:
+        compose.begin()
+        _pending_clear()
+        pid, name = _ctx()
+        st = session_state()
+        if not st:
+            return _result("noop", _pick(pid, name, "no_plan"))
+        cur = st["current"]
+        exn = ex.resolve_exercise(exercise, _plan_names()) if exercise else (cur["name"] if cur else None)
+        if not exn:
+            return _result("noop", _pick(pid, name, "all_done"))
+        row = {"exercise": exn, "weight": float(weight or 0.0), "reps": int(reps)}
+        if rpe is not None:
+            row["rpe"] = float(rpe)
+        n = max(1, min(int(sets or 1), 10))
+        shown = f"{exn} {fmt(row['weight'])} for {row['reps']}"
+        return _log_sets(shown, pid, name, parsed={"sets": [dict(row) for _ in range(n)], "safety_note": ""})
+    finally:
+        _mode.fast = False
+
+
+def handle(transcript: str, ambient: bool = False, allow_chat: bool = True, fast: bool = False) -> dict:
+    if fast:     # a button ("skip this", "what's next"): same logic, instant template line
+        _mode.fast = True
+        try:
+            return handle(transcript, ambient, allow_chat, False)
+        finally:
+            _mode.fast = False
+    return _handle(transcript, ambient, allow_chat)
+
+
+def _handle(transcript: str, ambient: bool = False, allow_chat: bool = True) -> dict:
     """allow_chat=False (the universal voice layer): never call the model; unrecognised talk returns intent 'fallback' with an empty reply.
     ambient=True: the mic is always on. Sets, commands and pain are always handled;
     open chat only happens when the lifter addresses the coach, so gym chatter is ignored."""
@@ -462,8 +505,10 @@ def handle(transcript: str, ambient: bool = False, allow_chat: bool = True) -> d
 
     if SKIP_RE.search(low) and not MINUTES_RE.search(low):
         st = session_state()
+        named = set_slots.find_exercise(norm, _plan_names())     # "skip bench press" skips that one; plain "skip this" skips the current one
+        target = next((r for r in st["exercises"] if r["name"] == named and not r["skipped"] and r["done"] < r["sets"]), None) if named else None
         if st["current"]:
-            skipped = st["current"]["name"]
+            skipped = target["name"] if target else st["current"]["name"]
             db.add_memory("skip", f"{session_flow.current_label()}|{skipped}")
             try:                           # repeated skips of one exercise become a low-confidence "you may dislike this" belief
                 from fitness_os.mem import ingest

@@ -12,9 +12,9 @@
 
 export type WakeMatch = { hit: boolean; command: string };
 
-const GREET = new Set(['hey', 'hay', 'hi', 'hii', 'ok', 'okay', 'o.k', 'hello', 'hallo', 'yo', 'he', 'hei', 'हे', 'हेलो', 'हैलो', 'हेल्लो', 'ओके', 'हाय', 'हेए']);
+const GREET = new Set(['hey', 'hay', 'hi', 'hii', 'ok', 'okay', 'o.k', 'hello', 'hallo', 'yo', 'he', 'hei', 'हे', 'हेलो', 'हैलो', 'हेल्लो', 'ओके', 'हाय', 'हेए', 'hey', 'heya', 'heyy', 'hey,', 'eh', 'ay', 'aye', 'hai', 'हय', 'है', 'ए', 'एय', 'अरे', 'ओ']);
 // Always a valid target after a greeting (mishearings of "coach").
-const TARGETS = ['coach', 'couch', 'coaches', 'coatch', 'koach', 'cooch', 'coch', 'कोच', 'कोचे'];
+const TARGETS = ['coach', 'couch', 'coaches', 'coatch', 'koach', 'cooch', 'coch', 'koch', 'kotch', 'cotch', 'coachh', 'कोच', 'कोचे', 'कॉच', 'कोछ', 'कोचू'];
 const WORD = /[A-Za-z0-9'ऀ-ॿ]+/g;
 const BREAK = /[.,!?;:—–।…]/;   // punctuation (incl. the Hindi danda) = a pause
 
