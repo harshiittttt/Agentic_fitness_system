@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { getRecognitionLang } from './voiceSettings';
 import { acquireMic, micOwner, releaseMic } from './micLock';
+import { dlog } from './diag';
 
 /** On-device speech-to-text. Falls back gracefully (typed input) if the native
  *  module is unavailable, e.g. in plain Expo Go. */
@@ -37,12 +38,13 @@ export function useVoice(onFinal: (text: string) => void, onError?: (msg: string
 
   const clearFailsafe = () => { if (failsafe.current) { clearTimeout(failsafe.current); failsafe.current = null; } };
   const done = () => { clearFailsafe(); mine.current = false; if (held.current) { held.current = false; releaseMic('ui'); } setListening(false); };
-  const fail = (msg: string) => { if (!msg) return; setError(msg); try { cb.current.onError?.(msg); } catch { /* ignore */ } };
+  const fail = (msg: string) => { dlog('voice_fail', msg); if (!msg) return; setError(msg); try { cb.current.onError?.(msg); } catch { /* ignore */ } };
   useEffect(() => () => { clearFailsafe(); mine.current = false; if (held.current) { held.current = false; releaseMic('ui'); } }, []);
 
   const begin = () => {
     gotText.current = false;
     mine.current = true;
+    dlog('voice_begin', { lang: getRecognitionLang() });
     SR.ExpoSpeechRecognitionModule.start({ lang: getRecognitionLang(), interimResults: false });
     // never stay 'listening' forever if the native side goes silent
     clearFailsafe();
@@ -51,7 +53,7 @@ export function useVoice(onFinal: (text: string) => void, onError?: (msg: string
 
   if (available) {
     SR.useSpeechRecognitionEvent?.('result', (e: any) => {
-      if (mine.current && e.isFinal && e.results?.[0]?.transcript) { gotText.current = true; cb.current.onFinal(e.results[0].transcript); }
+      if (mine.current && e.isFinal && e.results?.[0]?.transcript) { dlog('voice_final', String(e.results[0].transcript).slice(0, 60)); gotText.current = true; cb.current.onFinal(e.results[0].transcript); }
     });
     SR.useSpeechRecognitionEvent?.('end', () => {
       if (!mine.current) return;
@@ -61,6 +63,7 @@ export function useVoice(onFinal: (text: string) => void, onError?: (msg: string
     });
     SR.useSpeechRecognitionEvent?.('error', (e: any) => {
       if (!mine.current) return;
+      dlog('voice_error', { code: e?.error, msg: String(e?.message ?? '').slice(0, 80) });
       const busy = String(e?.error || '').toLowerCase() === 'busy' || String(e?.message || '').toLowerCase().includes('busy');
       if (busy && !retried.current) {   // the wake listener may still be winding down: wait and try once more
         retried.current = true;

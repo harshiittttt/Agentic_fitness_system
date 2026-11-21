@@ -10,6 +10,7 @@ import { setRecognitionLang, shouldUsePremium } from '../voiceSettings';
 import { useVoice } from '../useVoice';
 import { Dial } from '../SetLogger';
 import SwapSheet from '../SwapSheet';
+import { dlog } from '../diag';
 import { colors, font, gradients } from '../theme';
 import { Card, Confetti, Orb, Ring, Txt } from '../ui';
 import WorkoutSummary from '../ux/WorkoutSummary';
@@ -132,6 +133,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const logIt = async () => {
     if (!active || logging) return;
     setLogging(true); setProblem(''); setNote('');
+    dlog('live_log', { active, weight, reps, rpe });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const r = await liveLog(weight, reps, { exercise: active, rpe });
@@ -140,7 +142,8 @@ export default function Live({ onClose }: { onClose: () => void }) {
       apply(r);
       if (r.next_set && !r.state?.finished && (!done || done.done < done.sets)) { setWeight(+r.next_set.weight); setReps(r.next_set.reps); }
       setRpe(null);
-    } catch {
+    } catch (e: any) {
+      dlog('live_log_fail', String(e?.message ?? e).slice(0, 100));
       setProblem("Couldn't reach your coach, so that set was NOT saved. Check your connection and tap Log again.");
     }
     setLogging(false);
@@ -150,6 +153,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const send = useCallback(async (text: string, ambient: boolean, fast = false): Promise<boolean> => {
     if (!text.trim()) return true;
     setHeard(text); setPhase('thinking'); setProblem('');
+    dlog('live_say', { fast, ambient, text: text.slice(0, 60) });
     try { apply(await liveSay(text, ambient, fast)); if (fast) setSelected(null); return true; }
     catch { setPhase('idle'); setProblem("Couldn't reach your coach. Nothing was lost. Check your connection and try again."); return false; }
   }, [apply]);
@@ -159,17 +163,19 @@ export default function Live({ onClose }: { onClose: () => void }) {
 
   const open = useCallback(async () => {
     setProblem(''); setOpening(true);
+    dlog('live_open');
     try {
       const c = await getCoach();
       setCoachName(c.coach_name); setPersona(c.persona); personaRef.current = c.persona; tts.current = c.tts ?? tts.current; setRecognitionLang(c.tts?.lang);
       apply(await liveStart());
-    } catch { setProblem("Can't reach your coach. Check your connection, then try again."); }
+    } catch (e: any) { dlog('live_open_fail', String(e?.message ?? e).slice(0, 100)); setProblem("Can't reach your coach. Check your connection, then try again."); }
     setOpening(false);
   }, [apply]);
   useEffect(() => {
     alive.current = true;
+    dlog('live_mount');
     open();
-    return () => { alive.current = false; token.current++; stopSpeaking(); stopListenRef.current(); if (tick.current) clearInterval(tick.current); };
+    return () => { dlog('live_unmount'); alive.current = false; token.current++; stopSpeaking(); stopListenRef.current(); if (tick.current) clearInterval(tick.current); };
   }, []);
 
   // Rest finished: the coach calls you back in.

@@ -169,3 +169,23 @@ def test_eating_disorder_language_gets_the_fixed_serious_answer_not_the_model(en
     monkeypatch.setattr(agent, "run_agent", lambda *a, **k: pytest.fail("the model must not answer this"))
     r = agent.chat("I want to starve myself and eat nothing for a week")
     assert r["reply"]
+
+
+# ------------------------------------------------------------------ the phone's black-box recorder
+def test_diag_log_accepts_events_and_is_bounded(env):
+    with TestClient(app) as c:
+        r = c.post("/diag/log", json={"app": "0.3.1", "events": [{"t": 1, "kind": "talk_start", "data": {"lang": "hi-IN"}}, {"t": 2, "kind": "js_error", "data": "x" * 5000}]})
+        assert r.status_code == 200 and r.json()["n"] == 2
+        recent = c.get("/diag/recent?limit=5").json()
+        assert recent[-1]["kind"] == "js_error" and len(recent[-1]["data"]) <= 300
+        assert c.post("/diag/log", json={"events": [{"kind": "k"}] * 101}).status_code == 422
+
+
+def test_nonveg_and_egg_plans_actually_contain_chicken_and_eggs():
+    for dt, wanted in (("nonveg", {"chicken breast", "egg"}), ("egg", {"egg"})):
+        w = planner.plan_week(T, {"diet_type": dt, "meals_per_day": 3})
+        for d in w["days"][:2]:                                 # the first days (variation 0 and 1) lean on the foods they eat
+            foods = {i["food"] for m in d["meals"] for i in m["items"]}
+            assert foods & wanted, (dt, foods)
+        day0 = {i["food"] for m in w["days"][0]["meals"] if m["slot"] in ("Lunch", "Dinner") for i in m["items"]}
+        assert day0 & wanted, (dt, day0)

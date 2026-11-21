@@ -266,9 +266,14 @@ def plan_day(targets: dict, prefs: dict | None = None, variation: int = 0) -> di
             notes.append(f"No {slot.lower()} option fits your allergies; skipped.")
             continue
         k_t, p_t = targets["kcal"] * ks, targets["protein"] * ps
-        built = [_meal(slot, t, c, k_t, p_t) for t, _, c in opts]
+        built = [(_RANK[kind], _meal(slot, t, c, k_t, p_t)) for t, kind, c in opts]
         err = lambda m: abs(m["totals"]["kcal"] - k_t) / max(k_t, 1) + 0.8 * abs(m["totals"]["protein"] - p_t) / max(p_t, 1)
-        good = [m for m in built if err(m) <= 0.16] or sorted(built, key=err)[:2]     # variety only among options that actually fit this slot
+        good = [(r, m) for r, m in built if err(m) <= 0.16] or sorted(built, key=lambda x: err(x[1]))[:2]     # variety only among options that actually fit this slot
+        mine = _RANK[prefs["diet_type"]]
+        if mine > 0 and variation % 3 != 2:                 # someone who eats eggs / chicken gets them most days, not a paneer plan with the odd egg
+            top = [(r, m) for r, m in good if r == mine] or [(r, m) for r, m in good if r > 0]
+            good = top or good
+        good = [m for _, m in good]
         meals.append(good[(variation + i) % len(good)])
     short = targets["kcal"] - sum(m["totals"]["kcal"] for m in meals)
     if short > 0.08 * targets["kcal"] and short > 200:      # big appetites: believable portions fall short on energy, so add a real shake

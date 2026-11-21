@@ -20,6 +20,7 @@ import ServerForm from './src/screens/ServerForm';
 import { loadHaptics } from './src/haptics';
 import WakeCoach from './src/WakeCoach';
 import { getTalkState, onTalkState, toggleTalk, TalkState } from './src/voiceTalk';
+import { dlog, installCrashLog } from './src/diag';
 import { onVoiceAction } from './src/voiceBus';
 import { setVoiceTab } from './src/voiceScreen';
 import { loadVoiceSettings, setRecognitionLang } from './src/voiceSettings';
@@ -54,7 +55,7 @@ function TalkButton() {
   const label = t.phase === 'idle' ? 'Talk to your coach' : t.phase === 'speaking' ? 'Stop the coach talking' : t.phase === 'thinking' ? 'Cancel' : 'Stop listening';
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label}
-      onPress={() => { if (!toggleTalk()) toast('Voice needs the installed app, not Expo Go. Type to your coach instead.', { tone: 'warn' }); }}
+      onPress={() => { const ok = toggleTalk(); dlog('talk_button', { ok, phase: t.phase }); if (!ok) toast('Voice needs the installed app, not Expo Go. Type to your coach instead.', { tone: 'warn' }); }}
       style={({ pressed }) => ({ width: 64, height: 64, marginLeft: 10, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', transform: [{ scale: pressed ? 0.94 : 1 }] })}>
       <Animated.View style={{ position: 'absolute', width: 64, height: 64, borderRadius: 32, backgroundColor: tint, opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0, 0.35] }), transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.25] }) }] }} />
       <View style={{ width: 58, height: 58, borderRadius: 29, alignItems: 'center', justifyContent: 'center', backgroundColor: hot ? tint : colors.lime, shadowColor: tint, shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 10 }}>
@@ -131,7 +132,7 @@ export default function App() {
   }, []);
   // Any 401 from the server (wrong or missing access key) opens the connect screen with a plain message.
   useEffect(() => onAuthFailure(() => { authFailed.current = true; setNotice(AUTH_HELP); setGate('connect'); }), []);
-  useEffect(() => { loadHaptics(); loadVoiceSettings(); check(); }, [check]);
+  useEffect(() => { installCrashLog(); loadHaptics(); loadVoiceSettings(); check(); }, [check]);
   // A red badge on Insights when an agent is waiting for the athlete's OK (polled; cheap, and silent on failure).
   useEffect(() => {
     if (gate !== 'ready') return;

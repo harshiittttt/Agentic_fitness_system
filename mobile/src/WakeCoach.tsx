@@ -26,6 +26,7 @@ import { createWakeTracker, matchWake, wakeNames, wakePhrases } from './wakeWord
 import { getWakeState, loadWakeSetting, onWakeState, patchDiag, patchWakeState } from './wakeSettings';
 import { getTalkState, onTalkState, registerTalk, setTalkState, TalkState } from './voiceTalk';
 import { voiceErrorMessage } from './useVoice';
+import { dlog } from './diag';
 import { colors, font } from './theme';
 import { Txt } from './ui';
 
@@ -156,6 +157,7 @@ export default function WakeCoach() {
         contextualStrings: wakePhrases(coachName.current),
       });
       patchDiag({ sessions: getWakeState().diag.sessions + 1 });
+      if (getWakeState().diag.sessions <= 3) dlog('wake_session', { onDevice, lang });
       status();
     } catch (e: any) {
       running.current = false; if (micOwner() === 'wake') releaseMic('wake');
@@ -186,6 +188,7 @@ export default function WakeCoach() {
   const handleCommand = useCallback(async (command: string, followup = false) => {
     if (busy.current) return;
     busy.current = true; setTalkState({ phase: 'thinking', heard: command, note: '', error: false }); showBubble('');
+    dlog('cmd_send', { followup, screen: getVoiceScreen(), text: command.slice(0, 80) });
     stopRun();
     let expects: string | null = null;
     try {
@@ -197,6 +200,7 @@ export default function WakeCoach() {
         else throw e;
       }
       const reply: string = r?.reply ?? '';
+      dlog('cmd_reply', { intent: r?.intent, acts: (r?.actions ?? []).length, expects: r?.expects, reply: reply.slice(0, 80) });
       const acts = (Array.isArray(r?.actions) ? r.actions : []).map(parseAction).filter(Boolean) as VoiceAction[];
       if (acts.length) { try { emitVoiceActions(r.actions); } catch { /* a UI listener bug must not stop the reply */ } }
       const did = describeActions(acts);
@@ -212,6 +216,7 @@ export default function WakeCoach() {
       else showBubble("I didn't catch a command in that. Tap the mic and try again.");
     } catch (e) {
       expects = null;
+      dlog('cmd_error', String((e as any)?.message ?? e).slice(0, 120));
       const m = e instanceof ApiError && e.status !== 404 && e.message ? e.message : "Couldn't reach your coach. Check the connection and try again.";
       showError(m);
     }
@@ -237,6 +242,7 @@ export default function WakeCoach() {
     if (talkSent.current) return;
     const text = talkText.current.trim();
     const follow = talkFollow.current;
+    dlog('talk_finish', { why, errCode, chars: text.length, text: text.slice(0, 80) });
     talkSent.current = true;
     endTalk(false);
     if (text) { setTalkState({ heard: text }); handleCommand(text, follow); return; }
@@ -260,6 +266,7 @@ export default function WakeCoach() {
       }
     } catch { showError("Couldn't ask for microphone permission."); return; }
     const wakeWasRunning = running.current;
+    dlog('talk_start', { followup, lang: getRecognitionLang(), wake: wakeWasRunning, owner: micOwner(), perm: perm.current });
     talking.current = true; talkSent.current = false; talkText.current = ''; talkFollow.current = followup;
     acquireMic('ui');                                              // takes the mic from the wake listener (reconcile stops it)
     if (running.current) stopRun();
@@ -269,8 +276,8 @@ export default function WakeCoach() {
     if (!talking.current) return;
     try {
       MOD.start({ lang: getRecognitionLang(), interimResults: true, continuous: false, addsPunctuation: false, maxAlternatives: 1 });
-    } catch (e: any) { endTalk(true); setTalkState({ phase: 'idle' }); showError(voiceErrorMessage(e?.code || e?.error, e?.message) || "Couldn't start the microphone."); reconcile(); return; }
-    talkLive.current = true; talkStartedAt.current = Date.now();
+    } catch (e: any) { dlog('talk_start_throw', { code: e?.code, msg: String(e?.message ?? e).slice(0, 120) }); endTalk(true); setTalkState({ phase: 'idle' }); showError(voiceErrorMessage(e?.code || e?.error, e?.message) || "Couldn't start the microphone."); reconcile(); return; }
+    talkLive.current = true; talkStartedAt.current = Date.now(); dlog('talk_listening');
     talkT.current = setTimeout(() => finishTalk('timeout'), followup ? 9000 : TALK_MAX_MS);
   }, [endTalk, finishTalk, reconcile, status, stopRun]);
   startTalkRef.current = (f) => { startTalk(!!f); };
@@ -308,6 +315,7 @@ export default function WakeCoach() {
         if (!t) return;
         if (talking.current) {                                   // a tap-to-talk turn: show the words as they come, send when finished
           if (!talkLive.current) return;
+          if (!talkText.current) dlog('talk_first_words', t.slice(0, 60));
           talkText.current = t; setTalkState({ heard: t });
           if (talkQuiet.current) clearTimeout(talkQuiet.current);
           if (e.isFinal) { finishTalk('final'); return; }
@@ -325,7 +333,8 @@ export default function WakeCoach() {
       }),
       SR.addSpeechRecognitionListener('end', () => {
         if (talking.current) {
-          if (!talkLive.current || (Date.now() - talkStartedAt.current < 500 && !talkText.current)) return;   // the wake session winding down, not ours
+          if (!talkLive.current || (Date.now() - talkStartedAt.current < 500 && !talkText.current)) { dlog('talk_stale_end'); return; }   // the wake session winding down, not ours
+          dlog('talk_end');
           finishTalk('end'); return;
         }
         if (!running.current) return;                            // ours was stopped on purpose (or a stale end from another session)
@@ -337,13 +346,15 @@ export default function WakeCoach() {
       SR.addSpeechRecognitionListener('error', (e: any) => {
         const code = e?.error;
         if (talking.current) {
-          if (!talkLive.current) return;
+          if (!talkLive.current) { dlog('talk_stale_error', code); return; }
+          dlog('talk_error', { code, msg: String(e?.message ?? '').slice(0, 100) });
           if (code === 'not-allowed') { perm.current = 'denied'; status(); }
           if (code === 'no-speech' || code === 'speech-timeout' || code === 'aborted') { finishTalk('end'); return; }
           finishTalk('end', code);
           return;
         }
         patchDiag({ lastError: String(code || e?.message || 'error').slice(0, 60) });
+        dlog('wake_error', code);
         if (code === 'not-allowed') { perm.current = 'denied'; running.current = false; if (micOwner() === 'wake') releaseMic('wake'); status(); showError('Microphone or speech permission was refused. Allow it in your phone settings.'); return; }
         if (code === 'language-not-supported' && onDevicePref.current) { onDevicePref.current = false; }
         if (code === 'no-speech' || code === 'aborted' || code === 'speech-timeout') return;   // normal; 'end' follows

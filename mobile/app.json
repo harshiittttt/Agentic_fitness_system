@@ -2,7 +2,7 @@
   "expo": {
     "name": "AI Coach",
     "slug": "ai-fitness-coach",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "plugins": [
@@ -36,7 +36,7 @@
         "backgroundColor": "#07080B"
       },
       "package": "com.harshiittttt.aicoach",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ]

@@ -48,6 +48,8 @@ from backend.routes_split_consult import router as split_consult_router  # noqa:
 app.include_router(split_consult_router)
 from backend.routes_diet import router as diet_router  # noqa: E402  (the diet consultant: chat, day/week plans, swaps, preferences)
 app.include_router(diet_router)
+from backend.routes_diag import router as diag_router  # noqa: E402  (the phone's black-box recorder: voice events, crashes)
+app.include_router(diag_router)
 from backend.routes_voice import router as voice_router  # noqa: E402  (universal voice commands: food, navigation, settings, workout, tools)
 app.include_router(voice_router)
 
