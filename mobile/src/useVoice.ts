@@ -33,6 +33,7 @@ export function useVoice(onFinal: (text: string) => void, onError?: (msg: string
   const gotText = useRef(false);
   const retried = useRef(false);
   const failsafe = useRef<any>(null);
+  const hints = useRef<string[]>([]);   // words to bias the recognizer toward (exercise names, "warm up", "reps"...)
   const cb = useRef({ onFinal, onError });
   cb.current = { onFinal, onError };
 
@@ -45,7 +46,7 @@ export function useVoice(onFinal: (text: string) => void, onError?: (msg: string
     gotText.current = false;
     mine.current = true;
     dlog('voice_begin', { lang: getRecognitionLang() });
-    SR.ExpoSpeechRecognitionModule.start({ lang: getRecognitionLang(), interimResults: false });
+    SR.ExpoSpeechRecognitionModule.start({ lang: getRecognitionLang(), interimResults: false, ...(hints.current.length ? { contextualStrings: hints.current.slice(0, 80) } : {}) });
     // never stay 'listening' forever if the native side goes silent
     clearFailsafe();
     failsafe.current = setTimeout(() => { if (mine.current) { try { SR.ExpoSpeechRecognitionModule.abort?.(); } catch { /* */ } done(); if (!gotText.current) fail("Didn't hear anything. Tap the mic and try again."); } }, 20000);
@@ -76,8 +77,9 @@ export function useVoice(onFinal: (text: string) => void, onError?: (msg: string
     });
   }
 
-  const start = async () => {
+  const start = async (hintWords?: string[]) => {
     setError(null);
+    hints.current = hintWords ?? [];
     if (!available) { fail('Voice input needs the full app build, not Expo Go. Type it instead.'); return false; }
     try {
       const perm = await SR.ExpoSpeechRecognitionModule.requestPermissionsAsync();

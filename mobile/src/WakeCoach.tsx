@@ -384,7 +384,7 @@ export default function WakeCoach() {
       alive.current = false; unTalk(); unReg(); un(); unMic(); app.remove(); subs.forEach((s) => s.remove());
       clearTimers(); if (bubbleT.current) clearTimeout(bubbleT.current); endTalk(true);
       if (running.current) { running.current = false; try { MOD.abort?.(); } catch { /* ignore */ } }
-      if (micOwner() === 'wake') releaseMic('wake'); stopSpeaking();
+      if (micOwner() === 'wake') releaseMic('wake'); stopSpeaking(); setTalkState({ phase: 'idle', heard: '', note: '', error: false });
     };
   }, []);
 

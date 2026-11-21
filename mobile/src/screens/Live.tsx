@@ -23,6 +23,7 @@ const HOLD = new Set(['plank']);
 const RPE: { v: number; hint: string }[] = [{ v: 6, hint: 'Easy' }, { v: 7, hint: 'Solid' }, { v: 8, hint: 'Hard' }, { v: 9, hint: 'Grind' }, { v: 10, hint: 'Max' }];
 const cap = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 const fmt = (n: number) => String(+n.toFixed(2));
+const GYM_WORDS = ["warm up", "warm-up", "bench press", "set", "reps", "kilos", "kg", "rest", "skip", "next exercise", "what is next", "done", "I did", "ready", "lets go", "finish workout"];
 /** The coach's opening can run to five sentences (a long monologue every time the screen opens): speak and show the first two. */
 const brief = (t: string, n = 2) => { const parts = (t || '').match(/[^.!?]+[.!?]+(\s|$)|[^.!?]+$/g); return parts && parts.length > n ? parts.slice(0, n).join('').trim() : (t || ''); };
 
@@ -160,7 +161,10 @@ export default function Live({ onClose }: { onClose: () => void }) {
     catch { setPhase('idle'); setProblem("Couldn't reach your coach. Nothing was lost. Check your connection and try again."); return false; }
   }, [apply]);
 
-  const voice = useVoice((t) => { const ambient = !manual.current; manual.current = false; send(t, ambient); });
+  const silent = useRef(0);               // hands-free rounds in a row where nothing was heard
+  const voice = useVoice((t) => { silent.current = 0; const ambient = !manual.current; manual.current = false; send(t, ambient); },
+    (m) => { if (/didn't hear/i.test(m)) silent.current += 1; });
+  const hintWords = () => [...GYM_WORDS, ...((state?.exercises ?? []).map((e: any) => e.name))];
   stopListenRef.current = voice.stop;
 
   const open = useCallback(async () => {
@@ -195,7 +199,8 @@ export default function Live({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!handsFree || !voice.available || phase !== 'idle' || voice.listening || ended) return;
     const t = setTimeout(async () => {
-      const ok = await voice.start();
+      if (silent.current >= 3) { silent.current = 0; setHandsFree(false); setNote('Hands-free stopped because it heard nothing for a while. Tap the mic button to talk, or switch hands-free on again.'); return; }
+      const ok = await voice.start(hintWords());
       if (!ok && ++failures.current >= 3) { setHandsFree(false); setProblem('I could not use the microphone, so hands-free is off. Tap the mic to talk, or allow the microphone in your phone settings.'); }
     }, 450);
     return () => clearTimeout(t);
@@ -204,7 +209,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const onMic = async () => {
     if (phase === 'speaking') { token.current++; stopSpeaking(); setPhase('idle'); }
     if (voice.listening) { voice.stop(); return; }
-    if (voice.available) { manual.current = true; await voice.start(); }
+    if (voice.available) { manual.current = true; silent.current = 0; await voice.start(hintWords()); }
   };
   const sendTyped = () => { const t = typed; if (!t.trim()) return; setTyped(''); send(t, false).then((ok) => { if (!ok) setTyped(t); }); };
 
@@ -254,8 +259,9 @@ export default function Live({ onClose }: { onClose: () => void }) {
           <Ionicons name={sound ? 'volume-high' : 'volume-mute'} size={25} color={sound ? accent : colors.faint} />
         </Pressable>
         <Pressable accessibilityRole="switch" accessibilityState={{ checked: handsFree && voice.available }} accessibilityLabel="Hands-free listening" disabled={!voice.available || ended}
-          onPress={() => { Haptics.selectionAsync(); setHandsFree((h) => !h); }} style={{ width: 48, height: 52, alignItems: 'center', justifyContent: 'center', opacity: ended || !voice.available ? 0 : 1 }}>
-          <Ionicons name={handsFree ? 'ear' : 'ear-outline'} size={25} color={handsFree ? accent : colors.faint} />
+          onPress={() => { Haptics.selectionAsync(); silent.current = 0; setHandsFree((h) => !h); }} style={{ minWidth: 64, height: 52, alignItems: 'center', justifyContent: 'center', opacity: ended || !voice.available ? 0 : 1 }}>
+          <Ionicons name={handsFree ? 'ear' : 'ear-outline'} size={22} color={handsFree ? accent : colors.faint} />
+          <Txt style={{ fontSize: 10.5, fontFamily: font.bold, color: handsFree ? accent : colors.faint }}>{handsFree ? 'HANDS-FREE ON' : 'hands-free off'}</Txt>
         </Pressable>
       </View>
 
