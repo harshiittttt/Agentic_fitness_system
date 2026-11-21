@@ -261,6 +261,8 @@ def parse_meal_text(text: str) -> dict:
             if q is not None:
                 consumed.add(base + q.start())
             g, explicit, ambiguous = _qty_grams(q, food, name)
+            if q is None and re.search(r"\b(?:a|an)\s*$", ch[prev_end:m.start()]):
+                explicit = True  # "an egg", "a banana": one, stated
             items.append({"name": name, "grams": round(g), **macros(food, g), "estimated": False, "_explicit": explicit})
             if ambiguous:
                 reasons.add("ambiguous quantity")
@@ -275,7 +277,7 @@ def parse_meal_text(text: str) -> dict:
     if len(items) > 1 and any(not i["_explicit"] for i in items):
         reasons.add("amount missing in multi-item meal")
     for i in items:
-        i.pop("_explicit", None)
+        i["qty_given"] = bool(i.pop("_explicit", False))
     return {"items": items, "unknown": unknown, "low_confidence": bool(reasons), "reasons": sorted(reasons)}
 
 

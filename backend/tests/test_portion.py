@@ -78,3 +78,20 @@ def test_portion_mode_count_vs_weight(client):
     assert rice["mode"] == "weight" and rice["measure"] == "g"
     assert milk["mode"] == "weight" and milk["measure"] == "ml"
     assert unknown["mode"] == "weight"
+
+
+def test_preview_inserts_nothing_and_flags_needs_amount(client):
+    before = len(db.get_meals("2026-01-05"))
+    r = client.post("/meal/preview", json={"text": "eggs and rice", "day": "2026-01-05"}).json()
+    assert len(db.get_meals("2026-01-05")) == before
+    by = {i["name"]: i for i in r["items"]}
+    assert r["needs_amount"] is True and not by["egg"]["qty_given"]
+    assert by["egg"]["mode"] == "count" and by["egg"]["unit"] == "egg" and by["egg"]["unit_g"]
+    assert by["white rice"]["mode"] == "weight" and by["white rice"]["measure"] == "g"
+
+
+def test_preview_all_given_no_amount_needed(client):
+    r = client.post("/meal/preview", json={"text": "4 eggs and 400g rice"}).json()
+    assert r["needs_amount"] is False and [i["grams"] for i in r["items"]][1] == 400
+    assert client.post("/meal/preview", json={"text": "milk"}).json()["items"][0]["measure"] == "ml"
+    assert client.post("/meal/preview", json={"text": "x", "day": "bad"}).status_code == 400

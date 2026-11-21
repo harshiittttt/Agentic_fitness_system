@@ -3,7 +3,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, RefreshCo
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from '../haptics';
-import { deleteMeal, getNutritionDay, getPortionInfo, getRecentMeals, getWeek, logMeal, logPortion, PortionInfo, repeatMeal, restoreMeal, setMealPortion } from '../api';
+import { deleteMeal, getNutritionDay, getPortionInfo, getRecentMeals, getWeek, logMeal, logPortion, MealPreviewItem, PortionInfo, previewMeal, repeatMeal, restoreMeal, setMealPortion } from '../api';
 import PortionSheet, { Macros } from '../PortionSheet';
 import { DAYS, parseIso, shortDate } from '../dates';
 import { useVoice } from '../useVoice';
@@ -114,21 +114,56 @@ export default function Nutrition() {
 
   const pickDay = (d: string) => { setSelected(d); setNote(''); loadDay(d); };
 
-  const submit = useCallback(async (text: string) => {
-    if (!text.trim() || !selected) return;
+  // "How much?" flow: items the user gave no amount for are asked one by one; the rest are kept as parsed.
+  const [ask, setAsk] = useState<{ text: string; items: MealPreviewItem[]; unknown: string[]; missing: number[]; step: number; chosen: Record<number, number> } | null>(null);
+
+  const finishLog = useCallback(async (text: string, unknown: string[], log: () => Promise<void>) => {
     setBusy(true); setNote('');
     try {
       const before = new Set<number>((data?.meals ?? []).map((m: any) => m.id));
-      const r = await logMeal(text, selected);
+      await log();
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      if (r.unknown?.length) setNote(`Couldn't recognise "${r.unknown.join(', ')}". Try a common name, or add grams.`);
+      if (unknown.length) setNote(`Couldn't recognise "${unknown.join(', ')}". Try a common name, or add grams.`);
       else setNote('');
-      setTyped('');
+      setTyped(''); setAsk(null);
       await loadAll(selected);
-      await offerUndoAdd(before, r.unknown?.length ? 'Added the rest' : 'Meal added');
+      await offerUndoAdd(before, unknown.length ? 'Added the rest' : 'Meal added');
     } catch { setNote(online ? 'Something went wrong saving that. Try again.' : "You're offline, so this meal wasn't saved. Your text is still here. Try again when you're back."); }
     setBusy(false);
   }, [selected, loadAll, data, online]);
+
+  const submit = useCallback(async (text: string) => {
+    if (!text.trim() || !selected) return;
+    setBusy(true); setNote('');
+    let pv: Awaited<ReturnType<typeof previewMeal>> | null = null;
+    try { pv = await previewMeal(text, selected); } catch { pv = null; } // older backend or offline: log directly as before
+    setBusy(false);
+    if (pv && pv.needs_amount && pv.items.length) {
+      const missing = pv.items.map((it, i) => (it.qty_given ? -1 : i)).filter((i) => i >= 0);
+      setAsk({ text, items: pv.items, unknown: pv.unknown ?? [], missing, step: 0, chosen: {} });
+      return;
+    }
+    await finishLog(text, pv?.unknown ?? [], async () => {
+      const r = await logMeal(text, selected);
+      if (!pv && r.unknown?.length) setNote(`Couldn't recognise "${r.unknown.join(', ')}". Try a common name, or add grams.`);
+    });
+  }, [selected, finishLog]);
+
+  /** Log every previewed item at its final grams. Known foods go in exact; estimated ones via the text path with the grams embedded. */
+  const confirmAsk = async (chosen: Record<number, number>) => {
+    if (!ask) return;
+    const a = ask;
+    await finishLog(a.text, a.unknown, async () => {
+      for (let i = 0; i < a.items.length; i++) {
+        const it = a.items[i];
+        const g = Math.round(chosen[i] ?? it.grams);
+        if (it.known) {
+          try { await logPortion(it.name, g, selected); continue; } catch { /* fall through to text */ }
+        }
+        await logMeal(`${g}${it.measure} ${it.name}`, selected);
+      }
+    });
+  };
 
   /** After anything that adds meals, find what is new and offer to take it back. */
   const offerUndoAdd = async (before: Set<number>, label: string) => {
@@ -326,6 +361,27 @@ export default function Nutrition() {
             </ScrollView>
           </View>
         )}
+
+        {ask && (() => {
+          const i = ask.missing[ask.step], it = ask.items[i];
+          const last = ask.step === ask.missing.length - 1;
+          const info: PortionInfo = { name: it.name, known: it.known, unit: it.unit, unit_g: it.unit_g, mode: it.mode, measure: it.measure, per100: null };
+          return (
+            <View style={{ gap: 8 }}>
+              <Txt style={{ fontFamily: font.bold, fontSize: 15 }} accessibilityLiveRegion="polite">
+                How much? {ask.missing.length > 1 ? `${ask.step + 1} of ${ask.missing.length}` : ''}
+              </Txt>
+              <PortionSheet key={`${ask.step}-${it.name}`} name={it.name} info={info} baseGrams={it.grams} baseMacros={{ kcal: it.kcal, protein: it.protein, carbs: it.carbs, fat: it.fat }}
+                confirmLabel={last ? 'Add meal' : 'Next'} busy={busy}
+                onConfirm={(g) => { const chosen = { ...ask.chosen, [i]: g }; if (last) confirmAsk(chosen); else setAsk({ ...ask, chosen, step: ask.step + 1 }); }}
+                onCancel={() => setAsk(null)} />
+              <Pressable onPress={() => setAsk(null)} accessibilityRole="button" accessibilityLabel="Cancel, log nothing"
+                style={{ minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
+                <Txt style={{ color: colors.dim, fontFamily: font.semibold, fontSize: 14 }}>Skip, don't log this meal</Txt>
+              </Pressable>
+            </View>
+          );
+        })()}
 
         {sheet && (
           <PortionSheet name={sheet.name} info={sheetInfo} baseGrams={sheet.grams} baseMacros={sheet.macros} confirmLabel="Add" busy={sheetBusy}

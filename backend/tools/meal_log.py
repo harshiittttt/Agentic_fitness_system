@@ -22,6 +22,7 @@ ESTIMATE_TOOL = {
             "type": "object",
             "properties": {"name": {"type": "string"}, "grams": {"type": "number", "description": "grams eaten (liquids: ml)"},
                            "kcal": {"type": "number"}, "protein": {"type": "number"}, "carbs": {"type": "number"}, "fat": {"type": "number"},
+                           "qty_given": {"type": "boolean", "description": "true only if the user stated an amount for this item (a number, 'a/one', a unit); false when you guessed a typical portion"},
                            "matches_db_name": {"type": "string", "description": "exact name from the known-foods list, if it is that food"}},
             "required": ["name", "grams", "kcal", "protein", "carbs", "fat"]}}},
         "required": ["items"],
@@ -51,10 +52,11 @@ def sanitize_item(raw: dict) -> dict | None:
             db_name = hit
             break
     grams = _num(raw.get("grams"), 1, 3000)
+    given = raw.get("qty_given") is True and grams is not None
     if db_name:
         food = FOODS[db_name]
         g = grams if grams is not None else float(food["unit_g"])
-        return {"name": db_name, "grams": round(g), **macros(food, g), "estimated": False}
+        return {"name": db_name, "grams": round(g), **macros(food, g), "estimated": False, "qty_given": given}
     p, c, f = (_num(raw.get(k), 0, 500, 0.0) for k in ("protein", "carbs", "fat"))
     kcal = _num(raw.get("kcal"), 0, 6000)
     calc = 4 * p + 4 * c + 9 * f
@@ -65,7 +67,7 @@ def sanitize_item(raw: dict) -> dict | None:
     if kcal <= 0 and calc <= 0:
         return None
     return {"name": name, "grams": round(grams) if grams is not None else 0, "kcal": round(kcal), "protein": round(p, 1),
-            "carbs": round(c, 1), "fat": round(f, 1), "estimated": True}
+            "carbs": round(c, 1), "fat": round(f, 1), "estimated": True, "qty_given": given}
 
 
 def _llm_parse(text: str) -> list[dict]:
@@ -85,14 +87,20 @@ def _llm_parse(text: str) -> list[dict]:
         ex.shutdown(wait=False)
 
 
-def log_meal(text: str, day: str | None = None) -> dict:
-    day = day or date.today().isoformat()
+def parse_for_log(text: str) -> tuple[list[dict], list]:
+    """Shared by log_meal and /meal/preview: offline parse first, hybrid LLM when unsure. Inserts nothing."""
     parsed = parse_meal_text(normalize(text))
     items, unknown = parsed["items"], parsed["unknown"]
     if parsed.get("low_confidence") or unknown:
         llm = _llm_parse(normalize(text))
         if llm:
             items, unknown = llm, []
+    return items, unknown
+
+
+def log_meal(text: str, day: str | None = None) -> dict:
+    day = day or date.today().isoformat()
+    items, unknown = parse_for_log(text)
     for it in items:
         db.add_meal(day, it["name"], it.get("grams"), it["kcal"], it["protein"], it["carbs"], it["fat"], it.get("estimated", False))
     return {"items": items, "unknown": unknown}

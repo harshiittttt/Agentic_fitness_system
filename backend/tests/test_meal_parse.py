@@ -164,3 +164,36 @@ def test_no_key_never_calls_llm(monkeypatch, tmp_path):
     monkeypatch.setattr(meal_log, "extract_structured", lambda *a, **k: called.append(1) or {"items": []})
     out = meal_log.log_meal("200g quinoa surprise, rajma chawal")
     assert called == [] and out["unknown"]
+
+
+# ---------------- qty_given ----------------
+def _qg(text):
+    return {i["name"]: i["qty_given"] for i in parse_meal_text(text)["items"]}
+
+
+def test_qty_given_bare_vs_stated():
+    assert _qg("eggs") == {"egg": False}
+    assert _qg("rice") == {"white rice": False}
+    assert _qg("some dal") == {"dal": False}
+    assert _qg("a bit of rice") == {"white rice": False}
+    assert _qg("4 eggs") == {"egg": True}
+    assert _qg("400g rice") == {"white rice": True}
+    assert _qg("350 grams rice") == {"white rice": True}
+    assert _qg("an egg") == {"egg": True}
+    assert _qg("one egg") == {"egg": True}
+
+
+def test_qty_given_multi_item():
+    r = _qg("egg and 200g rice")
+    assert r["egg"] is False and r["white rice"] is True
+    r = _qg("3 roti and dal")
+    assert r["roti"] is True and r["dal"] is False
+
+
+def test_qty_given_llm_path(llm):
+    llm.reply = {"items": [
+        {"name": "rajma", "matches_db_name": "rajma", "grams": 200, "kcal": 1, "protein": 1, "carbs": 1, "fat": 1, "qty_given": True},
+        {"name": "steamed rice", "grams": 180, "kcal": 234, "protein": 5, "carbs": 50, "fat": 1}]}
+    out = meal_log.log_meal("rajma chawal")
+    q = {i["name"]: i["qty_given"] for i in out["items"]}
+    assert q["rajma"] is True and q["white rice"] is False

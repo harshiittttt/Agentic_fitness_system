@@ -114,3 +114,26 @@ def meal_portion_log(body: PortionLog):
     m = macros(f, grams)
     mid = db.add_meal(day, n, round(grams), m["kcal"], m["protein"], m["carbs"], m["fat"], False)
     return {"id": mid, "item": db.get_meal(mid)}
+
+
+class MealPreview(BaseModel):
+    text: str
+    day: str | None = None
+
+
+@router.post("/meal/preview")
+def meal_preview(body: MealPreview):
+    """Parse a meal exactly like POST /meal, but insert nothing. Tells the app which items still need an amount."""
+    from backend.tools.meal_log import parse_for_log
+    _valid_day(body.day)
+    items, unknown = parse_for_log(body.text)
+    out = []
+    for it in items:
+        hit = _find_food(it["name"])
+        known = bool(hit) and not it.get("estimated")
+        unit = hit[1]["unit"] if hit else None
+        out.append({**it, "qty_given": bool(it.get("qty_given")),
+                    "mode": portion_mode(hit[0], unit) if hit else "weight", "unit": unit,
+                    "unit_g": hit[1]["unit_g"] if hit else None,
+                    "measure": "ml" if hit and hit[0] in _LIQUIDS else "g", "known": known})
+    return {"items": out, "unknown": unknown, "needs_amount": any(not i["qty_given"] for i in out)}

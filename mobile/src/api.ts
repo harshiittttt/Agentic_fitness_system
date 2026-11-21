@@ -342,3 +342,12 @@ export const setMealPortion = async (id: number, body: { grams: number } | { uni
 };
 /** Log a food by exact grams. Throws ApiError (status 404 = food not in the local DB). */
 export const logPortion = (name: string, grams: number, day?: string): Promise<{ id: number; item: any }> => post('/meal/portion', { name, grams, day });
+
+export type MealPreviewItem = { name: string; grams: number; kcal: number; protein: number; carbs: number; fat: number; estimated: boolean; qty_given: boolean;
+  mode: 'count' | 'weight'; unit: string | null; unit_g: number | null; measure: 'g' | 'ml'; known: boolean };
+/** Parse a meal without logging anything. Throws on failure so the caller can fall back to the direct logMeal. */
+export const previewMeal = async (text: string, day?: string): Promise<{ items: MealPreviewItem[]; unknown: string[]; needs_amount: boolean }> => {
+  const r = await fetch(`${API}/meal/preview`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, day }) });
+  if (!r.ok) throw new Error(`preview ${r.status}`);
+  return r.json();
+};
