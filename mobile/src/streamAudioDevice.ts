@@ -14,8 +14,11 @@ export function makeDevice(): PcmDevice | null {
   let lastNativeError = '';
   return {
     async start(onMic) {
-      const p = await m.requestPermission();
-      if (p && p.granted === false) throw new Error('microphone permission is off');
+      // Only ask when it is not granted yet: asking opens Android's permission screen for a moment even when it IS granted, which took the app out of the
+      // foreground and made it end the voice session (found on the real phone: logcat showed GrantPermissionsActivity at every tap).
+      let p = await m.getPermission();
+      if (!p || p.granted !== true) p = await m.requestPermission();
+      if (!p || p.granted !== true) throw new Error('microphone permission is off');
       micSub = m.addListener('mic', (e: { b64?: string }) => { if (e && e.b64) onMic(b64ToBytes(e.b64)); });
       errSub = m.addListener('error', (e: { message?: string }) => { lastNativeError = String(e?.message ?? ''); });
       const why: string = m.start();

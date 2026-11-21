@@ -76,6 +76,7 @@ export default function WakeCoach() {
   const stream = useRef<VoiceStream | null>(null);        // live voice (streamed audio to the PC's voice agent) when it is reachable
   const streamDownAt = useRef(0);                         // it was unreachable at this time: use the built-in recogniser for a while
   const streamQuietT = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const starting = useRef(false);                          // live voice is connecting (a permission screen may flash: that is not the user leaving)
   const connectUntil = useRef(0);                          // taps that arrive while live voice is still connecting are ignored (a second tap used to cancel it)
 
   const enabled = useRef(getWakeState().enabled);
@@ -261,7 +262,7 @@ export default function WakeCoach() {
     if (!liveVoiceEnabled() || Date.now() - streamDownAt.current < 60000) return false;
     const url = voiceWsUrl(); const dev = makeDevice();
     if (!url || !dev) return false;
-    session.current = true; quietSince.current = Date.now(); connectUntil.current = Date.now() + 1800 * tuning.scale;
+    session.current = true; starting.current = true; quietSince.current = Date.now(); connectUntil.current = Date.now() + 1800 * tuning.scale;
     acquireMic('ui'); if (running.current) stopRun();
     setBubble(''); setTalkState({ phase: 'listening', heard: '', note: '', error: false, session: true });
     const t0 = Date.now();
@@ -286,7 +287,9 @@ export default function WakeCoach() {
     stream.current = vs;
     try {
       await vs.open(getVoiceScreen(), bargeInEnabled());
+      starting.current = false;
     } catch (e) {
+      starting.current = false;
       if (stream.current === vs) stream.current = null;
       dlog('s_unavailable', String((e as any)?.message ?? e).slice(0, 80));
       streamDownAt.current = Date.now();
@@ -491,7 +494,9 @@ export default function WakeCoach() {
     loadWakeSetting().then((on) => { enabled.current = on; reconcile(); });
     const un = onWakeState((s) => { setWakeOn(s.status === 'listening'); if (s.enabled !== enabled.current) { enabled.current = s.enabled; reconcile(); } });
     const unMic = onMicChange(reconcile);
-    const app = AppState.addEventListener('change', (s) => { appActive.current = s === 'active'; if (s !== 'active' && session.current) stopSession(); reconcile(); });
+    // A live-voice session only ends when the app really goes to the background; 'inactive' (a permission or system screen flashing over it, the notification
+    // shade) is not the user leaving. The phone-recogniser session keeps its stricter rule.
+    const app = AppState.addEventListener('change', (s) => { appActive.current = s === 'active'; if (session.current && (s === 'background' || (s !== 'active' && !stream.current && !starting.current))) stopSession(); reconcile(); });
     if (!MOD) { status(); return () => { alive.current = false; unTalk(); unReg(); un(); unMic(); app.remove(); { const s = stream.current; stream.current = null; try { s?.close(); } catch { /* ignore */ } } }; }
 
     const subs = [

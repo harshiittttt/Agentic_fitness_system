@@ -1,14 +1,16 @@
 /** The mic button with LIVE VOICE (streamed audio to the PC voice agent) through the real WakeCoach, with a fake audio module and a fake server socket. */
 import React from 'react';
 import { act, render, waitFor } from '@testing-library/react-native';
+import { AppState } from 'react-native';
 import { makeBackend } from './fakeBackend';
 
 jest.mock('../src/tts', () => ({ speak: jest.fn(async (_t: string, _c: any, done?: () => void) => { if (done) setTimeout(done, 0); }), stopSpeaking: jest.fn() }));
 jest.mock('../src/haptics', () => ({ impactAsync: jest.fn(), notificationAsync: jest.fn(), selectionAsync: jest.fn(), ImpactFeedbackStyle: {}, NotificationFeedbackType: {}, loadHaptics: jest.fn(), hapticsEnabled: () => true, setHapticsEnabled: jest.fn() }));
-const mockAudio: any = { mic: null, err: null, played: [] as any[], recording: false, stops: 0, flushes: 0, silent: false, startError: '' };
+const mockAudio: any = { mic: null, err: null, played: [] as any[], recording: false, stops: 0, flushes: 0, silent: false, startError: '', asked: 0, needsAsk: false };
 jest.mock('../src/pcmNative', () => ({
   pcmNative: () => ({
-    requestPermission: async () => ({ granted: true }),
+    getPermission: async () => ({ granted: !mockAudio.needsAsk }),
+    requestPermission: async () => { mockAudio.asked++; mockAudio.needsAsk = false; return { granted: true }; },
     addListener: (name: string, cb: any) => { if (name === 'mic') mockAudio.mic = cb; else mockAudio.err = cb; return { remove: () => { if (name === 'mic') mockAudio.mic = null; } }; },
     start: () => {
       if (mockAudio.startError) return mockAudio.startError;
@@ -58,7 +60,7 @@ beforeEach(() => {
   clearTimeout(mockAudio.timer);                                                      // a frame scheduled by the previous test must not leak into this one
   tuning.scale = 0.02;                                                              // the real 1.8 s connecting guard would slow every test
   (global as any).WebSocket = FakeSocket; FakeSocket.all = []; FakeSocket.failNext = false;
-  mockAudio.mic = null; mockAudio.err = null; mockAudio.played = []; mockAudio.recording = false; mockAudio.stops = 0; mockAudio.flushes = 0; mockAudio.silent = false; mockAudio.startError = '';
+  mockAudio.mic = null; mockAudio.err = null; mockAudio.played = []; mockAudio.recording = false; mockAudio.stops = 0; mockAudio.flushes = 0; mockAudio.silent = false; mockAudio.startError = ''; mockAudio.asked = 0; mockAudio.needsAsk = false;
   setTalkState({ phase: 'idle', heard: '', note: '', error: false, session: false }); SR.__reset(); setVoiceOverlay(null);
   (global as any).fetch = makeBackend().fetch;
   setApiConfig('https://coach.example', 'tok');
@@ -192,4 +194,31 @@ test('extra taps while live voice is still connecting do not cancel it', async (
   await wait(70);                                                                   // past the (scaled) connecting guard
   await tap();
   await waitFor(() => expect(getTalkState().session).toBe(false));
+});
+
+test('REGRESSION (found on the real phone): an already-granted microphone permission is NOT asked for again, so no permission screen flashes over the app at every tap', async () => {
+  await mounted();
+  await openLive();
+  expect(mockAudio.asked).toBe(0);
+  await wait(70);
+  await tap();
+  await waitFor(() => expect(getTalkState().session).toBe(false));
+  mockAudio.needsAsk = true;                                                        // first ever use: it IS asked, once
+  await openLive();
+  expect(mockAudio.asked).toBe(1);
+});
+
+test('REGRESSION: the app flickering to "inactive" (a system screen over it) does not end a live-voice session; really going to the background does', async () => {
+  const listeners: ((s: string) => void)[] = [];
+  const spy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((_t: string, cb: any) => { listeners.push(cb); return { remove: () => {} }; }) as any);
+  try {
+    await mounted();
+    await openLive();
+    act(() => { listeners.forEach((f) => f('inactive')); });
+    act(() => { listeners.forEach((f) => f('active')); });
+    expect(getTalkState()).toMatchObject({ session: true });
+    expect(mockAudio.recording).toBe(true);
+    act(() => { listeners.forEach((f) => f('background')); });
+    await waitFor(() => expect(getTalkState().session).toBe(false));
+  } finally { spy.mockRestore(); }
 });
