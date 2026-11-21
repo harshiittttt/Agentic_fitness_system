@@ -36,13 +36,26 @@
         "backgroundColor": "#07080B"
       },
       "package": "com.harshiittttt.aicoach",
-      "versionCode": 1
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.harshiittttt.aicoach",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "Used to transcribe your workout notes.",
+        "NSMicrophoneUsageDescription": "Used to log sets by voice."
+      }
     },
-    "scheme": "aicoach"
+    "scheme": "aicoach",
+    "extra": {
+      "eas": {
+        "projectId": "1de94ae3-68b8-4370-b704-7066ca7cc025"
+      }
+    },
+    "owner": "goluexpobuild"
   }
 }
