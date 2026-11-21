@@ -1,5 +1,5 @@
 // A small in-memory stand-in for the coach server, with the same response SHAPES as the real endpoints (checked against backend/main.py).
-export function makeBackend() {
+export function makeBackend(opts: { delayMs?: number; fragments?: string[]; failVoice?: boolean } = {}) {
   const calls: { path: string; method: string; body: any }[] = [];
   const names = ['bench press', 'lat pulldown', 'overhead press'];
   const ex = names.map((n) => ({ name: n, sets: 3, reps: 8, target_rpe: 8, done: 0, skipped: false, target: null }));
@@ -29,7 +29,15 @@ export function makeBackend() {
     'GET /agents/nudges': () => [],
     'GET /agents/status': () => ({ pending: [] }),
     'POST /live/cue': () => live('cue', 'Rest is over. Next set.'),
-    'POST /voice/command': (b) => ({ intent: 'router', reply: `You said ${b.transcript}.`, actions: [], expects: null, moment: false, pr: false, safety_flag: null, state: null, saved: [] }),
+    'POST /voice/command': (b) => {
+      if (opts.fragments?.includes(b.transcript)) return { intent: 'fragment', reply: '', actions: [], expects: 'answer', moment: false, pr: false, safety_flag: null, state: null, saved: [] };
+      const m = /(\d+(?:\.\d+)?)\s*(?:kg\s*)?for\s*(\d+)/.exec(b.transcript);
+      if (b.screen === 'live' && m) {
+        const e = ex.find((x) => !x.skipped && x.done < x.sets)!; e.done += 1;
+        return live('set', `Logged ${m[1]} for ${m[2]}.`, { saved: [{ exercise: e.name, weight: +m[1], reps: +m[2] }], actions: [{ type: 'rest', seconds: 90 }] });
+      }
+      return { intent: 'router', reply: `You said ${b.transcript}.`, actions: [], expects: null, moment: false, pr: false, safety_flag: null, state: null, saved: [] };
+    },
     'GET /exercise/prefill': () => ({ last: null, suggest: null, increment: 2.5 }),
     'POST /diag/log': () => ({ ok: true }),
   };
@@ -39,6 +47,8 @@ export function makeBackend() {
     const method = (init.method || 'GET').toUpperCase();
     const body = init.body ? JSON.parse(init.body) : undefined;
     calls.push({ path, method, body });
+    if (opts.delayMs && path === '/voice/command') await new Promise((r) => setTimeout(r, opts.delayMs));
+    if (opts.failVoice && path === '/voice/command') return { ok: false, status: 500, json: async () => ({ detail: 'boom' }) } as any;
     const h = handlers[`${method} ${path}`];
     if (!h) return { ok: false, status: 404, json: async () => ({ detail: `no fake for ${method} ${path}` }) } as any;
     const data = h(body, u);

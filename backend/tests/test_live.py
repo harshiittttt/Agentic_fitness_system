@@ -331,3 +331,18 @@ def test_reopening_the_session_soon_after_is_short_not_a_second_intro(client):
     a = client.post("/live/start").json()
     b = client.post("/live/start").json()
     assert len(b["reply"]) < len(a["reply"]) and b["state"]["current"]["name"] in b["reply"].lower()
+
+
+def test_a_model_made_set_is_dropped_when_its_numbers_are_not_in_the_sentence(client, monkeypatch):
+    """The model once read 'tell me how much protein' as a set of 75 x 6 and the coach praised it. Numbers must be in the words."""
+    from backend.tools import voice_parser
+    first = client.get("/live/state").json()["current"]["name"]
+    fake = lambda t: {"sets": [{"exercise": first, "weight": 75, "reps": 6}], "safety_note": ""}
+    monkeypatch.setattr(voice_parser, "parse_voice_log", fake)
+    monkeypatch.setattr(live, "parse_voice_log", fake)
+    for said in ("then tell me how much protein", "what should I eat for dinner", "okay I am done with the first exercise"):
+        r = client.post("/live/say", json={"transcript": said}).json()
+        assert r["intent"] != "set", said
+    assert db.get_sets(first, 5) == []
+    ok = client.post("/live/say", json={"transcript": f"{first} 75 for 6"}).json()          # the same numbers, actually said, are logged
+    assert ok["intent"] == "set" and db.get_sets(first, 5)

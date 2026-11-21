@@ -12,7 +12,7 @@ from collections import Counter
 from backend.agents import orchestrator as orch
 from backend.agents import specialists as sp
 from backend.agents.base import have_key, quick_text
-from backend.coach import care, compose, hindi, lines, persona as P, session_flow, set_slots
+from backend.coach import care, compose, hindi, lines, persona as P, session_flow, set_slots, speech_fix
 from backend.memory import db
 from backend.policy.adaptation import has_safety_flag
 from backend.tools import exercises as ex
@@ -244,7 +244,13 @@ def _rest_seconds(exercise: str, rpe) -> int:
     return 75
 
 
+def _numbers_in(text: str) -> set[float]:
+    from backend.tools.foods import _words_to_digits
+    return {float(x) for x in re.findall(r"\d+(?:\.\d+)?", _words_to_digits((text or "").lower()))}
+
+
 def _log_sets(text: str, pid: str, name: str, parsed: dict | None = None) -> dict | None:
+    explicit = parsed is not None               # built by code from checked numbers (a slot answer, the dials), not read from speech
     parsed = parsed if parsed is not None else parse_voice_log(text)
     sets = parsed.get("sets", [])
     if not sets:
@@ -252,6 +258,11 @@ def _log_sets(text: str, pid: str, name: str, parsed: dict | None = None) -> dic
     names = _plan_names()
     for s in sets:
         s["exercise"] = ex.resolve_exercise(s["exercise"], names)
+    if explicit is False:                       # read out of free speech (rules or the model): the numbers must really be in the sentence
+        heard = _numbers_in(text)
+        sets = [s for s in sets if s.get("reps") is not None and float(s["reps"]) in heard and (s.get("weight") in (None, 0, 0.0) or float(s["weight"]) in heard)]
+        if not sets:
+            return None                         # "tell me how much protein", "what should I eat": not a set at all, never answered as one
     # A model's reading of "first set done" can come back as {bench press, no weight, 1 rep}. That is a guess, not a set: never save it (it also
     # tags today as a day you did not train). Ask for the missing numbers instead.
     good = [s for s in sets if s.get("reps") and (s.get("weight") is not None or s["exercise"] in set_slots.BODYWEIGHT)]
@@ -483,7 +494,7 @@ def _handle(transcript: str, ambient: bool = False, allow_chat: bool = True) -> 
     ambient=True: the mic is always on. Sets, commands and pain are always handled;
     open chat only happens when the lifter addresses the coach, so gym chatter is ignored."""
     pid, name = _ctx()
-    text = transcript.strip()
+    text = speech_fix.clean(transcript.strip())
     compose.begin(text)
     norm = hindi.normalize(text)   # Hindi/Haryanvi (Devanagari) speech -> the English-ish text the parsers understand; English passes through
     low = norm.lower()

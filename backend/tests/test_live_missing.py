@@ -133,9 +133,10 @@ def test_a_question_while_waiting_is_not_swallowed(client):
 
 def test_gibberish_is_asked_again_then_dropped(client):
     say(client, "1 set done")
-    assert say(client, "umm")["intent"] == "ask_unclear"
-    assert say(client, "uhh")["intent"] == "ask_unclear"
-    assert say(client, "hmm")["intent"] != "ask_unclear" and not live._pending     # never trapped in the question forever
+    assert say(client, "umm")["intent"] == "noop" and live._pending                # a filler is not an answer: silence, the question stays open
+    assert say(client, "blorp")["intent"] == "ask_unclear"
+    assert say(client, "blorp blorp")["intent"] == "ask_unclear"
+    assert say(client, "blorp blorp blorp")["intent"] != "ask_unclear" and not live._pending     # never trapped in the question forever
 
 
 def test_a_complete_new_log_replaces_the_half_finished_one(client):

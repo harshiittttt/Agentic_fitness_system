@@ -277,7 +277,7 @@ def _missing() -> list[str]:
     return [k for k, known in (("diet_type", p["diet_type_known"]), ("meals_per_day", p["meals_known"])) if not known]
 
 
-def chat(message: str) -> dict:
+def chat(message: str, fast: bool = False) -> dict:
     from backend.coach import care, lines
     msg = (message or "").strip()[:1200]
     out: dict = {"plan": None, "week": None, "grocery": None, "prefs": None}
@@ -298,7 +298,7 @@ def chat(message: str) -> dict:
     prof = db.get_profile() or {}
     system = SYSTEM + (f"\nThe athlete's name is {prof['name']}." if prof.get("name") else "")
     try:
-        reply = run_agent(system, msg, TOOLS, handlers, max_turns=7, max_tokens=900, history=_history(), trace=trace)
+        reply = run_agent(system, msg, TOOLS, handlers, max_turns=7, max_tokens=900, history=_history(), trace=trace, fast=fast)
     except Exception:
         reply = ""
     actions = coach_tools.actions_from_trace(trace)

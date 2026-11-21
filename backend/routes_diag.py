@@ -46,3 +46,10 @@ def diag_log(b: DiagBatch):
 def diag_recent(limit: int = 100):
     with _lock:
         return list(_recent)[-max(1, min(limit, 400)):]
+
+
+@router.get("/diag/llm")
+def diag_llm():
+    """Which models answer right now: the order they are tried, which are resting after a spent quota (seconds left), and whether a second provider is set."""
+    from backend.agents import base
+    return {"main": base.role_models("main"), "compose": base.role_models("compose"), "cooldown_seconds": base.cooldowns(), "second_provider": bool(base._cfg2("main"))}

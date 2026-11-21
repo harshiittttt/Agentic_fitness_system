@@ -299,7 +299,7 @@ def test_profile_days_validation(client):
 # ---------------------------------------------------------------- LLM router with a fake run_agent
 def fake_agent(calls):
     """calls: list of (tool, kwargs); run them through the handlers like the real loop and return 'reply'."""
-    def run(system, user, tools, handlers, max_turns=6, max_tokens=700, history=None, trace=None):
+    def run(system, user, tools, handlers, max_turns=6, max_tokens=700, history=None, trace=None, fast=False):
         assert "TODAY is" in system
         for name, kw in calls:
             assert name in {t["name"] for t in tools}
@@ -480,7 +480,7 @@ def test_diet_questions_go_to_the_dietitian_and_plans_open_the_screen(client, mo
     monkeypatch.setenv("GEMINI_API_KEY", "x")
     seen = []
 
-    def fake_chat(msg):
+    def fake_chat(msg, fast=False):
         seen.append(msg)
         return {"reply": "Here is your day. Protein lands near 140 g.", "actions": [], "plan": {"meals": []}, "week": None, "needs": []}
 
@@ -496,7 +496,7 @@ def test_diet_questions_go_to_the_dietitian_and_plans_open_the_screen(client, mo
 def test_logging_food_still_logs_and_does_not_go_to_the_dietitian(client, monkeypatch):
     from backend.diet import agent as diet_agent
     monkeypatch.setenv("GEMINI_API_KEY", "x")
-    monkeypatch.setattr(diet_agent, "chat", lambda m: pytest.fail("a food log must not reach the dietitian"))
+    monkeypatch.setattr(diet_agent, "chat", lambda m, fast=False: pytest.fail("a food log must not reach the dietitian"))
     r = say(client, "I ate 4 eggs", screen="nutrition")
     assert r["intent"] in ("food", "log_food", "meal") or "egg" in r["reply"].lower() or r["expects"] == "food_amount"
 
@@ -511,7 +511,7 @@ def test_the_router_remembers_its_own_clarifying_question(client, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "x")
     seen = []
 
-    def fake(system, user, tools, handlers, max_turns=6, max_tokens=1024, history=None, trace=None):
+    def fake(system, user, tools, handlers, max_turns=6, max_tokens=1024, history=None, trace=None, fast=False):
         seen.append((user, list(history or [])))
         return "What weight did you use?" if len(seen) == 1 else "Logged."
 
@@ -520,3 +520,10 @@ def test_the_router_remembers_its_own_clarifying_question(client, monkeypatch):
     say(client, "sixty", followup=True)
     assert len(seen) == 2 and seen[0][1] == []
     assert [h["role"] for h in seen[1][1]] == ["user", "assistant"] and "What weight" in seen[1][1][1]["content"]
+
+
+def test_how_much_protein_is_answered_from_the_app_without_a_model(client, monkeypatch):
+    monkeypatch.setattr(vc, "run_agent", lambda *a, **k: pytest.fail("a numbers question must not reach the model"))
+    for q in ("then tell me how much protein", "how much protein", "what's my protein today", "how many calories do I have"):
+        r = say(client, q)
+        assert r["intent"] == "meal_left" and "protein" in r["reply"], q

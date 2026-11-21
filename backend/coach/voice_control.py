@@ -17,10 +17,11 @@ from __future__ import annotations
 import re
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from datetime import date, timedelta
 
 from backend.agents.base import have_key, run_agent
-from backend.coach import care, hindi, lines, live, persona as P, set_slots
+from backend.coach import care, hindi, lines, live, persona as P, set_slots, speech_fix
 from backend.memory import db
 from backend.policy.adaptation import has_safety_flag
 from backend.tools import plan_edit as pe
@@ -463,6 +464,10 @@ def _repeat_meal(screen: str, shown: str | None, day: str | None) -> dict:
     return _out("meal_repeat", f"Logged {', '.join(names)} again. {_left_phrase(target)}", actions=_meal_actions(target, screen, shown), moment=True)
 
 
+# 'how much protein', 'tell me how much protein', 'my protein', 'how many calories do I need today' (no food named after 'in'): the numbers are in the app, no model needed
+PROTEIN_Q_RE = re.compile(r"^(?:(?:then|and|so|okay|ok)\s+)*(?:tell me\s+)?(?:how much|how many|what(?:'s| is)(?: my)?|my)\s+(?:more\s+)?(?:protein|calories|carbs|fat)(?:\s+(?:do i (?:need|have|want)|should i (?:eat|have)|am i (?:at|on)|left|more|today|so far))*\s*\??$")
+
+
 def _meal_queries(low: str, text: str, screen: str, shown: str | None) -> dict | None:
     iso, _ = parse_day(low)
     day = iso or (shown if screen == "nutrition" and shown else date.today().isoformat())
@@ -470,7 +475,7 @@ def _meal_queries(low: str, text: str, screen: str, shown: str | None) -> dict |
         return _repeat_meal(screen, shown, iso)
     if UNDO_MEAL_RE.search(low) or (UNDO_BARE_RE.match(low) and time.time() - _last_logged["ts"] < LAST_MEAL_TTL and _last_logged["ids"]):
         return _undo_meal(screen, shown)
-    if LEFT_RE.search(low):
+    if LEFT_RE.search(low) or PROTEIN_Q_RE.match(low):
         return _out("meal_left", _left_phrase(day))
     if ATE_Q_RE.search(low):
         meals = db.get_meals(day)
@@ -862,6 +867,37 @@ OFFLINE_HINT = ("I can log food, like 'I ate two eggs', open any screen, like 'o
                 "For anything fancier I need my AI connection, and it isn't available right now.")
 
 
+ROUTER_DEADLINE_S = 12.0
+
+# Which tools a sentence can need. The full catalogue is ~45 tools; sending all of them on every model turn made replies take 8-20 s.
+_TOOL_GROUPS: list[tuple[re.Pattern, set[str]]] = [
+    (re.compile(r"\b(split|day|days|exercise|exercises|add|remove|swap|replace|volume|sets?|reps?|plan|program|workout|session|skip|time|minutes?|rest day|squat|bench|deadlift|press|row|curl)\b"),
+     {"get_split", "get_today", "add_exercise", "remove_exercise", "change_sets_reps_rpe", "move_exercise", "rename_day", "change_volume", "rebuild_plan", "fit_session",
+      "skip_session", "restore_session", "swap_exercise", "find_alternatives", "restructure_split", "log_set", "recent_sets", "get_progress", "set_days_per_week"}),
+    (re.compile(r"\b(eat|ate|food|meal|meals|calorie|calories|protein|carb|carbs|fat|macro|macros|diet|weigh|weight|bodyweight|kg|kilos?|cut|bulk|maintain|goal)\b"),
+     {"get_nutrition_today", "log_meal", "set_calories", "set_macros", "set_goal", "log_bodyweight", "change_profile_field"}),
+    (re.compile(r"\b(sleep|slept|sore|soreness|tired|energy|stress|stressed|pain|hurt|hurts|injur\w*|ache|knee|shoulder|back|elbow|wrist|ready|recover\w*)\b"),
+     {"log_checkin", "get_readiness", "add_restriction", "clear_restriction"}),
+    (re.compile(r"\b(trip|trips|travel\w*|calendar|busy|competition|meet|vacation|holiday|gym|away|schedule|flight|out of town|no gym|equipment)\b"), {"add_agenda_event"}),
+    (re.compile(r"\b(profile|goal|days a week|days per week|days|switch|change my|update my|experience|activity|height|age|train \d|four days|three days|five days)\b"),
+     {"change_profile_field", "set_days_per_week", "set_goal", "rebuild_plan", "restructure_split"}),
+    (re.compile(r"\b(decision|decisions|approve|decline|pending|team|proposal)\b"), {"list_pending_decisions", "approve_decision", "decline_decision"}),
+    (re.compile(r"\b(evidence|study|studies|research|science|true that|myth)\b"), {"ask_evidence"}),
+    (re.compile(r"\b(remember|forget|know about me|prefer|preference|dislike|like to)\b"), {"recall_about_me", "remember_this", "correct_memory", "forget_this", "add_preference"}),
+]
+_CORE_TOOLS = {"get_today", "get_nutrition_today", "get_readiness", "recall_about_me", "undo_last_change", "ask_evidence"}
+
+
+def tools_for(text: str, tools: list[dict]) -> list[dict]:
+    low = text.lower()
+    want = set(_CORE_TOOLS)
+    for rx, names in _TOOL_GROUPS:
+        if rx.search(low):
+            want |= names
+    out = [t for t in tools if t["name"] in want]
+    return out or tools
+
+
 def _router(text: str, screen: str, ambient: bool, addressed: bool) -> dict:
     pid, name = _ctx()
     if not have_key():
@@ -870,9 +906,18 @@ def _router(text: str, screen: str, ambient: bool, addressed: bool) -> dict:
         return _out("ignored", "")
     try:
         tools, handlers = build_tools(text)
+        tools = tools_for(text, tools)                        # only the tools this sentence can need: each model turn is several times faster
         trace: list[dict] = []
         user = f"[Screen: {screen}. {live.live_context()}]\n{text}" if live.live_context() else f"[Screen: {screen}]\n{text}"
-        reply = run_agent(_system(pid, name), user, tools, handlers, max_turns=6, max_tokens=700, trace=trace, history=_history())
+        pool = ThreadPoolExecutor(max_workers=1)
+        fut = pool.submit(run_agent, _system(pid, name), user, tools, handlers, 3, 400, _history(), trace, True)
+        try:
+            reply = fut.result(timeout=ROUTER_DEADLINE_S)
+        except FutureTimeout:
+            pool.shutdown(wait=False)
+            return _out("fallback", "That is taking longer than it should. Say it again in a few words, or tap the mic and try once more.")
+        finally:
+            pool.shutdown(wait=False)
     except Exception:
         return _out("fallback", OFFLINE_HINT)
     p = _pend_get("confirm")
@@ -914,7 +959,7 @@ def _diet(text: str, low: str) -> dict | None:
         return None                      # an evidence question: the router has the ask_evidence tool for those
     try:
         from backend.diet import agent as diet_agent
-        r = diet_agent.chat(text)
+        r = diet_agent.chat(text, fast=True)
     except Exception:
         return None
     reply = (r.get("reply") or "").strip()
@@ -931,9 +976,9 @@ def handle(transcript: str, screen: str = "unknown", day: str | None = None, amb
         shown = date.fromisoformat(day).isoformat() if day else None
     except ValueError:
         shown = None
-    text = (transcript or "").strip()
-    if not text:
-        return _out("noop", "")
+    text = speech_fix.clean((transcript or "").strip())      # fillers out, 'wraps/raps' -> 'reps'
+    if not text:                                             # only "uhh...": say nothing, and keep any open question open so the next words answer it
+        return _out("noop", "", expects="set_details" if live._pending_get() else "food_amount" if _pend_get("food") else None)
     pid, name = _ctx()
     cared = care.handle(text, pid in lines.HI_PERSONAS)
     if cared:
@@ -956,6 +1001,10 @@ def handle(transcript: str, screen: str = "unknown", day: str | None = None, amb
         db.add_memory("injury", text)
         db.add_checkin(note=text)
         return _out("pain", lines.pick(pid, "pain", name), safety_flag=has_safety_flag(low), moment=True)
+
+    # an unfinished sentence ("I did like"): say nothing, the app keeps it and joins it to what comes next
+    if speech_fix.is_fragment(low) and not _pend_get() and not live._pending_get():
+        return _out("fragment", "", expects="answer")
 
     # 1. pending dialogues
     if _pend_get("confirm"):

@@ -9,9 +9,13 @@ jest.mock('../src/SwapSheet', () => () => null);
 
 const SR = require('expo-speech-recognition');
 import Live from '../src/screens/Live';
+import WakeCoach from '../src/WakeCoach';
+import { tuning } from '../src/voiceEndpoint';
+import { setTalkState } from '../src/voiceTalk';
+import { setVoiceOverlay } from '../src/voiceScreen';
 
 let backend: ReturnType<typeof makeBackend>;
-beforeEach(() => { SR.__reset(); backend = makeBackend(); (global as any).fetch = backend.fetch; });
+beforeEach(() => { SR.__reset(); setTalkState({ phase: 'idle', heard: '', note: '', error: false, session: false }); setVoiceOverlay('live'); backend = makeBackend(); (global as any).fetch = backend.fetch; });
 const wait = (ms: number) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
 
 test('opens once: one /live/start, shows the exercise and the log button, does not restart itself or touch the microphone', async () => {
@@ -35,49 +39,57 @@ test('logging a set: one tap saves it, the count moves on and the rest timer sta
 });
 
 const micButton = async (api: any) => (await api.findAllByLabelText(/Talk to your coach|Stop the voice conversation/, {}, { timeout: 3000 }))[0];
+const sayLive = (text: string, isFinal = false) => act(() => { SR.__emit('result', { results: [{ transcript: text }], isFinal }); });
+const voiceCalls = () => backend.calls.filter((c) => c.path === '/voice/command');
 
-test('one tap on the mic starts a voice session: it keeps listening turn after turn, every sentence goes to the coach, and the next tap stops it', async () => {
-  const api = render(<Live onClose={jest.fn()} />);
+// The mic in the workout screen drives the app's voice engine (WakeCoach); both are mounted, as in the real app.
+const mountBoth = async () => {
+  const api = render(<><WakeCoach /><Live onClose={jest.fn()} /></>);
   await api.findByLabelText('Log set 1 of 3');
+  await waitFor(() => expect(SR.__listenerCount('result')).toBe(1));
+  return api;
+};
+
+test('one tap on the workout mic starts the voice session; a spoken set is logged through the server and the screen updates by itself', async () => {
+  tuning.scale = 0.2;
+  const api = await mountBoth();
   await act(async () => { fireEvent.press(await micButton(api)); });
-  expect(await api.findByText('Voice on · tap the mic to stop')).toBeTruthy();
+  expect((await api.findAllByText('Voice on · tap the mic to stop')).length).toBeGreaterThan(0);
   await waitFor(() => expect(SR.__state.starts.length).toBe(1), { timeout: 4000 });
+  expect(SR.__state.starts[0]).toMatchObject({ continuous: true, lang: 'en-IN' });
   expect(SR.__state.starts[0].contextualStrings).toEqual(expect.arrayContaining(['warm up', 'bench press']));
-  expect(SR.__state.starts[0].lang).toBe('en-IN');
-  for (let i = 1; i <= 3; i++) {
-    act(() => SR.__emit('result', { results: [{ transcript: `sentence ${i}` }], isFinal: true }));
-    act(() => SR.__emit('end'));
-    await waitFor(() => expect(backend.count('/live/say')).toBe(i));
-    await waitFor(() => expect(SR.__state.starts.length).toBe(i + 1), { timeout: 6000 });   // back to listening with no tap
-  }
-  const said = backend.calls.filter((c) => c.path === '/live/say');
-  expect(said.map((c) => c.body.transcript)).toEqual(['sentence 1', 'sentence 2', 'sentence 3']);
-  expect(said.every((c) => c.body.ambient === false)).toBe(true);                       // you started it, so it is all for the coach
-  await act(async () => { fireEvent.press(await micButton(api)); });                    // stop
-  await waitFor(() => expect(api.queryByText('Voice on · tap the mic to stop')).toBeNull());
-  const n = SR.__state.starts.length;
-  await wait(2000);
-  expect(SR.__state.starts.length).toBe(n);
+  await wait(900);                                                           // the coach's greeting just ended: a short echo-protection window
+  sayLive('bench press 60 for 8 reps');
+  await waitFor(() => expect(voiceCalls().length).toBe(1), { timeout: 4000 });
+  expect(voiceCalls()[0].body).toMatchObject({ transcript: 'bench press 60 for 8 reps', screen: 'live' });
+  await api.findByLabelText('Log set 2 of 3', {}, { timeout: 4000 });       // the set count moved: the screen applied the server's answer
+  expect(await api.findByText('Resting')).toBeTruthy();                      // and the rest timer started
+  expect(SR.__state.starts.length).toBe(1);                                  // the microphone never restarted
+  await act(async () => { fireEvent.press(await micButton(api)); });         // stop
+  await waitFor(() => expect(api.queryAllByText('Voice on · tap the mic to stop')).toHaveLength(0));
+  tuning.scale = 1;
 });
 
-test('silence in a voice session is fine (rest between sets): it keeps listening without any message or switching itself off', async () => {
-  const api = render(<Live onClose={jest.fn()} />);
-  await api.findByLabelText('Log set 1 of 3');
+test('the words appear live while you speak, including through a thinking pause', async () => {
+  tuning.scale = 0.2;
+  const api = await mountBoth();
   await act(async () => { fireEvent.press(await micButton(api)); });
-  for (let round = 1; round <= 4; round++) {
-    await waitFor(() => expect(SR.__state.starts.length).toBe(round), { timeout: 4000 });
-    act(() => SR.__emit('error', { error: 'no-speech', message: 'No speech was detected.' }));
-    act(() => SR.__emit('end'));
-  }
-  expect(api.queryByText('Voice on · tap the mic to stop')).toBeTruthy();
-  expect(api.queryByText(/Didn't hear anything/i)).toBeNull();
+  await waitFor(() => expect(SR.__state.starts.length).toBe(1), { timeout: 4000 });
+  await wait(900);
+  sayLive('I did like');
+  expect((await api.findAllByText(/“I did like”/)).length).toBeGreaterThan(0);
+  await wait(300);
+  expect(voiceCalls().length).toBe(0);                                       // still waiting for the rest
+  sayLive('I did like one set of bench 60 for 8 reps');
+  await waitFor(() => expect(voiceCalls().length).toBe(1), { timeout: 4000 });
+  expect(voiceCalls()[0].body.transcript).toBe('I did like one set of bench 60 for 8 reps');
   await act(async () => { fireEvent.press(await micButton(api)); });
-  await waitFor(() => expect(api.queryByText('Voice on · tap the mic to stop')).toBeNull());
+  tuning.scale = 1;
 });
 
 test('the voice session does not start by itself: nothing listens until you tap the mic', async () => {
-  const api = render(<Live onClose={jest.fn()} />);
-  await api.findByLabelText('Log set 1 of 3');
+  const api = await mountBoth();
   await wait(2000);
   expect(SR.__state.starts.length).toBe(0);
+  expect(api.queryAllByText('Voice on · tap the mic to stop')).toHaveLength(0);
 });

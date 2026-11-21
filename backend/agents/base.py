@@ -53,14 +53,52 @@ MODEL = _cfg("main")["model"]
 FAST_MODEL = _cfg("fast")["model"]
 
 
+# ---- a second provider (free tiers run out; a fast OpenAI-compatible one such as Groq makes voice feel instant) -------------------------------------
+# LLM2_BASE_URL, LLM2_API_KEY, LLM2_MODEL (or LLM2_<ROLE>_MODEL). LLM2_FIRST_FOR=compose,main puts it ahead of the primary for those roles.
+def _cfg2(role: str) -> dict | None:
+    R = role.upper()
+    url, key = (os.environ.get("LLM2_BASE_URL") or "").strip().rstrip("/"), (os.environ.get("LLM2_API_KEY") or "").strip()
+    model = (os.environ.get(f"LLM2_{R}_MODEL") or os.environ.get("LLM2_MODEL") or "").strip()
+    return {"base_url": url, "api_key": key, "model": model} if url and key and model else None
+
+
+# ---- circuit breaker: a model whose quota is spent is skipped at once instead of costing every turn a failed call ---------------------------------
+_COOLDOWN: dict[str, float] = {}
+
+
+def _cooling(cand: str) -> bool:
+    return _COOLDOWN.get(cand, 0.0) > time.time()
+
+
+def _cool_down(cand: str, body_text: str) -> None:
+    m = re.search(r"retryDelay\W+(\d+(?:\.\d+)?)s", body_text or "")
+    secs = float(m.group(1)) if m else 30.0
+    per_day = "PerDay" in (body_text or "")
+    _COOLDOWN[cand] = time.time() + (min(max(secs, 900.0), 3 * 3600.0) if per_day else min(max(secs, 5.0), 120.0))   # a daily quota is re-probed every <= 3 h
+
+
 def role_models(role: str) -> list[str]:
-    """The configured model for a role followed by its fallbacks (used to race two models when one hangs)."""
+    """Candidates for a role, best first: the configured model, its fallbacks, then the second provider ('@2:model'). Models in cooldown are left out
+    (unless every one is, in which case all are returned so something is still tried)."""
     c = _cfg(role)
-    return [c["model"], *[m for m in c["fallbacks"] if m != c["model"]]]
+    cands = [c["model"], *[m for m in c["fallbacks"] if m != c["model"]]] if c["api_key"] else []
+    c2 = _cfg2(role)
+    if c2:
+        two = "@2:" + c2["model"]
+        first = role in [x.strip() for x in (os.environ.get("LLM2_FIRST_FOR") or "").split(",") if x.strip()]
+        cands = [two, *cands] if first else [*cands, two]
+    live = [m for m in cands if not _cooling(m)]
+    return live or cands
+
+
+def cooldowns() -> dict:
+    """For /diag: which models are resting and for how long (seconds)."""
+    now = time.time()
+    return {m: round(t - now) for m, t in _COOLDOWN.items() if t > now}
 
 
 def have_key(role: str = "main") -> bool:
-    return bool(_cfg(role)["api_key"])
+    return bool(_cfg(role)["api_key"]) or bool(_cfg2(role))
 
 
 class LLMError(RuntimeError):
@@ -108,17 +146,26 @@ def _is_empty_reply(data: dict) -> bool:
 
 def _post_raw(role: str, body: dict, timeout: float = 60.0, retries: int = 1, models: list[str] | None = None) -> dict:
     c = _cfg(role)
-    if not c["api_key"]:
+    c2 = _cfg2(role)
+    if not c["api_key"] and not c2:
         raise LLMError(f"no API key configured for role '{role}' (set GEMINI_API_KEY or LLM_API_KEY in .env)")
     last = ""
-    for model in (models or [c["model"], *[m for m in c["fallbacks"] if m != c["model"]]]):
-        req = {"model": model, **body}
-        if c["reasoning"]:
+    for model in (models or role_models(role)):
+        second = model.startswith("@2:")
+        ep = c2 if second else c
+        if ep is None:
+            continue
+        name = model[3:] if second else model
+        if _cooling(model) and not models:
+            last = f"{model}: resting after a quota error"
+            continue
+        req = {"model": name, **body}
+        if c["reasoning"] and not second:
             req["reasoning_effort"] = c["reasoning"]
         for attempt in range(retries + 1):
             try:
-                r = httpx.post(f"{c['base_url']}/chat/completions", json=req, timeout=timeout,
-                               headers={"Authorization": f"Bearer {c['api_key']}"})
+                r = httpx.post(f"{ep['base_url']}/chat/completions", json=req, timeout=timeout,
+                               headers={"Authorization": f"Bearer {ep['api_key']}"})
             except httpx.HTTPError as e:
                 last = f"{model}: {type(e).__name__}: {e}"
             else:
@@ -132,12 +179,48 @@ def _post_raw(role: str, body: dict, timeout: float = 60.0, retries: int = 1, mo
                     _count(role)
                     return data
                 last = f"{model}: HTTP {r.status_code}: {r.text[:200]}"
-                if r.status_code not in (429, 500, 502, 503, 504):
-                    raise LLMError(f"{c['base_url']} rejected the request: {last}")  # auth / bad request: no point retrying or falling back
+                if r.status_code == 429:
+                    _cool_down(model, r.text)                 # quota spent: skip this model from now on, and do not retry it
+                    break
+                if r.status_code not in (500, 502, 503, 504):
+                    raise LLMError(f"{ep['base_url']} rejected the request: {last}")  # auth / bad request: no point retrying or falling back
             if attempt < retries:
                 time.sleep(1.0)
         # this model is exhausted or overloaded: fall through to the next candidate
-    raise LLMError(f"all models failed @ {c['base_url']}; last error: {last}")
+    raise LLMError(f"all models failed @ {c['base_url'] or 'provider'}; last error: {last}")
+
+
+def _post_fast(role: str, body: dict, per_call: float = 7.0, hedge: float = 1.8, total: float = 11.0) -> dict:
+    """The voice path cannot wait 60 s on a stalled request: each call times out at `per_call`, and if the first model has not answered after `hedge` seconds
+    the next model is asked in parallel; the first good answer wins."""
+    from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+    models = role_models(role)
+    pool = ThreadPoolExecutor(max_workers=2)
+    t0 = time.time()
+    try:
+        futs = [pool.submit(_post, role, body, per_call, 0, models[:1])]
+        done, _ = wait(futs, timeout=hedge)
+        if not done and len(models) > 1:
+            futs.append(pool.submit(_post, role, body, per_call, 0, models[1:2]))
+        err: Exception | None = None
+        while futs:
+            left = total - (time.time() - t0)
+            if left <= 0:
+                break
+            done, _ = wait(futs, timeout=left, return_when=FIRST_COMPLETED)
+            if not done:
+                break
+            for f in done:
+                futs.remove(f)
+                try:
+                    return f.result()
+                except Exception as e:
+                    err = e
+                    if len(futs) == 0 and len(models) > 2 and (time.time() - t0) < total - 2:       # both raced models failed fast: one more try
+                        futs.append(pool.submit(_post, role, body, per_call, 0, models[2:3]))
+        raise LLMError(f"voice call failed within {total:.0f}s" + (f": {err}" if err else ""))
+    finally:
+        pool.shutdown(wait=False)
 
 
 def _openai_tools(tools: list[dict] | None) -> list[dict]:
@@ -156,6 +239,7 @@ def run_agent(
     max_tokens: int = 1024,
     history: list[dict] | None = None,
     trace: list[dict] | None = None,
+    fast: bool = False,
 ) -> str:
     """Run a tool-use loop until the model stops calling tools. Returns final text.
 
@@ -172,7 +256,7 @@ def run_agent(
         body: dict = {"messages": messages, "max_tokens": max_tokens}
         if oa_tools:
             body["tools"] = oa_tools
-        msg = _post("main", body)["choices"][0]["message"]
+        msg = (_post_fast("main", body) if fast else _post("main", body))["choices"][0]["message"]
         messages.append(msg)  # keep the raw message: some providers need extra fields echoed back
         calls = msg.get("tool_calls") or []
         if not calls:

@@ -1,16 +1,16 @@
-// The voice layer, mounted once in App.tsx. Two ways in, one brain (POST /voice/command, falling back to /live/say on an older server):
+// The voice engine, mounted once in App.tsx. Two ways in, one brain (POST /voice/command, falling back to /live/say on an older server):
 //
-//  1. TAP TO TALK (the main way; works on every phone that can do speech-to-text). The mic button in the tab bar (voiceTalk.ts) starts ONE
-//     listening turn: you see your words appear live, they are sent when you stop, the coach answers out loud. If the coach asks a question
-//     the next turn starts by itself, so a conversation needs one tap and no wake phrase.
-//  2. "HEY COACH" (opt-in, OFF by default; Profile > Hands-free). Always-on speech-to-text filtered for the phrase. It is NOT a hardware wake
-//     word, which is why it is unreliable on many phones (the recognizer restarts constantly, some phones beep, loud gyms break it). Free
-//     hardware wake words do not exist for a custom phrase any more (Picovoice ended its free keys on 2026-06-30), so this stays an extra.
-//     Profile shows live diagnostics: sessions started, results received, the last thing the recognizer heard, the last error.
+//  1. A VOICE SESSION (the main way): the mic button (tab bar, or Train with coach) starts it with one tap; a second tap stops it.
+//       * The microphone STAYS ON for the whole conversation (continuous recognition: no restarts, no start/stop beeps).
+//       * WE decide when you have finished speaking (voiceEndpoint.ts), not the phone's recognizer, which cuts you off after ~1 s of silence. A sentence
+//         that ends on "like", "uhh", "I did" waits up to ~4 s for the rest; "skip" or "bench 60 for 8 reps" is sent after ~0.7 s.
+//       * While the coach thinks or speaks the microphone is muted (ignored), so it never hears itself, and listening resumes by itself.
+//       * If the answer is slow, a short "one sec" is spoken at once. If the server says your sentence is unfinished, it is held and joined to the next one.
+//  2. "HEY COACH" (opt-in, OFF by default; Profile > Talking to your coach): always-on speech-to-text filtered for the phrase. Not a hardware wake word, so
+//     it can miss and costs battery. Profile shows live diagnostics.
 //
-// REAL PLATFORM LIMITS (be honest with users):
-//  * Needs the installed app build. Expo Go has no native speech module: this component then does nothing and the mic button says so.
-//  * Foreground only. While the coach speaks, or a screen holds the mic lock (Live, a text field's mic), the wake listener is stopped.
+// REAL PLATFORM LIMITS: needs the installed app (Expo Go has no native speech module). Continuous recognition needs Android 13+ (older phones get one
+// utterance per start, so the engine restarts it: slower, with a beep). Foreground only.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,7 +24,8 @@ import { shouldUsePremium, getRecognitionLang } from './voiceSettings';
 import { acquireMic, micOwner, onMicChange, releaseMic } from './micLock';
 import { createWakeTracker, matchWake, wakeNames, wakePhrases } from './wakeWord';
 import { getWakeState, loadWakeSetting, onWakeState, patchDiag, patchWakeState } from './wakeSettings';
-import { getTalkState, onTalkState, registerTalk, setTalkState, TalkState } from './voiceTalk';
+import { emitVoiceReply, getTalkState, getVoiceHints, hasReplyListener, onTalkState, registerTalk, setTalkState, TalkState } from './voiceTalk';
+import { cleanSpeech, Endpointer, joinSegments, pickFiller, tuning } from './voiceEndpoint';
 import { voiceErrorMessage } from './useVoice';
 import { dlog } from './diag';
 import { colors, font } from './theme';
@@ -37,9 +38,11 @@ const MOD = SR?.ExpoSpeechRecognitionModule;
 const CMD_WINDOW_MS = 6000;       // wake mode: a bare "hey coach" waits this long for the command
 const STABLE_MS = 1600;           // wake mode: phrase heard + no new words for this long = utterance finished
 const BUBBLE_MS = 7000;
-const TALK_MAX_MS = 15000;        // a talk turn never listens longer than this
-const SESSION_QUIET_MS = 5 * 60 * 1000;   // a voice session ends by itself after this long with nothing said (battery), and says so
-const TALK_SILENCE_MS = 1700;     // ... and ends this long after the last new word (recognizers on some phones never send a final result)
+const TICK_MS = 120;              // how often the end-of-speech decision is checked
+const MUTE_GRACE_MS = 650;        // after the coach stops talking, ignore the microphone a little longer (echo, late partial results)
+const FILLER_AFTER_MS = 1300;     // a slower answer than this gets a short spoken "one sec"
+const SESSION_QUIET_MS = 5 * 60 * 1000;   // a session ends by itself after this long with nothing said (battery), and says so
+const CARRY_MS = 25000;           // an unfinished sentence is held this long and joined to the next one
 
 const TAB_NAME: Record<string, string> = { today: 'Today', coach: 'Coach', nutrition: 'Fuel', insights: 'Insights', setup: 'Profile' };
 /** One short human line for what the phone just did, from the actions the server sent ('Opened Fuel'). */
@@ -69,22 +72,37 @@ export default function WakeCoach() {
 
   const enabled = useRef(getWakeState().enabled);
   const appActive = useRef(AppState.currentState === 'active');
-  const speaking = useRef(false);
-  const busy = useRef(false);                       // a command is being sent / spoken
-  const busyAt = useRef(0);
-  const session = useRef(false);                    // a voice SESSION is on: after every turn the mic listens again by itself until the user taps stop
-  const quietSince = useRef(0);
-  const cmdSeq = useRef(0);                         // a cancelled command's late answer is ignored
-  const running = useRef(false);                    // the WAKE recognizer session is running
-  const talking = useRef(false);                    // a TALK turn owns the recognizer
-  const talkText = useRef('');                      // latest words of the talk turn
-  const talkSent = useRef(false);
-  const talkLive = useRef(false);                   // the talk recognizer session has really been started (events before that are stale ones from the wake session)
-  const talkStartedAt = useRef(0);
-  const talkFollow = useRef(false);
-  const talkT = useRef<ReturnType<typeof setTimeout> | null>(null);       // hard stop
-  const talkQuiet = useRef<ReturnType<typeof setTimeout> | null>(null);   // silence stop
+  const alive = useRef(true);
   const perm = useRef<'unknown' | 'granted' | 'denied'>('unknown');
+
+  // ---- a command in flight
+  const speaking = useRef(false);
+  const busy = useRef(false);                       // a command is being sent / answered / spoken
+  const busyAt = useRef(0);
+  const cmdSeq = useRef(0);                         // a cancelled command's late answer is ignored
+  const fillerT = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fillerN = useRef(0);
+  const muteUntil = useRef(0);
+
+  // ---- the voice session
+  const session = useRef(false);
+  const quietSince = useRef(0);
+  const ep = useRef(new Endpointer());
+  const committed = useRef('');                     // finished segments of the current utterance
+  const partial = useRef('');                       // the segment being spoken now
+  const carry = useRef<{ text: string; at: number } | null>(null);   // an unfinished sentence waiting for its other half
+  const followNext = useRef(false);                 // the coach just asked a question: the next utterance is its answer
+  const talkLive = useRef(false);                   // our recognizer session has really been started (events before that are stale ones from the wake session)
+  const talkStartedAt = useRef(0);
+  const lastResultAt = useRef(0);
+  const tickT = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recT = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const endTimes = useRef<number[]>([]);
+  const contOK = useRef(true);                      // continuous recognition works on this phone (Android 13+)
+  const hardErrors = useRef(0);
+
+  // ---- "Hey coach" (wake listener)
+  const running = useRef(false);
   const onDevicePref = useRef(true);
   const backoff = useRef(500);
   const startedAt = useRef(0);
@@ -96,15 +114,15 @@ export default function WakeCoach() {
   const ttsCfg = useRef({ rate: 1, pitch: 1 } as any);
   const coachAt = useRef(0);
   const tracker = useRef(createWakeTracker([], CMD_WINDOW_MS));
-  const alive = useRef(true);
   const diagAt = useRef(0);
 
-  const shouldRun = () => !!MOD && enabled.current && appActive.current && !speaking.current && !busy.current && !talking.current && micOwner() !== 'ui' && perm.current !== 'denied';
+  const shouldRun = () => !!MOD && enabled.current && appActive.current && !speaking.current && !busy.current && !session.current && micOwner() !== 'ui' && perm.current !== 'denied';
+  const muted = () => busy.current || speaking.current || Date.now() < muteUntil.current;
 
   const showBubble = (t: string) => {
     setBubble(t);
     if (bubbleT.current) clearTimeout(bubbleT.current);
-    bubbleT.current = t ? setTimeout(() => { setBubble(''); if (!talking.current && !busy.current) setTalkState({ heard: '', note: '', error: false }); }, BUBBLE_MS) : null;
+    bubbleT.current = t ? setTimeout(() => { setBubble(''); if (!session.current && !busy.current) setTalkState({ heard: '', note: '', error: false }); }, BUBBLE_MS) : null;
   };
 
   const refreshCoach = async () => {
@@ -131,6 +149,7 @@ export default function WakeCoach() {
     if (stableT.current) { clearTimeout(stableT.current); stableT.current = null; }
   };
 
+  // ================================================================ "Hey coach" listener
   const stopRun = useCallback(() => {
     if (stableT.current) { clearTimeout(stableT.current); stableT.current = null; }
     if (running.current) { running.current = false; try { MOD?.abort?.(); } catch { /* not running */ } }
@@ -185,18 +204,70 @@ export default function WakeCoach() {
     else status();
   }, [scheduleRestart, stopRun, status]);
 
-  const showError = (t: string) => { session.current = false; showBubble(t); setTalkState({ error: true, note: '', session: false }); };   // a real error ends the session
+  // ================================================================ the voice session
+  const stopTicker = () => { if (tickT.current) { clearInterval(tickT.current); tickT.current = null; } };
 
-  // ---------------------------------------------------------------- one command to the coach
-  const startTalkRef = useRef<(followup?: boolean) => void>(() => {});
+  /** End the session: stop listening, drop anything in flight, free the microphone. `msg` is shown (a reason, or an error). */
+  const stopSession = useCallback((msg?: string, isError = false) => {
+    const was = session.current;
+    session.current = false;
+    stopTicker();
+    if (recT.current) { clearTimeout(recT.current); recT.current = null; }
+    if (fillerT.current) { clearTimeout(fillerT.current); fillerT.current = null; }
+    talkLive.current = false;
+    if (was) { try { MOD?.abort?.(); } catch { /* not running */ } releaseMic('ui'); dlog('session_stop', msg ? msg.slice(0, 60) : ''); }
+    cmdSeq.current++; busy.current = false; speaking.current = false; muteUntil.current = 0;
+    committed.current = ''; partial.current = ''; carry.current = null; followNext.current = false; ep.current.reset();
+    stopSpeaking();
+    setTalkState({ phase: 'idle', heard: '', note: '', session: false, error: isError });
+    if (msg) showBubble(msg);
+    reconcile();
+  }, [reconcile]);
 
+  const showError = (t: string) => { stopSession(t, true); };
+
+  /** Start (or restart after a break) the recognizer of the session. The session itself stays on. */
+  const startRecognizer = useCallback(() => {
+    if (!session.current || !alive.current || !MOD) return;
+    try {
+      MOD.start({
+        lang: getRecognitionLang(), interimResults: true, continuous: contOK.current, maxAlternatives: 1, addsPunctuation: false,
+        contextualStrings: getVoiceHints(),
+        // the phone's own endpointing is only a backstop: we decide when you are done (voiceEndpoint.ts)
+        androidIntentOptions: { EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: 4000, EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS: 4000 },
+      });
+      talkLive.current = true; talkStartedAt.current = Date.now();
+      dlog('rec_start', { cont: contOK.current });
+    } catch (e: any) {
+      dlog('rec_start_throw', { code: e?.code, msg: String(e?.message ?? e).slice(0, 100) });
+      talkLive.current = false;
+      if (++hardErrors.current >= 3) showError(voiceErrorMessage(e?.code || e?.error, e?.message) || "Couldn't start the microphone.");
+      else scheduleRecRestart(600);
+    }
+  }, []);
+
+  const scheduleRecRestart = useCallback((ms: number) => {
+    if (recT.current || !session.current) return;
+    recT.current = setTimeout(() => { recT.current = null; if (session.current && !talkLive.current) startRecognizer(); }, ms);
+  }, [startRecognizer]);
+
+  // ---- one utterance to the coach
   const handleCommand = useCallback(async (command: string, followup = false) => {
     if (busy.current && Date.now() - busyAt.current < 45000) return;
     const seq = ++cmdSeq.current;
-    busy.current = true; busyAt.current = Date.now(); setTalkState({ phase: 'thinking', heard: command, note: '', error: false }); showBubble('');
+    const inSession = session.current;
+    busy.current = true; busyAt.current = Date.now();
+    setTalkState({ phase: 'thinking', heard: command, note: '', error: false }); showBubble('');
     dlog('cmd_send', { followup, screen: getVoiceScreen(), text: command.slice(0, 80) });
     stopRun();
+    // a slow answer gets a short spoken "one sec" (phone voice, no network) so the silence never feels like a hang
+    if (fillerT.current) clearTimeout(fillerT.current);
+    fillerT.current = setTimeout(() => {
+      fillerT.current = null;
+      if (cmdSeq.current === seq && busy.current && alive.current) { dlog('filler'); speak(pickFiller(fillerN.current++), ttsCfg.current, undefined, { persona: persona.current, premium: false }).catch(() => {}); }
+    }, FILLER_AFTER_MS * tuning.scale);
     let expects: string | null = null;
+    const t0 = Date.now();
     try {
       let r: any;
       try {
@@ -205,81 +276,85 @@ export default function WakeCoach() {
         if (e instanceof ApiError && e.status === 404) r = await liveSay(command, false);   // older server without /voice/command
         else throw e;
       }
+      if (fillerT.current) { clearTimeout(fillerT.current); fillerT.current = null; }
       if (seq !== cmdSeq.current) return;                    // cancelled while waiting: say nothing, touch nothing
       const reply: string = r?.reply ?? '';
-      dlog('cmd_reply', { intent: r?.intent, acts: (r?.actions ?? []).length, expects: r?.expects, reply: reply.slice(0, 80) });
+      dlog('cmd_reply', { ms: Date.now() - t0, intent: r?.intent, acts: (r?.actions ?? []).length, expects: r?.expects, reply: reply.slice(0, 80) });
+      if (r?.intent === 'fragment') {                        // "I did like": the server says it is unfinished: hold it, say nothing, join it to what comes next
+        carry.current = { text: command, at: Date.now() };
+        busy.current = false; stopSpeaking();
+        setTalkState({ phase: 'listening', heard: command });
+        return;
+      }
       const acts = (Array.isArray(r?.actions) ? r.actions : []).map(parseAction).filter(Boolean) as VoiceAction[];
-      if (acts.length) { try { emitVoiceActions(r.actions); } catch { /* a UI listener bug must not stop the reply */ } }
+      const forLive = getVoiceScreen() === 'live' && hasReplyListener();
+      if (forLive) { try { emitVoiceReply(r); } catch { /* the workout screen applies sets / rest itself */ } }
+      const forBus = forLive ? acts.filter((a) => !['rest', 'rest_add', 'rest_skip', 'end'].includes(a.type)) : acts;
+      if (forBus.length) { try { emitVoiceActions(forBus as any); } catch { /* a UI listener bug must not stop the reply */ } }
       const did = describeActions(acts);
       if (r?.pr) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       else if (acts.length) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       if (reply && r?.intent !== 'ignored') {
         expects = r?.expects ?? null;
         setTalkState({ note: did }); showBubble(reply); setTalkState({ phase: 'speaking' }); speaking.current = true;
+        const premium = shouldUsePremium(!!r.moment) && (!inSession || !!r.pr || r.intent === 'start' || r.intent === 'end');   // premium audio costs seconds of download: only for the big moments
         await new Promise<void>((done) => {
           const cap = setTimeout(done, Math.min(40000, 6000 + reply.length * 90));   // never wait forever on a speech engine that forgot to say "done"
-          speak(reply, ttsCfg.current, () => { clearTimeout(cap); done(); }, { persona: persona.current, premium: shouldUsePremium(!!r.moment) }).catch(() => { clearTimeout(cap); done(); });
+          speak(reply, ttsCfg.current, () => { clearTimeout(cap); done(); }, { persona: persona.current, premium }).catch(() => { clearTimeout(cap); done(); });
         });
       } else if (did) { setTalkState({ note: did }); showBubble(did); }
-      else showBubble("I didn't catch a command in that. Tap the mic and try again.");
+      else if (!inSession) showBubble("I didn't catch a command in that. Tap the mic and try again.");
     } catch (e) {
+      if (fillerT.current) { clearTimeout(fillerT.current); fillerT.current = null; }
       if (seq !== cmdSeq.current) return;
       expects = null;
       dlog('cmd_error', String((e as any)?.message ?? e).slice(0, 120));
       const m = e instanceof ApiError && e.status !== 404 && e.message ? e.message : "Couldn't reach your coach. Check the connection and try again.";
-      showError(m);
+      speaking.current = false; busy.current = false;
+      if (inSession) { stopSession(m, true); return; }
+      showBubble(m); setTalkState({ error: true });
     }
     if (seq !== cmdSeq.current) return;
-    speaking.current = false; busy.current = false;
+    speaking.current = false; busy.current = false; muteUntil.current = Date.now() + MUTE_GRACE_MS * tuning.scale;
     if (!alive.current) return;
-    if (session.current) {                                    // voice session: straight back to listening, no tap needed (the answer to a question, or the next command)
-      setTalkState({ phase: 'listening', heard: '' });
-      setTimeout(() => { if (session.current && alive.current && !busy.current && !talking.current) startTalkRef.current(!!expects); }, 350);
-      return;
-    }
+    followNext.current = !!expects;
+    if (session.current) { setTalkState({ phase: 'listening', heard: '' }); return; }      // the microphone never stopped: just listening again
     setTalkState({ phase: 'idle' });
     backoff.current = 500;
-    if (expects) setTimeout(() => { if (alive.current && !busy.current && !talking.current) startTalkRef.current(true); }, 350);   // the coach asked something: listen for the answer
+    if (expects) startSessionRef.current();                // a Hey-coach command that asked a question: open a session to hear the answer
     else reconcile();
-  }, [reconcile, stopRun]);
+  }, [reconcile, stopRun, stopSession]);
 
-  // ---------------------------------------------------------------- tap to talk
-  const endTalk = useCallback((abort: boolean) => {
-    if (talkT.current) { clearTimeout(talkT.current); talkT.current = null; }
-    if (talkQuiet.current) { clearTimeout(talkQuiet.current); talkQuiet.current = null; }
-    const was = talking.current;
-    talking.current = false; talkLive.current = false;
-    if (was) { try { abort ? MOD?.abort?.() : MOD?.stop?.(); } catch { /* not running */ } releaseMic('ui'); }
-  }, []);
+  const startSessionRef = useRef<() => void>(() => {});
 
-  /** The turn is over: send what was heard, or say plainly that nothing was heard. */
-  const finishTalk = useCallback((why: 'final' | 'silence' | 'end' | 'timeout' | 'tap', errCode?: string) => {
-    if (talkSent.current) return;
-    const text = talkText.current.trim();
-    const follow = talkFollow.current;
-    dlog('talk_finish', { why, errCode, chars: text.length, text: text.slice(0, 80) });
-    talkSent.current = true;
-    endTalk(false);
-    if (text) { quietSince.current = Date.now(); setTalkState({ heard: text }); handleCommand(text, follow); return; }
-    if (session.current && why !== 'tap') {                   // nothing said this round: stay in the session quietly, no error, no flicker
-      if (Date.now() - quietSince.current > SESSION_QUIET_MS) { session.current = false; dlog('session_quiet_end'); setTalkState({ phase: 'idle', heard: '', session: false }); showBubble('Voice paused after a few quiet minutes. Tap the mic to carry on.'); reconcile(); return; }
-      setTalkState({ phase: 'listening', heard: '' });
-      setTimeout(() => { if (session.current && alive.current && !busy.current && !talking.current) startTalkRef.current(false); }, 250);
-      return;
-    }
-    setTalkState({ phase: 'idle', heard: '' });
-    if (follow && why !== 'tap') { reconcile(); return; }          // a follow-up window that nobody answered: end quietly
-    if (why === 'tap') { reconcile(); return; }
-    showError(errCode ? voiceErrorMessage(errCode) || "Didn't hear anything. Tap the mic and try again." : "Didn't hear anything. Tap the mic and try again.");
-    reconcile();
-  }, [endTalk, handleCommand, reconcile]);
+  const sendUtterance = useCallback((text: string) => {
+    committed.current = ''; partial.current = '';
+    let full = text;
+    const c = carry.current;
+    if (c && Date.now() - c.at < CARRY_MS) full = `${c.text} ${text}`;
+    carry.current = null;
+    quietSince.current = Date.now();
+    const f = followNext.current; followNext.current = false;
+    dlog('utt_send', { chars: full.length, follow: f });
+    handleCommand(cleanSpeech(full), f);
+  }, [handleCommand]);
 
-  const startTalk = useCallback(async (followup = false) => {
+  const startTicker = useCallback(() => {
+    stopTicker();
+    tickT.current = setInterval(() => {
+      if (!session.current || !alive.current) return;
+      const now = Date.now();
+      if (carry.current && now - carry.current.at > CARRY_MS) carry.current = null;
+      if (muted()) return;
+      const out = ep.current.ready(now);
+      if (out) { sendUtterance(out); return; }
+      if (!ep.current.peek() && !carry.current && now - quietSince.current > SESSION_QUIET_MS) stopSession('Voice paused after a few quiet minutes. Tap the mic to carry on.');
+    }, TICK_MS);
+  }, [sendUtterance, stopSession]);
+
+  const startSession = useCallback(async () => {
     if (!MOD) { setTalkState({ phase: 'idle', error: true }); showBubble('Voice needs the installed app build, not Expo Go. Type to your coach instead.'); return; }
-    if (busy.current && Date.now() - busyAt.current > 45000) { busy.current = false; speaking.current = false; dlog('busy_reset'); }   // a stuck turn must never lock the mic
-    if (talking.current || busy.current) { dlog('talk_blocked', { talking: talking.current, busy: busy.current }); return; }
-    if (micOwner() === 'ui') { showBubble('The microphone is in use on this screen right now.'); return; }
-    stopSpeaking(); speaking.current = false;
+    if (session.current) return;
     try {
       const avail = MOD.isRecognitionAvailable?.();
       dlog('recognition_available', avail);
@@ -292,59 +367,45 @@ export default function WakeCoach() {
         if (!p.granted) { status(); showError('Microphone permission is off. Allow it in your phone settings.'); return; }
       }
     } catch { showError("Couldn't ask for microphone permission."); return; }
+    if (session.current) return;
     const wakeWasRunning = running.current;
-    dlog('talk_start', { followup, lang: getRecognitionLang(), wake: wakeWasRunning, owner: micOwner(), perm: perm.current });
-    talking.current = true; talkSent.current = false; talkText.current = ''; talkFollow.current = followup;
-    acquireMic('ui');                                              // takes the mic from the wake listener (reconcile stops it)
+    session.current = true; quietSince.current = Date.now();
+    committed.current = ''; partial.current = ''; carry.current = null; followNext.current = false; ep.current.reset();
+    contOK.current = true; hardErrors.current = 0; endTimes.current = []; lastResultAt.current = 0;
+    dlog('session_start', { lang: getRecognitionLang(), wake: wakeWasRunning, owner: micOwner() });
+    acquireMic('ui');                                              // takes the mic from the wake listener
     if (running.current) stopRun();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setBubble(''); setTalkState({ phase: followup ? 'followup' : 'listening', heard: '', note: '', error: false });
-    await new Promise((r) => setTimeout(r, wakeWasRunning ? 600 : 120));   // let a running session wind down; its late 'end' event is ignored (talking is set)
-    if (!talking.current) return;
-    try {
-      MOD.start({ lang: getRecognitionLang(), interimResults: true, continuous: false, addsPunctuation: false, maxAlternatives: 1 });
-    } catch (e: any) { dlog('talk_start_throw', { code: e?.code, msg: String(e?.message ?? e).slice(0, 120) }); endTalk(true); setTalkState({ phase: 'idle' }); showError(voiceErrorMessage(e?.code || e?.error, e?.message) || "Couldn't start the microphone."); reconcile(); return; }
-    talkLive.current = true; talkStartedAt.current = Date.now(); dlog('talk_listening');
-    talkT.current = setTimeout(() => finishTalk('timeout'), followup ? 9000 : TALK_MAX_MS);
-  }, [endTalk, finishTalk, reconcile, status, stopRun]);
-  startTalkRef.current = (f) => { startTalk(!!f); };
+    setBubble(''); setTalkState({ phase: 'listening', heard: '', note: '', error: false, session: true });
+    await new Promise((r) => setTimeout(r, wakeWasRunning ? 600 : 100));   // let a running wake session wind down; its late 'end' event is ignored
+    if (!session.current) return;
+    startRecognizer();
+    startTicker();
+  }, [startRecognizer, startTicker, status, stopRun]);
+  startSessionRef.current = () => { startSession(); };
 
-  const startSession = useCallback(() => {
-    session.current = true; quietSince.current = Date.now(); dlog('session_start');
-    setTalkState({ session: true });
-    startTalk(false);
-  }, [startTalk]);
+  /** A screen that speaks by itself (a button press) asks us to ignore the microphone for a while. */
+  const muteFor = useCallback((ms: number, exact = false) => { muteUntil.current = exact ? Date.now() + ms : Math.max(muteUntil.current, Date.now() + ms); }, []);
 
-  const stopTalkOrAnswer = useCallback(() => {
-    const was = session.current;
-    session.current = false; setTalkState({ session: false }); if (was) dlog('session_stop');
-    if (talking.current) { talkText.current = ''; finishTalk('tap'); return; }      // tapping stop discards a half-said sentence
-    // thinking or speaking: cancel it for real, so the next tap always starts a fresh turn
-    cmdSeq.current++; busy.current = false; speaking.current = false;
-    stopSpeaking();
-    setTalkState({ phase: 'idle', note: '' });
-    reconcile();
-  }, [finishTalk, reconcile]);
-
-  // ---------------------------------------------------------------- wake mode: an utterance, a hit, a command
+  // ================================================================ "Hey coach": an utterance, a hit, a command
   const dispatch = useCallback((events: ReturnType<typeof tracker.current.feed>) => {
     for (const e of events) {
       if (e.kind === 'wake') { patchDiag({ lastMatch: Date.now() }); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setTalkState({ phase: 'listening', note: 'Heard "Hey coach"' }); }
       else if (e.kind === 'command') handleCommand(e.command, !!e.followup);
     }
     if (events.length === 0) return;
-    if (tracker.current.awaiting(Date.now())) setTimeout(() => { if (!busy.current && !talking.current) setTalkState({ phase: 'idle', note: '' }); }, CMD_WINDOW_MS + 200);
+    if (tracker.current.awaiting(Date.now())) setTimeout(() => { if (!busy.current && !session.current) setTalkState({ phase: 'idle', note: '' }); }, CMD_WINDOW_MS + 200);
   }, [handleCommand]);
 
-  // ---------------------------------------------------------------- bootstrap + native events
+  // ================================================================ bootstrap + native events
   useEffect(() => {
     alive.current = true;
     const unTalk = onTalkState(setTalk);
-    const unReg = registerTalk(() => { startSession(); }, stopTalkOrAnswer);
+    const unReg = registerTalk(() => { startSession(); }, () => stopSession(), muteFor);
     loadWakeSetting().then((on) => { enabled.current = on; reconcile(); });
     const un = onWakeState((s) => { setWakeOn(s.status === 'listening'); if (s.enabled !== enabled.current) { enabled.current = s.enabled; reconcile(); } });
     const unMic = onMicChange(reconcile);
-    const app = AppState.addEventListener('change', (s) => { appActive.current = s === 'active'; if (s !== 'active') { session.current = false; setTalkState({ session: false }); if (talking.current) { talkText.current = ''; finishTalk('tap'); } } reconcile(); });
+    const app = AppState.addEventListener('change', (s) => { appActive.current = s === 'active'; if (s !== 'active' && session.current) stopSession(); reconcile(); });
     if (!MOD) { status(); return () => { alive.current = false; unTalk(); unReg(); un(); unMic(); app.remove(); }; }
 
     const subs = [
@@ -353,13 +414,16 @@ export default function WakeCoach() {
       MOD.addListener('result', (e: any) => {
         const t: string = e.results?.[0]?.transcript ?? '';
         if (!t) return;
-        if (talking.current) {                                   // a tap-to-talk turn: show the words as they come, send when finished
+        if (session.current) {                                   // the voice session: collect the words, the ticker decides when you are done
           if (!talkLive.current) return;
-          if (!talkText.current) dlog('talk_first_words', t.slice(0, 60));
-          talkText.current = t; setTalkState({ heard: t });
-          if (talkQuiet.current) clearTimeout(talkQuiet.current);
-          if (e.isFinal) { finishTalk('final'); return; }
-          talkQuiet.current = setTimeout(() => finishTalk('silence'), TALK_SILENCE_MS);
+          const now = Date.now();
+          if (muted()) return;                                   // the coach is thinking / talking (or just stopped): ignore, so it never hears itself
+          if (!lastResultAt.current || lastResultAt.current < talkStartedAt.current) dlog('first_words', t.slice(0, 60));
+          lastResultAt.current = now; hardErrors.current = 0;
+          if (e.isFinal) { committed.current = joinSegments(committed.current, t); partial.current = ''; } else partial.current = t;
+          const whole = joinSegments(committed.current, partial.current);
+          ep.current.feed(whole, now, !!e.isFinal);
+          setTalkState({ phase: 'listening', heard: cleanSpeech(joinSegments(carry.current?.text ?? '', whole)) });
           return;
         }
         if (!running.current || micOwner() !== 'wake' || busy.current) return;
@@ -372,10 +436,20 @@ export default function WakeCoach() {
         }
       }),
       MOD.addListener('end', () => {
-        if (talking.current) {
-          if (!talkLive.current || (Date.now() - talkStartedAt.current < 500 && !talkText.current)) { dlog('talk_stale_end'); return; }   // the wake session winding down, not ours
-          dlog('talk_end');
-          finishTalk('end'); return;
+        if (session.current) {
+          if (!talkLive.current) { dlog('rec_stale_end'); return; }
+          if (Date.now() - talkStartedAt.current < 500 && lastResultAt.current < talkStartedAt.current) { dlog('rec_stale_end'); return; }   // the wake session winding down, not ours
+          talkLive.current = false;
+          const now = Date.now();
+          if (partial.current) {                                  // the recognizer stopped mid-sentence: keep what it had
+            committed.current = joinSegments(committed.current, partial.current); partial.current = '';
+            ep.current.feed(committed.current, now, true);
+          }
+          endTimes.current = [...endTimes.current.filter((x) => now - x < 8000), now];
+          if (endTimes.current.length >= 4 && lastResultAt.current < endTimes.current[0] && contOK.current) { contOK.current = false; dlog('cont_off'); }   // restarting without ever hearing anything: no continuous mode here
+          dlog('rec_end', { cont: contOK.current });
+          scheduleRecRestart(contOK.current ? 100 : 250);
+          return;
         }
         if (!running.current) return;                            // ours was stopped on purpose (or a stale end from another session)
         running.current = false; if (micOwner() === 'wake') releaseMic('wake');
@@ -385,12 +459,14 @@ export default function WakeCoach() {
       }),
       MOD.addListener('error', (e: any) => {
         const code = e?.error;
-        if (talking.current) {
-          if (!talkLive.current) { dlog('talk_stale_error', code); return; }
-          dlog('talk_error', { code, msg: String(e?.message ?? '').slice(0, 100) });
-          if (code === 'not-allowed') { perm.current = 'denied'; status(); }
-          if (code === 'no-speech' || code === 'speech-timeout' || code === 'aborted') { finishTalk('end'); return; }
-          finishTalk('end', code);
+        if (session.current) {
+          if (!talkLive.current) { dlog('rec_stale_error', code); return; }
+          dlog('rec_error', { code, msg: String(e?.message ?? '').slice(0, 100) });
+          if (code === 'not-allowed' || code === 'service-not-allowed') { perm.current = 'denied'; status(); showError('Microphone or speech permission was refused. Allow it in your phone settings.'); return; }
+          talkLive.current = false;
+          if (code === 'no-speech' || code === 'speech-timeout' || code === 'aborted') { scheduleRecRestart(contOK.current ? 100 : 250); return; }   // silence is normal
+          if (++hardErrors.current >= 4) { showError(voiceErrorMessage(code, e?.message) || "I can't hear you right now. Tap the mic to try again."); return; }
+          scheduleRecRestart(500 * hardErrors.current);
           return;
         }
         patchDiag({ lastError: String(code || e?.message || 'error').slice(0, 60) });
@@ -404,13 +480,15 @@ export default function WakeCoach() {
     ];
     return () => {
       alive.current = false; unTalk(); unReg(); un(); unMic(); app.remove(); subs.forEach((s) => s.remove());
-      clearTimers(); if (bubbleT.current) clearTimeout(bubbleT.current); endTalk(true);
+      clearTimers(); if (bubbleT.current) clearTimeout(bubbleT.current);
+      stopTicker(); if (recT.current) clearTimeout(recT.current); if (fillerT.current) clearTimeout(fillerT.current);
+      if (session.current) { session.current = false; try { MOD.abort?.(); } catch { /* ignore */ } releaseMic('ui'); }
       if (running.current) { running.current = false; try { MOD.abort?.(); } catch { /* ignore */ } }
       if (micOwner() === 'wake') releaseMic('wake'); stopSpeaking(); setTalkState({ phase: 'idle', heard: '', note: '', error: false, session: false });
     };
   }, []);
 
-  // ---------------------------------------------------------------- what is shown (only while something is happening)
+  // ================================================================ what is shown (only while something is happening)
   const active = talk.phase !== 'idle';
   const label = talk.phase === 'listening' ? (talk.session ? 'Voice on · tap the mic to stop' : 'Listening…') : talk.phase === 'followup' ? 'Your answer?' : talk.phase === 'thinking' ? 'On it…' : talk.phase === 'speaking' ? (talk.note || 'Coach') : talk.note;
   const top = { position: 'absolute' as const, top: insets.top + 6, left: 0, right: 0, alignItems: 'center' as const, gap: 8, zIndex: 50, elevation: 50 };

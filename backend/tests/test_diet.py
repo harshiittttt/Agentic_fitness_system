@@ -131,7 +131,7 @@ def test_agent_tools_build_the_plan_and_the_reply_carries_it(env, monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "x")
     seen = {}
 
-    def fake(system, user, tools, handlers, max_turns=6, max_tokens=1024, history=None, trace=None):
+    def fake(system, user, tools, handlers, max_turns=6, max_tokens=1024, history=None, trace=None, fast=False):
         seen["system"], seen["tools"] = system, [t["name"] for t in tools]
         handlers["save_diet_preferences"](diet_type="nonveg", meals_per_day=3)
         r = handlers["make_meal_plan"](variation=1)
@@ -154,7 +154,7 @@ def test_agent_replays_only_diet_turns_and_never_the_workout_chat(env, monkeypat
     conversation.record("chat", "user", "how is my bench", learn=False)
     captured = {}
 
-    def fake(system, user, tools, handlers, max_turns=6, max_tokens=1024, history=None, trace=None):
+    def fake(system, user, tools, handlers, max_turns=6, max_tokens=1024, history=None, trace=None, fast=False):
         captured["history"] = history
         return "ok"
 

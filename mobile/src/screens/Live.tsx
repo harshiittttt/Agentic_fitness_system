@@ -7,7 +7,7 @@ import { deleteSet, getCoach, getLiveState, getPrefill, getSessionSets, liveCue,
 import { personaById, Tts } from '../personas';
 import { speak, stopSpeaking } from '../tts';
 import { setRecognitionLang, shouldUsePremium } from '../voiceSettings';
-import { useVoice } from '../useVoice';
+import { getTalkState, muteVoice, onTalkState, onVoiceReply, setVoiceHints, stopTalk, talkAvailable, TalkState, toggleTalk } from '../voiceTalk';
 import { Dial } from '../SetLogger';
 import SwapSheet from '../SwapSheet';
 import { dlog } from '../diag';
@@ -49,7 +49,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const [line, setLine] = useState('');
   const [heard, setHeard] = useState('');
   const [rest, setRest] = useState(0);
-  const [voiceOn, setVoiceOn] = useState(false);       // a voice session: tap the mic once, it keeps listening turn after turn until you tap stop
+  const [talkS, setTalkS] = useState<TalkState>(getTalkState());   // the voice session (owned by the voice engine): one tap starts it, the next stops it
   const [sound, setSound] = useState(true);
   const [typing, setTyping] = useState(false);
   const [typed, setTyped] = useState('');
@@ -71,8 +71,6 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const tts = useRef<Tts>({ rate: 1, pitch: 1 });
   const personaRef = useRef('hype');
   const soundRef = useRef(true);
-  const stopListenRef = useRef<() => void>(() => {});
-  const quietSince = useRef(0);
   const restTotal = useRef(90);
   const restRunning = useRef(false);
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -84,8 +82,8 @@ export default function Live({ onClose }: { onClose: () => void }) {
     setLine(text);
     if (!soundRef.current) { setPhase('idle'); return; }
     setPhase('speaking');
-    stopListenRef.current();               // never listen to ourselves
-    speak(text, tts.current, () => { if (alive.current && token.current === mine) setPhase('idle'); }, { persona: personaRef.current, premium });
+    muteVoice(60000);                      // never listen to ourselves: the voice engine ignores the microphone until this line is done
+    speak(text, tts.current, () => { muteVoice(700, true); if (alive.current && token.current === mine) setPhase('idle'); }, { persona: personaRef.current, premium });
   }, []);
 
   const startRest = useCallback((sec: number) => {
@@ -106,6 +104,8 @@ export default function Live({ onClose }: { onClose: () => void }) {
     else if (r.intent === 'set') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     for (const a of r.actions ?? []) {
       if (a.type === 'rest') startRest(a.seconds);
+      if (a.type === 'rest_add') { restTotal.current += a.seconds; setRest((x) => x + a.seconds); }
+      if (a.type === 'rest_skip') { if (tick.current) clearInterval(tick.current); restRunning.current = false; setRest(0); }
       if (a.type === 'end') { setEnded(true); if (tick.current) clearInterval(tick.current); setRest(0); restRunning.current = false; }
     }
     if (opts.speakIt === false) { setLine(r.reply || ''); setPhase('idle'); } else talk(r.reply, shouldUsePremium(!!r.moment));
@@ -161,9 +161,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
     catch { setPhase('idle'); setProblem("Couldn't reach your coach. Nothing was lost. Check your connection and try again."); return false; }
   }, [apply]);
 
-  const voice = useVoice((t) => { quietSince.current = Date.now(); send(t, false); });   // you started the session, so everything you say is for the coach
   const hintWords = () => [...GYM_WORDS, ...((state?.exercises ?? []).map((e: any) => e.name))];
-  stopListenRef.current = voice.stop;
 
   const open = useCallback(async () => {
     setProblem(''); setOpening(true);
@@ -180,7 +178,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
     alive.current = true;
     dlog('live_mount');
     open();
-    return () => { dlog('live_unmount'); alive.current = false; token.current++; stopSpeaking(); stopListenRef.current(); if (tick.current) clearInterval(tick.current); };
+    return () => { dlog('live_unmount'); alive.current = false; token.current++; stopSpeaking(); stopTalk(); if (tick.current) clearInterval(tick.current); };
   }, []);
 
   // Rest finished: the coach calls you back in.
@@ -192,27 +190,17 @@ export default function Live({ onClose }: { onClose: () => void }) {
     }
   }, [rest, talk]);
 
-  // Voice session: whenever the coach is quiet and nothing is being sent, listen again. Silence is fine (rest between sets); it ends only when you tap stop,
-  // or after five quiet minutes (battery), and says so.
-  const failures = useRef(0);
-  useEffect(() => {
-    if (!voiceOn || !voice.available || phase !== 'idle' || voice.listening || ended) return;
-    const t = setTimeout(async () => {
-      if (Date.now() - quietSince.current > 5 * 60 * 1000) { setVoiceOn(false); setNote('Voice paused after a few quiet minutes. Tap the mic to carry on.'); return; }
-      const ok = await voice.start(hintWords());
-      if (!ok && ++failures.current >= 3) { setVoiceOn(false); setProblem('I could not use the microphone. Allow it in your phone settings, then tap the mic again.'); }
-      else if (ok) failures.current = 0;
-    }, 450);
-    return () => clearTimeout(t);
-  }, [voiceOn, voice.available, phase, voice.listening, ended]);
+  // The voice engine (WakeCoach) answers voice turns itself and speaks; every reply also comes here so sets, the rest timer and the lineup update.
+  useEffect(() => onVoiceReply((r) => apply(r, { speakIt: false })), [apply]);
+  useEffect(() => onTalkState(setTalkS), []);
+  useEffect(() => { setVoiceHints(hintWords()); }, [state?.exercises?.length]);
 
   /** One tap starts the voice session, the next tap stops it. */
   const onMic = () => {
-    if (!voice.available) return;
+    if (!talkAvailable()) { setProblem('Voice needs the installed app, not Expo Go. You can still type below.'); return; }
     Haptics.selectionAsync();
-    if (voiceOn) { setVoiceOn(false); if (phase === 'speaking') { token.current++; stopSpeaking(); setPhase('idle'); } voice.stop(); return; }
-    quietSince.current = Date.now(); failures.current = 0; setVoiceOn(true);
-    if (phase === 'speaking') { token.current++; stopSpeaking(); setPhase('idle'); }
+    if (!talkS.session && phase === 'speaking') { token.current++; stopSpeaking(); setPhase('idle'); }
+    toggleTalk();
   };
   const sendTyped = () => { const t = typed; if (!t.trim()) return; setTyped(''); send(t, false).then((ok) => { if (!ok) setTyped(t); }); };
 
@@ -238,7 +226,8 @@ export default function Live({ onClose }: { onClose: () => void }) {
     setLogging(false);
   };
 
-  const display: 'idle' | 'listening' | 'thinking' | 'speaking' = voice.listening ? 'listening' : phase;
+  const voiceOn = talkS.session;
+  const display: 'idle' | 'listening' | 'thinking' | 'speaking' = voiceOn && talkS.phase !== 'idle' ? (talkS.phase === 'followup' ? 'listening' : talkS.phase) : phase;
   const accent = personaById(persona).color;
   const total = row?.sets ?? 0;
   const setNo = (row?.done ?? 0) + 1;
@@ -277,7 +266,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
                 {opening ? <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}><ActivityIndicator size="small" color={colors.amber} /><Txt style={{ color: colors.amber, fontFamily: font.semibold }}>Getting your session ready…</Txt></View>
                   : <Txt accessibilityLiveRegion="polite" style={{ fontFamily: font.bold, fontSize: line.length > 120 ? 16 : 19, lineHeight: line.length > 120 ? 22 : 26, letterSpacing: -0.2 }}>{line || `Ready when you are.`}</Txt>}
                 {!!status && <Txt style={{ color: accent, fontFamily: font.semibold, fontSize: 13 }}>{status}</Txt>}
-                {!!heard && !status && <Txt numberOfLines={2} style={{ color: colors.dim, fontSize: 13 }}>You said: {heard}</Txt>}
+                {voiceOn && !!talkS.heard && talkS.phase === 'listening' ? <Txt numberOfLines={3} style={{ color: colors.text, fontSize: 14, fontFamily: font.medium }}>“{talkS.heard}”</Txt> : !!heard && !status && <Txt numberOfLines={2} style={{ color: colors.dim, fontSize: 13 }}>You said: {heard}</Txt>}
               </View>
             </View>
 
@@ -412,7 +401,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
         )}
       </ScrollView>
 
-      {!ended && voice.available && (
+      {!ended && talkAvailable() && (
         <View pointerEvents="box-none" style={{ position: 'absolute', right: 16, bottom: 18 }}>
           <Pressable accessibilityRole="button" accessibilityLabel={voiceOn ? 'Stop the voice conversation' : 'Talk to your coach'} onPress={onMic}
             style={({ pressed }) => ({ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: voiceOn ? colors.cyan : accent, transform: [{ scale: pressed ? 0.94 : 1 }], shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 10 })}>
