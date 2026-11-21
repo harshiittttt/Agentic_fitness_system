@@ -20,7 +20,8 @@ const HOLD_DONE = 700 * S, HOLD_MAYBE = 1600 * S, HOLD_OPEN = 3800 * S;
 
 let backend: ReturnType<typeof makeBackend>;
 const setup = (opts: Parameters<typeof makeBackend>[0] = {}) => { backend = makeBackend(opts); (global as any).fetch = backend.fetch; };
-beforeEach(() => { tuning.scale = S; setTalkState({ phase: 'idle', heard: '', note: '', error: false, session: false }); SR.__reset(); TTS.speak.mockClear(); setVoiceOverlay(null); setup(); });
+const defaultSpeak = async (_t: string, _c: any, done?: () => void) => { if (done) setTimeout(done, 0); };
+beforeEach(() => { tuning.scale = S; setTalkState({ phase: 'idle', heard: '', note: '', error: false, session: false }); SR.__reset(); TTS.speak.mockReset(); TTS.speak.mockImplementation(defaultSpeak); TTS.stopSpeaking.mockReset(); setVoiceOverlay(null); setup(); });
 afterAll(() => { tuning.scale = 1; });
 
 const say = (text: string, isFinal = false) => act(() => { SR.__emit('result', { results: [{ transcript: text }], isFinal }); });
@@ -30,7 +31,8 @@ const starts = () => SR.__state.starts.length;
 const cmds = () => backend.calls.filter((c) => c.path === '/voice/command').map((c) => c.body);
 const mounted = async () => { const r = render(<WakeCoach />); await waitFor(() => expect(SR.__listenerCount('result')).toBe(1)); return r; };
 const startSession = async () => { await tap(); await waitFor(() => expect(starts()).toBe(1)); };
-const stopSession = async () => { if (getTalkState().session) await tap(); await waitFor(() => expect(getTalkState().session).toBe(false)); };
+// a tap while the coach is still talking only skips its sentence, so stopping may take a second tap (that is the real behaviour)
+const stopSession = async () => { for (let i = 0; i < 3 && getTalkState().session; i++) { await tap(); await wait(80); } await waitFor(() => expect(getTalkState().session).toBe(false)); };
 const spokenTexts = () => TTS.speak.mock.calls.map((c: any[]) => c[0]);
 
 test('REGRESSION: the recognizer listeners are attached through the module object, not the unbound package export', async () => {
@@ -312,4 +314,36 @@ test('Hey coach: a voice session takes the microphone from the wake listener and
   await waitFor(() => expect(starts()).toBe(3), { timeout: 6000 });      // wake listening resumes
   expect(SR.__state.starts[2].addsPunctuation).toBe(true);
   await setWakeEnabled(false);
+});
+
+
+test('a long answer can be cut short with one tap: the sentence stops, the session carries on, and you are heard at once', async () => {
+  let finish: (() => void) | null = null;
+  TTS.speak.mockImplementation(async (t: string, _c: any, done?: () => void) => { if (t.startsWith('You said')) finish = done ?? null; else if (done) setTimeout(done, 0); });   // the answer "talks" until stopped
+  TTS.stopSpeaking.mockImplementation(() => { const f = finish; finish = null; f?.(); });
+  await mounted();
+  await startSession();
+  say('what should I do next', true);
+  await waitFor(() => expect(getTalkState().phase).toBe('speaking'), { timeout: 3000 });
+  await tap();                                                         // the coach is talking: this tap only skips the rest of the sentence
+  await waitFor(() => expect(getTalkState()).toMatchObject({ phase: 'listening', session: true }), { timeout: 3000 });
+  expect(TTS.stopSpeaking).toHaveBeenCalled();
+  await wait(220 * S + 60);                                            // only a very short echo guard after a skip
+  say('skip this', true);
+  await waitFor(() => expect(cmds().length).toBe(2), { timeout: 3000 });
+  expect(starts()).toBe(1);
+  await waitFor(() => expect(getTalkState().phase).toBe('speaking'), { timeout: 3000 });
+  await tap();                                                         // skip that answer too, then stop the session
+  await waitFor(() => expect(getTalkState().phase).toBe('listening'), { timeout: 3000 });
+  await stopSession();
+});
+
+test('in a session the coach talks a little faster than the narration voice', async () => {
+  await mounted();
+  await startSession();
+  say('what is next', true);
+  await waitFor(() => expect(spokenTexts().some((t: string) => t.startsWith('You said'))).toBe(true), { timeout: 3000 });
+  const call = TTS.speak.mock.calls.find((c: any[]) => String(c[0]).startsWith('You said'));
+  expect(call[1].rate).toBeGreaterThan(1.1);
+  await stopSession();
 });

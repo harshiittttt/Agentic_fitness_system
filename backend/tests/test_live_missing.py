@@ -199,3 +199,22 @@ def test_a_weight_on_a_bodyweight_exercise_is_kept(client):
     say(client, "pull up set done")
     r = say(client, "20 kilos for 6")
     assert r["intent"] == "set" and r["saved"][0]["weight"] == 20 and r["saved"][0]["reps"] == 6
+
+
+def test_a_hinglish_set_is_understood_and_asked_for_what_is_missing(client):
+    """Real session: 'maine ek set maar diya' -> weight? -> '30 kilo' -> reps? -> 'aath bar uthaya aath bar' must log 30 x 8 (it used to say 'did not understand' twice)."""
+    cur = _current(client)
+    r = say(client, f"theek hai yaar maine Ek set Maar Diya {cur} ka")
+    assert r["intent"] == "ask" and r["expects"] == "set_details"
+    r = say(client, "bhajan tha 30 kilo aur Maine uthaya")
+    assert r["intent"] == "ask" and live._pending["w"] == 30
+    r = say(client, "aath bar uthaya aath bar")
+    assert r["intent"] == "set" and r["saved"][0]["weight"] == 30 and r["saved"][0]["reps"] == 8
+
+
+def test_repeating_the_weight_when_asked_for_reps_does_not_log_that_many_reps(client):
+    cur = _current(client)
+    say(client, f"{cur} 30 kilo set done")
+    r = say(client, "30")
+    assert r["intent"] != "set" and live._pending
+    assert say(client, "8 reps")["saved"][0]["reps"] == 8

@@ -209,7 +209,7 @@ def compose(pid: str, name: str, intent: str, user_said: str, beats: list[dict],
     if not beats or not enabled() or intent in SAFETY_INTENTS or any(b["key"] in SAFETY_KEYS for b in beats):
         return None
     hi = pid in lines.HI_PERSONAS
-    cap = 320 if len(beats) > 3 else 220
+    cap = 200 if len(beats) > 3 else 150
     items = []
     for b in beats:
         vals = lines._localize(b["ctx"]) if hi else b["ctx"]
@@ -217,7 +217,7 @@ def compose(pid: str, name: str, intent: str, user_said: str, beats: list[dict],
         items.append(f"- {MEANING.get(b['key'], 'Convey this idea: ' + b['text'])}" + (f" Facts (exact): {facts}." if facts else "")
                      + f" Rough meaning only, do not copy the wording: \"{b['text']}\"")
     system = (P.system_prompt(pid, name) + "\n\nYou are speaking ALOUD to a lifter in the middle of a workout. Write what you say next: one flowing reply of "
-              "1 or 2 short spoken sentences (under " + str(cap) + " characters), in your own voice, with fresh wording every time. "
+              "ONE short spoken sentence, two at most, about 12 words each (under " + str(cap) + " characters), in your own voice, with fresh wording every time. "
               "Cover every item under BEATS, in a natural order. The facts are exact: use these numbers and exercise names exactly, write numbers as digits, "
               "never invent or change a number, and never claim a record unless a beat says one was set. Do not reuse the openers, phrases or sentence "
               "structure of RECENT LINES. No emojis, no markdown, no stage directions, no quotation marks. Output only the words you say."

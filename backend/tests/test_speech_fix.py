@@ -69,3 +69,17 @@ def test_the_router_only_gets_the_tools_a_sentence_can_need():
 def test_pain_words_match_whole_words_only(text, flag):
     from backend.policy.adaptation import has_safety_flag
     assert has_safety_flag(text) == flag
+
+
+# ------------------------------------------------------------------ Hinglish (Hindi in Roman letters), taken from the user's own session
+@pytest.mark.parametrize("raw,want", [
+    ("aath bar uthaya aath bar", "8 reps uthaya"),
+    ("aath bar", "8 reps"),
+    ("okay Maine uthaya Hai 30 kilo aath", "okay Maine uthaya Hai 30 kilo 8"),
+    ("bhajan tha 30 kilo aur Maine uthaya", "weight tha 30 kilo aur Maine uthaya"),
+    ("theek hai yaar maine Ek set Maar Diya bench press ka", "theek hai yaar maine 1 set done bench press ka"),
+    ("do set kiye 60 kilo paanch bar", "2 set kiye 60 kilo 5 reps"),
+    ("do it now", "do it now"), ("what do you do", "what do you do"),          # English 'do' is never turned into 2
+])
+def test_hinglish_numbers_and_phrases(raw, want):
+    assert sf.clean(raw) == want

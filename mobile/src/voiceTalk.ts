@@ -14,6 +14,7 @@ const subs = new Set<(s: TalkState) => void>();
 let starter: (() => void) | null = null;
 let stopper: (() => void) | null = null;
 let muter: ((ms: number, exact?: boolean) => void) | null = null;
+let skipper: (() => void) | null = null;
 const replySubs = new Set<(r: any) => void>();
 
 export const getTalkState = () => state;
@@ -26,14 +27,15 @@ export function setTalkState(p: Partial<TalkState>) {
 export const onTalkState = (fn: (s: TalkState) => void) => { subs.add(fn); return () => { subs.delete(fn); }; };
 
 /** WakeCoach registers how to start / stop a voice session and how to mute the microphone for a while. */
-export function registerTalk(start: () => void, stop: () => void, mute?: (ms: number, exact?: boolean) => void) {
-  starter = start; stopper = stop; muter = mute ?? null;
-  return () => { if (starter === start) { starter = null; stopper = null; muter = null; } };
+export function registerTalk(start: () => void, stop: () => void, mute?: (ms: number, exact?: boolean) => void, skip?: () => void) {
+  starter = start; stopper = stop; muter = mute ?? null; skipper = skip ?? null;
+  return () => { if (starter === start) { starter = null; stopper = null; muter = null; skipper = null; } };
 }
 /** The button: one tap starts a voice SESSION, the next tap stops it. Returns false when nothing is registered (e.g. Expo Go). */
 export function toggleTalk(): boolean {
   if (!starter) return false;
-  if (state.session || state.phase !== 'idle') stopper?.(); else starter();
+  if (state.session && state.phase === 'speaking' && skipper) skipper();          // the coach is talking: the tap cuts the sentence short and keeps listening
+  else if (state.session || state.phase !== 'idle') stopper?.(); else starter();
   return true;
 }
 export const talkAvailable = () => !!starter;

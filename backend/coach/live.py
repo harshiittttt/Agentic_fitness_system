@@ -305,7 +305,7 @@ def _log_sets(text: str, pid: str, name: str, parsed: dict | None = None) -> dic
     actions = []
     if not after["finished"]:
         sec = _rest_seconds(last["exercise"], rpe)
-        parts.append(_pick(pid, name, "rest_cue", rest=lines.rest_text(sec)))
+        _pick(pid, name, "rest_cue", rest=lines.rest_text(sec))   # registered for the offline template only; the rest timer is on screen, so it is not spoken
         actions.append({"type": "rest", "seconds": sec})
     flag = res.get("safety_flag")
     if flag:
@@ -378,6 +378,8 @@ def _set_flow(pid: str, name: str, norm: str, low: str) -> dict | None:
             _pending_clear()
             return None
         got = set_slots.extract(norm, ask=pend["missing"])
+        if (pend["missing"] == {"r"} and pend.get("w") and got["r"] is not None and not got.get("r_explicit") and float(got["r"]) == float(pend["w"])):
+            return _ask(pid, name, dict(pend))                 # (a copy: _ask rewrites the pending state) they repeated the weight: ask for the reps again instead of logging that many reps
         mentioned = set_slots.find_exercise(norm, plan)
         useful = got["w"] is not None or got["r"] is not None
         if not useful:

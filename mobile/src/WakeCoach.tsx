@@ -69,6 +69,7 @@ export default function WakeCoach() {
   const [wakeOn, setWakeOn] = useState(getWakeState().status === 'listening');
   const bubbleT = useRef<ReturnType<typeof setTimeout> | null>(null);
   const errAt = useRef(0);
+  const skipped = useRef(false);                  // the user cut the coach's sentence short: listen again at once
 
   const enabled = useRef(getWakeState().enabled);
   const appActive = useRef(AppState.currentState === 'active');
@@ -301,7 +302,8 @@ export default function WakeCoach() {
         const spoke0 = Date.now();
         await new Promise<void>((done) => {
           const cap = setTimeout(done, Math.min(40000, 6000 + reply.length * 90));   // never wait forever on a speech engine that forgot to say "done"
-          speak(reply, ttsCfg.current, () => { clearTimeout(cap); done(); }, { persona: persona.current, premium }).catch(() => { clearTimeout(cap); done(); });
+          const cfg = inSession ? { ...ttsCfg.current, rate: Math.min(1.3, (ttsCfg.current.rate ?? 1) * 1.15) } : ttsCfg.current;   // a conversation: a little quicker than the narration voice
+          speak(reply, cfg, () => { clearTimeout(cap); done(); }, { persona: persona.current, premium }).catch(() => { clearTimeout(cap); done(); });
         });
         dlog('spoke', { ms: Date.now() - spoke0, chars: reply.length, premium });
       } else if (did) { setTalkState({ note: did }); showBubble(did); }
@@ -317,7 +319,7 @@ export default function WakeCoach() {
       showBubble(m); setTalkState({ error: true });
     }
     if (seq !== cmdSeq.current) return;
-    speaking.current = false; busy.current = false; muteUntil.current = Date.now() + MUTE_GRACE_MS * tuning.scale;
+    speaking.current = false; busy.current = false; muteUntil.current = Date.now() + (skipped.current ? 150 : MUTE_GRACE_MS) * tuning.scale; skipped.current = false;
     if (!alive.current) return;
     followNext.current = !!expects;
     if (session.current) { setTalkState({ phase: 'listening', heard: '' }); return; }      // the microphone never stopped: just listening again
@@ -386,6 +388,12 @@ export default function WakeCoach() {
   }, [startRecognizer, startTicker, status, stopRun]);
   startSessionRef.current = () => { startSession(); };
 
+  /** A tap while the coach is talking: cut the sentence short, keep the session, listen at once. */
+  const skipSpeech = useCallback(() => {
+    if (!speaking.current) return;
+    skipped.current = true; dlog('skip_speech'); stopSpeaking();
+  }, []);
+
   /** A screen that speaks by itself (a button press) asks us to ignore the microphone for a while. */
   const muteFor = useCallback((ms: number, exact = false) => { muteUntil.current = exact ? Date.now() + ms : Math.max(muteUntil.current, Date.now() + ms); }, []);
 
@@ -403,7 +411,7 @@ export default function WakeCoach() {
   useEffect(() => {
     alive.current = true;
     const unTalk = onTalkState(setTalk);
-    const unReg = registerTalk(() => { startSession(); }, () => stopSession(), muteFor);
+    const unReg = registerTalk(() => { startSession(); }, () => stopSession(), muteFor, skipSpeech);
     loadWakeSetting().then((on) => { enabled.current = on; reconcile(); });
     const un = onWakeState((s) => { setWakeOn(s.status === 'listening'); if (s.enabled !== enabled.current) { enabled.current = s.enabled; reconcile(); } });
     const unMic = onMicChange(reconcile);
