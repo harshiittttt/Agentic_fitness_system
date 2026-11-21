@@ -16,6 +16,7 @@ Run (Windows, the venv in D:\\voice-proto):  python voice_agent/server.py   (env
 from __future__ import annotations
 
 import asyncio
+import audioop
 import glob
 import json
 import os
@@ -148,6 +149,12 @@ def warm_up() -> float:
 
 # ---- wire format ----
 class PcmSerializer(FrameSerializer):
+    """Also counts what arrives, so "the phone connects but nothing is heard" can be told apart from "the phone sends silence" (see report())."""
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.rx = {"bytes": 0, "frames": 0, "peak": 0, "since": time.time()}
+
     async def serialize(self, frame: Frame):
         if isinstance(frame, OutputAudioRawFrame):
             return b"\x01" + frame.audio
@@ -159,6 +166,12 @@ class PcmSerializer(FrameSerializer):
 
     async def deserialize(self, data):
         if isinstance(data, (bytes, bytearray)):
+            self.rx["bytes"] += len(data)
+            self.rx["frames"] += 1
+            try:
+                self.rx["peak"] = max(self.rx["peak"], audioop.max(bytes(data[: len(data) // 2 * 2]), 2))
+            except Exception:
+                pass
             return InputAudioRawFrame(audio=bytes(data), sample_rate=IN_RATE, num_channels=1)
         try:
             return InputTransportMessageFrame(message=json.loads(data))
@@ -261,6 +274,7 @@ class Brain(FrameProcessor):
         full = (self.carry + " " + text).strip()
         self.carry = ""
         t0 = time.time()
+        print(f"[voice] heard: {full!r}", flush=True)
         await say(self, t="user", text=full)
         await say(self, t="state", s="thinking")
         try:
@@ -297,6 +311,8 @@ def spoken(reply: str, limit: int = 100) -> str:
     return out
 
 
+import itertools
+_conn_ids = itertools.count(1)
 app = FastAPI()
 _ready = {"warm_s": None}
 
@@ -328,11 +344,24 @@ async def ws(websocket: WebSocket):
         await websocket.close(code=4401)
         return
     await websocket.accept()
+    ser = PcmSerializer()
     transport = FastAPIWebsocketTransport(websocket, FastAPIWebsocketParams(audio_in_enabled=True, audio_out_enabled=True, add_wav_header=False,
-                                                                           serializer=PcmSerializer(), audio_in_sample_rate=IN_RATE, audio_out_sample_rate=OUT_RATE))
+                                                                           serializer=ser, audio_in_sample_rate=IN_RATE, audio_out_sample_rate=OUT_RATE))
     pair = LLMContextAggregatorPair(LLMContext(), user_params=LLMUserAggregatorParams(vad_analyzer=SileroVADAnalyzer(params=VADParams(stop_secs=VAD_STOP_SECS)),
                                                                                                               user_turn_strategies=UserTurnStrategies(stop=[TurnAnalyzerUserTurnStopStrategy(turn_analyzer=LocalSmartTurnAnalyzerV3(params=SmartTurnParams(stop_secs=TURN_STOP_SECS)))])))
     brain = Brain(token, backend)
+    cid = next(_conn_ids)
+    print(f"[voice {cid}] connected (backend {backend})", flush=True)
+
+    async def report():
+        last = 0
+        while True:
+            await asyncio.sleep(3)
+            rx = ser.rx if ser else {"bytes": 0, "frames": 0, "peak": 0}
+            print(f"[voice {cid}] mic: {rx['frames']} frames, {rx['bytes'] // 1024} KB total, {(rx['bytes'] - last) // 1024} KB in the last 3 s, loudest sample {rx['peak']}/32767", flush=True)
+            last, rx["peak"] = rx["bytes"], 0
+
+    reporter = asyncio.create_task(report())
     pipe = Pipeline([transport.input(), Gate(), make_stt(), pair.user(), brain, make_tts(), transport.output()])
     task = PipelineTask(pipe, params=PipelineParams(audio_in_sample_rate=IN_RATE, audio_out_sample_rate=OUT_RATE, allow_interruptions=True))
 
@@ -343,6 +372,8 @@ async def ws(websocket: WebSocket):
     try:
         await PipelineRunner(handle_sigint=False).run(task)
     finally:
+        reporter.cancel()
+        print(f"[voice {cid}] closed", flush=True)
         await brain.http.aclose()
 
 
