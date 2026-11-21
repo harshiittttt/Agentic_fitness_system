@@ -1,19 +1,19 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Easing, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { WorkoutSummaryData, getWorkoutSummary } from '../api';
 import { colors, font, gradients } from '../theme';
-import { Card, CountUp, FadeIn, GradientButton, SectionTitle, Skeleton, Txt } from '../ui';
+import { Card, Confetti, CountUp, FadeIn, GradientButton, SectionTitle, Skeleton, Txt } from '../ui';
 
 const cap = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 const kg = (n: number | null | undefined) => String(+(n ?? 0).toFixed(2));
 
 function Tile({ value, label, children }: { value?: number; label: string; children?: React.ReactNode }) {
   return (
-    <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
+    <View accessible accessibilityLabel={label} style={{ flex: 1, alignItems: 'center', gap: 2 }}>
       {children ?? <CountUp value={value ?? 0} style={{ fontFamily: font.black, fontSize: 30, letterSpacing: -0.8 }} />}
-      <Txt style={{ color: colors.dim, fontSize: 11.5, letterSpacing: 1, fontFamily: font.semibold }}>{label.toUpperCase()}</Txt>
+      <Txt numberOfLines={1} style={{ color: colors.dim, fontSize: 11.5, letterSpacing: 1, fontFamily: font.semibold }}>{label.toUpperCase()}</Txt>
     </View>
   );
 }
@@ -26,6 +26,15 @@ export default function WorkoutSummary({ session, accent = colors.lime, coachLin
   const [failed, setFailed] = useState(false);
   const load = useCallback(() => { setFailed(false); setD(null); getWorkoutSummary(session).then(setD).catch(() => setFailed(true)); }, [session]);
   useEffect(() => { load(); }, [load]);
+  // The badge pops in and, only for a genuinely finished session, a single tasteful burst fires once.
+  const pop = useRef(new Animated.Value(0)).current;
+  const [burst, setBurst] = useState(0);
+  const celebrated = useRef(false);
+  useEffect(() => {
+    if (!d) return;
+    Animated.spring(pop, { toValue: 1, damping: 11, stiffness: 140, mass: 0.8, useNativeDriver: true }).start();
+    if (d.finished && d.sets > 0 && !celebrated.current) { celebrated.current = true; setBurst(1); }
+  }, [d]);
 
   if (failed) {
     return (
@@ -47,10 +56,12 @@ export default function WorkoutSummary({ session, accent = colors.lime, coachLin
     <View style={{ gap: 14 }}>
       <FadeIn>
         <LinearGradient colors={complete ? ['#1B2A12', '#10131A'] : ['#161A24', '#10131A']} style={{ borderRadius: 30, padding: 22, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: complete ? accent + '66' : colors.border }}>
+          <Animated.View style={{ transform: [{ scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] }) }], opacity: pop }}>
           <View style={{ width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: accent + '24', borderWidth: 2, borderColor: accent + 'cc', shadowColor: accent, shadowOpacity: 0.6, shadowRadius: 18, shadowOffset: { width: 0, height: 0 } }}>
             <Ionicons name={empty ? 'moon' : d.prs.length ? 'trophy' : 'checkmark'} size={36} color={accent} />
           </View>
-          <Txt style={{ fontFamily: font.black, fontSize: 28, letterSpacing: -0.5, textAlign: 'center' }}>{empty ? 'Nothing logged yet' : complete ? 'Workout complete' : 'Session saved'}</Txt>
+          </Animated.View>
+          <Txt accessibilityRole="header" style={{ fontFamily: font.black, fontSize: 28, letterSpacing: -0.5, textAlign: 'center' }}>{empty ? 'Nothing logged yet' : complete ? 'Workout complete' : 'Session saved'}</Txt>
           <Txt style={{ color: colors.dim, fontSize: 14.5, textAlign: 'center', lineHeight: 21 }}>
             {empty ? 'No sets were logged today. Rest days count too.'
               : complete ? `${d.day_name ?? 'Today'}: every planned set is done.`
@@ -58,6 +69,7 @@ export default function WorkoutSummary({ session, accent = colors.lime, coachLin
               : `${d.day_name ?? 'Today'}: ${d.done_planned_sets} of ${d.planned_sets} planned sets. Whatever you did counts.`}
           </Txt>
           {!!coachLine && <Txt style={{ color: colors.text, fontFamily: font.semibold, fontSize: 15, lineHeight: 22, textAlign: 'center', marginTop: 6 }}>{coachLine}</Txt>}
+          <Confetti burst={burst} />
         </LinearGradient>
       </FadeIn>
 
@@ -102,7 +114,7 @@ export default function WorkoutSummary({ session, accent = colors.lime, coachLin
             {d.exercises.map((e, i) => (
               <View key={e.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 16, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
                 <View style={{ flex: 1 }}>
-                  <Txt style={{ fontFamily: font.semibold, fontSize: 16 }} numberOfLines={1}>{cap(e.name)}</Txt>
+                  <Txt style={{ fontFamily: font.semibold, fontSize: 16 }} numberOfLines={2}>{cap(e.name)}</Txt>
                   <Txt style={{ color: colors.dim, fontSize: 13 }}>{e.sets} {e.sets === 1 ? 'set' : 'sets'}{e.volume_kg ? ` · ${e.volume_kg} kg total` : ''}</Txt>
                 </View>
                 {e.best && <Txt style={{ fontFamily: font.bold, fontSize: 15 }}>{e.best.weight ? `${kg(e.best.weight)} kg × ${e.best.reps}` : `${e.best.reps} reps`}</Txt>}
@@ -121,7 +133,7 @@ export default function WorkoutSummary({ session, accent = colors.lime, coachLin
             </View>
             <View style={{ flex: 1 }}>
               <Txt style={{ color: colors.dim, fontSize: 11.5, letterSpacing: 1, fontFamily: font.semibold }}>UP NEXT</Txt>
-              <Txt style={{ fontFamily: font.bold, fontSize: 17 }} numberOfLines={1}>{d.next.name}</Txt>
+              <Txt style={{ fontFamily: font.bold, fontSize: 17 }} numberOfLines={2}>{d.next.name}</Txt>
               <Txt style={{ color: colors.dim, fontSize: 13 }}>{d.next.exercises} exercises{d.next.est_minutes ? ` · about ${d.next.est_minutes} min` : ''}</Txt>
             </View>
           </Card>

@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AgentStatus, Decision, decide, getAgentStatus, getDecisions, runAgents, setDial, setKill } from '../api';
 import { TEAM, colors, font, gradients } from '../theme';
-import { Avatar, Card, ErrorCard, FadeIn, IconButton, SectionTitle, Segmented, Skeleton, Txt, useOnline } from '../ui';
+import { Avatar, Card, EmptyState, ErrorCard, FadeIn, IconButton, SectionTitle, Segmented, Skeleton, Txt, useOnline } from '../ui';
 import * as Haptics from '../haptics';
 import Review from './Review';
 import Roundtable from './Roundtable';
@@ -57,14 +57,15 @@ const clock = (iso: string | null) => {
 function Pill({ label, color }: { label: string; color: string }) {
   return (
     <View style={{ paddingHorizontal: 9, paddingVertical: 3, borderRadius: 999, backgroundColor: color + '22' }}>
-      <Txt style={{ fontFamily: font.bold, fontSize: 11, color }}>{label}</Txt>
+      <Txt maxFontSizeMultiplier={1.4} style={{ fontFamily: font.bold, fontSize: 11.5, color }}>{label}</Txt>
     </View>
   );
 }
 
-function Btn({ label, onPress, color = 'rgba(255,255,255,0.07)', text = colors.text, busy }: { label: string; onPress: () => void; color?: string; text?: string; busy?: boolean }) {
+function Btn({ label, onPress, color = 'rgba(255,255,255,0.07)', text = colors.text, busy, grow = 1 }: { label: string; onPress: () => void; color?: string; text?: string; busy?: boolean; grow?: number }) {
   return (
-    <Pressable onPress={onPress} disabled={busy} style={({ pressed }) => ({ flex: 1, paddingVertical: 13, borderRadius: 15, alignItems: 'center', backgroundColor: color, opacity: pressed || busy ? 0.7 : 1 })}>
+    <Pressable onPress={onPress} disabled={busy} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled: !!busy, busy: !!busy }}
+      style={({ pressed }) => ({ flex: grow, minHeight: 48, paddingVertical: 12, paddingHorizontal: 10, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: color, opacity: pressed || busy ? 0.7 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] })}>
       {busy ? <ActivityIndicator color={text} /> : <Txt style={{ fontFamily: font.bold, fontSize: 14, color: text }}>{label}</Txt>}
     </Pressable>
   );
@@ -182,25 +183,33 @@ function Row({ d, busy, onAct, open, onToggle }: { d: Decision; busy: boolean; o
   const st = STATUS[d.status] ?? { label: d.status, color: colors.dim };
   const hot = d.status === 'pending_approval' || d.status === 'pending_veto';
   return (
-    <Card onPress={onToggle} glow={hot ? st.color : undefined} style={{ gap: 11 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 13 }}>
+    <Card glow={hot ? st.color : undefined} style={{ gap: 11 }}>
+      <Pressable onPress={onToggle} accessibilityRole="button" accessibilityState={{ expanded: open }} accessibilityLabel={`${a.label}: ${arrow(d.summary)}. ${st.label}. ${open ? 'Hide' : 'Show'} details`}
+        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 13, opacity: pressed ? 0.75 : 1 })}>
         <Avatar size={42} color={a.color} icon={a.icon} />
         <View style={{ flex: 1, gap: 2 }}>
-          <Txt style={{ fontFamily: font.bold, fontSize: 16, lineHeight: 21, letterSpacing: -0.2 }}>{arrow(d.summary)}</Txt>
-          <Txt style={{ color: colors.dim, fontSize: 12 }}>{a.label} · {ago(d.ts)}</Txt>
+          <Txt style={{ color: a.color, fontSize: 11.5, letterSpacing: 0.8, fontFamily: font.bold }}>{a.label.toUpperCase()} {'·'} {ago(d.ts).toUpperCase()}</Txt>
+          <Txt style={{ fontFamily: font.bold, fontSize: 16.5, lineHeight: 22, letterSpacing: -0.2 }}>{arrow(d.summary)}</Txt>
         </View>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.faint} />
-      </View>
+        <View style={{ width: 32, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.faint} />
+        </View>
+      </Pressable>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
         <Pill label={st.label} color={st.color} />
         <Pill label={TIER[d.tier] ?? d.tier} color={colors.dim} />
       </View>
-      <Txt style={{ color: colors.dim, fontSize: 14, lineHeight: 21 }}>{d.why}</Txt>
+      {!!d.why && (
+        <View style={{ gap: 2 }}>
+          <Txt style={{ color: colors.faint, fontSize: 11.5, letterSpacing: 0.8, fontFamily: font.semibold }}>WHY</Txt>
+          <Txt style={{ color: colors.text, opacity: 0.85, fontSize: 14, lineHeight: 21 }}>{d.why}</Txt>
+        </View>
+      )}
 
       {d.status === 'pending_approval' && (
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Btn label="Not now" onPress={() => onAct('reject')} busy={busy} />
-          <Btn label="Approve" onPress={() => onAct('approve')} color={colors.lime} text="#07080B" busy={busy} />
+          <Btn label="Approve" onPress={() => onAct('approve')} color={colors.lime} text="#07080B" busy={busy} grow={1.5} />
         </View>
       )}
       {d.status === 'pending_veto' && (
@@ -213,6 +222,14 @@ function Row({ d, busy, onAct, open, onToggle }: { d: Decision; busy: boolean; o
         </View>
       )}
 
+      {!open && d.can_revert && d.status === 'applied' && (
+        <Pressable onPress={() => onAct('revert')} disabled={busy} accessibilityRole="button" accessibilityLabel={`Undo: ${arrow(d.summary)}`}
+          style={({ pressed }) => ({ alignSelf: 'flex-start', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4, opacity: pressed || busy ? 0.6 : 1 })}>
+          <Ionicons name="arrow-undo" size={16} color={colors.amber} />
+          <Txt style={{ color: colors.amber, fontFamily: font.bold, fontSize: 14 }}>Undo this change</Txt>
+        </Pressable>
+      )}
+
       {open && (
         <View style={{ gap: 8, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 11 }}>
           {!!d.evidence && <Txt style={{ color: colors.dim, fontSize: 12.5, lineHeight: 18 }}>What they looked at: {d.evidence}</Txt>}
@@ -220,7 +237,7 @@ function Row({ d, busy, onAct, open, onToggle }: { d: Decision; busy: boolean; o
             <Txt style={{ color: colors.amber, fontSize: 12.5, lineHeight: 18 }}>Safety rules that applied: {d.fired.map((f) => RULE[f] ?? f.replace(/_/g, ' ')).join(', ')}</Txt>
           )}
           <Txt style={{ color: colors.dim, fontSize: 12 }}>Started by {d.trigger.replace('watchdog:', 'a safety watch on ').replace(/[._]/g, ' ')} · ref #{d.id}</Txt>
-          {d.can_revert && <Btn label="Undo this change" onPress={() => onAct('revert')} busy={busy} />}
+          {d.can_revert && <Btn label="Undo this change" onPress={() => onAct('revert')} busy={busy} color={colors.amber + '22'} text={colors.amber} />}
         </View>
       )}
     </Card>
@@ -332,7 +349,7 @@ export default function Decisions({ onPending }: { onPending?: (n: number) => vo
 
       {pending.length > 0 && (
         <>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 18, backgroundColor: 'rgba(255,184,77,0.14)', borderWidth: 1, borderColor: 'rgba(255,184,77,0.5)' }}>
+          <View accessibilityRole="alert" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 18, backgroundColor: 'rgba(255,184,77,0.14)', borderWidth: 1, borderColor: 'rgba(255,184,77,0.5)' }}>
             <Ionicons name="notifications" size={22} color={colors.amber} />
             <Txt style={{ flex: 1, fontFamily: font.bold, fontSize: 15, lineHeight: 20 }}>{pending.length === 1 ? 'A change is waiting for your OK' : `${pending.length} changes are waiting for your OK`}</Txt>
           </View>
@@ -364,7 +381,7 @@ export default function Decisions({ onPending }: { onPending?: (n: number) => vo
         </View>
         <View style={{ height: 1, backgroundColor: colors.border }} />
         <Pipeline running={running} done={!!report && !running} />
-        <Pressable onPress={runTeam} disabled={running} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }], opacity: running ? 0.85 : 1 })}>
+        <Pressable onPress={runTeam} disabled={running} accessibilityRole="button" accessibilityLabel={running ? 'The team is working' : 'Ask the team now'} accessibilityState={{ busy: running }} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }], opacity: running ? 0.85 : 1 })}>
           <LinearGradient colors={gradients.lime} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 20, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
             {running ? <ActivityIndicator color="#07080B" /> : <Ionicons name="git-compare" size={20} color="#07080B" />}
             <Txt style={{ color: '#07080B', fontFamily: font.black, fontSize: 16 }}>{running ? 'The team is working…' : 'Ask the team now'}</Txt>
@@ -378,7 +395,7 @@ export default function Decisions({ onPending }: { onPending?: (n: number) => vo
       </Card>
       <Roundtable visible={table} onClose={() => { setTable(false); load(); }} />
 
-      {!!runErr && <Txt style={{ color: colors.red, lineHeight: 20 }}>{runErr}</Txt>}
+      {!!runErr && <Card glow={colors.red} style={{ flexDirection: 'row', gap: 10 }}><Ionicons name="alert-circle" size={20} color={colors.red} /><Txt accessibilityRole="alert" style={{ flex: 1, lineHeight: 20, fontSize: 14 }}>{runErr}</Txt></Card>}
       {report && !report.llm && <Txt style={{ color: colors.amber, lineHeight: 20 }}>The agents are off: no Gemini key is set on the backend. Safety checks still ran.</Txt>}
       {report?.llm && (
         <>
@@ -392,13 +409,19 @@ export default function Decisions({ onPending }: { onPending?: (n: number) => vo
       <SectionTitle>How much the team decides alone</SectionTitle>
       <Card style={{ gap: 14 }}>
         <Segmented options={DIAL.map((x) => ({ key: x.key, label: x.label }))} value={status.dial as any} onChange={pickDial} />
-        <Txt style={{ color: colors.dim, fontSize: 13.5, lineHeight: 20 }}>{dial.blurb}</Txt>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ flexDirection: 'row', gap: 4 }}>
+            {DIAL.map((x, i) => <View key={x.key} style={{ width: 22, height: 6, borderRadius: 3, backgroundColor: i <= DIAL.findIndex((y) => y.key === dial.key) ? colors.lime : 'rgba(255,255,255,0.12)' }} />)}
+          </View>
+          <Txt style={{ flex: 1, color: colors.dim, fontSize: 13.5, lineHeight: 20 }}>{dial.blurb}</Txt>
+        </View>
+        <Txt style={{ color: colors.faint, fontSize: 12.5, lineHeight: 18 }}>The fixed safety rules stay on at every setting.</Txt>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 14 }}>
           <View style={{ flex: 1 }}>
             <Txt style={{ fontFamily: font.semibold, fontSize: 15 }}>Pause all agent changes</Txt>
             <Txt style={{ color: colors.dim, fontSize: 12.5, lineHeight: 18 }}>The kill switch. Nothing changes on its own while this is on.</Txt>
           </View>
-          <Switch value={status.kill_switch} onValueChange={toggleKill} trackColor={{ false: colors.cardHi, true: colors.red }} thumbColor="#fff" />
+          <Switch accessibilityLabel="Pause all agent changes" value={status.kill_switch} onValueChange={toggleKill} trackColor={{ false: colors.cardHi, true: colors.red }} thumbColor="#fff" />
         </View>
         {!!status.designed_by && (
           <Txt style={{ color: colors.dim, fontSize: 12 }}>
@@ -409,7 +432,7 @@ export default function Decisions({ onPending }: { onPending?: (n: number) => vo
 
       <SectionTitle>What the team has done for you</SectionTitle>
       {history.length === 0 && (
-        <Txt style={{ color: colors.dim, lineHeight: 21 }}>Nothing yet, which is normal at the start. When you check in, finish a workout or mention pain, the team looks at it. Anything they change shows up here with the reason, and most changes can be undone.</Txt>
+        <EmptyState icon="time-outline" tint={colors.cyan} title="Nothing yet" body="That is normal at the start. When you check in, finish a workout or mention pain, the team looks at it. Anything they change shows up here with the reason, and most changes can be undone." />
       )}
       {history.map((d) => <Row key={d.id} d={d} busy={busyId === d.id} open={open === d.id} onToggle={() => setOpen(open === d.id ? null : d.id)} onAct={(a) => act(d, a)} />)}
 

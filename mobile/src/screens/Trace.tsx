@@ -115,11 +115,23 @@ export default function Trace({ visible, onClose }: { visible: boolean; onClose:
           : !runs ? <><Skeleton height={64} /><Skeleton height={64} /><Skeleton height={64} /></>
           : !enabled ? <EmptyState icon="eye-off" tint={colors.amber} title="Tracing is off" body="Set FITNESS_TRACE=1 on the backend (or remove FITNESS_TRACE=0) to record agent runs." />
           : runs.length === 0 ? <EmptyState icon="pulse" tint={colors.cyan} title="No runs yet" body="When a coach runs, you will see each step here with its timing and token use." />
-          : runs.map((r, i) => (
+          : [
+            <FadeIn key="sum">
+              <Card style={{ flexDirection: 'row', gap: 0, paddingVertical: 14 }}>
+                {[{ l: 'Runs', v: String(runs.length), c: colors.text }, { l: 'With errors', v: String(runs.filter((r) => r.errors > 0).length), c: runs.some((r) => r.errors > 0) ? colors.red : colors.mint },
+                  { l: 'Typical time', v: dur(runs.map((r) => r.dur_ms ?? 0).sort((x, y) => x - y)[Math.floor(runs.length / 2)]) || '-', c: colors.text }].map((x, i) => (
+                  <View key={x.l} accessible accessibilityLabel={`${x.l}: ${x.v}`} style={{ flex: 1, alignItems: 'center', gap: 2, borderLeftWidth: i ? 1 : 0, borderLeftColor: colors.border }}>
+                    <Txt maxFontSizeMultiplier={1.3} style={{ fontFamily: font.black, fontSize: 20, color: x.c }}>{x.v}</Txt>
+                    <Txt maxFontSizeMultiplier={1.3} style={{ color: colors.dim, fontSize: 11.5, letterSpacing: 0.6, fontFamily: font.semibold }}>{x.l.toUpperCase()}</Txt>
+                  </View>
+                ))}
+              </Card>
+            </FadeIn>,
+            ...runs.map((r, i) => (
             <FadeIn key={r.run_id} delay={Math.min(i, 6) * 30}>
               <RunCard run={r} open={openId === r.run_id} onToggle={() => setOpenId(openId === r.run_id ? null : r.run_id)} />
             </FadeIn>
-          ))}
+          ))]}
         {!!runs?.length && <Txt style={{ color: colors.faint, fontSize: 12, textAlign: 'center' }}>Only timings, counts and short ids are stored. Your messages are never recorded.</Txt>}
       </ScrollView>
     </CoachShell>

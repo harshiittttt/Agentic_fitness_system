@@ -1,7 +1,7 @@
 import * as Speech from 'expo-speech';
 import { Audio, AVPlaybackStatus } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
-import { API } from './api';
+import { API, authHeaders, notifyAuthFailure } from './api';
 import type { Tts } from './personas';
 
 export type SpeakOpts = {
@@ -67,10 +67,11 @@ async function playPremium(text: string, persona: string, mine: number, finish: 
     if (!info.exists) {
       const url = `${API}/tts?persona=${encodeURIComponent(persona)}${agent ? `&agent=${encodeURIComponent(agent)}` : ''}&text=${encodeURIComponent(text)}`;
       const got = await Promise.race([
-        FileSystem.downloadAsync(url, file),
+        FileSystem.downloadAsync(url, file, { headers: authHeaders() }),   // native download: bypasses the wrapped fetch, so send the key explicitly
         new Promise<null>((r) => setTimeout(() => r(null), PREMIUM_TIMEOUT_MS)),
       ]);
-      if (!got || got.status !== 200) {            // 503 = backend says "use the phone voice"; the file then holds an error body
+      if (got?.status === 401) notifyAuthFailure();
+      if (!got || got.status !== 200) {          // 401/503 = wrong key / backend says "use the phone voice"; the file then holds an error body
         await FileSystem.deleteAsync(file, { idempotent: true });
         return false;
       }

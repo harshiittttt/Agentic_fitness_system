@@ -313,6 +313,7 @@ function Body() {
             ) : (
               <>
                 <SectionTitle>What I know</SectionTitle>
+                <Txt style={{ color: colors.faint, fontSize: 13, lineHeight: 18, marginTop: -6 }}>Tap any line to confirm it, correct it or have me forget it.</Txt>
                 {sections.map((s, idx) => (
                   <Collapsible key={s} title={dos.section_titles[s] ?? s} icon={SECTION_ICON[s] ?? 'ellipse'} color={SECTION_COLOR[s] ?? colors.lime} count={by[s].length} open={secOpen(s, idx)} onToggle={() => setOpenSec((o) => ({ ...o, [s]: !secOpen(s, idx) }))}>
                     {by[s].map((it, i) => it.fact_id ? <Fact key={it.fact_id} {...factProps(it)} /> : (

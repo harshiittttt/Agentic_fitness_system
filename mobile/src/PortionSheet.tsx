@@ -45,8 +45,8 @@ export default function PortionSheet({ name, info, baseGrams, baseMacros, initia
   }, [info, grams, baseMacros, baseGrams]);
 
   const roundBtn = (icon: 'add' | 'remove', label: string, onPress: () => void) => (
-    <Pressable onPress={() => { Haptics.selectionAsync(); onPress(); }} accessibilityRole="button" accessibilityLabel={label}
-      style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)' }}>
+    <Pressable onPress={() => { Haptics.selectionAsync(); onPress(); }} accessibilityRole="button" accessibilityLabel={label} hitSlop={4}
+      style={({ pressed }) => ({ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? 'rgba(198,255,61,0.22)' : 'rgba(255,255,255,0.08)', transform: [{ scale: pressed ? 0.94 : 1 }] })}>
       <Ionicons name={icon} size={22} color={colors.lime} />
     </Pressable>
   );
@@ -68,14 +68,16 @@ export default function PortionSheet({ name, info, baseGrams, baseMacros, initia
             {roundBtn('remove', `One fewer ${unit}`, () => set(Math.max(1, n - 1) * unitG!))}
             <View style={{ flex: 1, alignItems: 'center' }}>
               <Txt style={{ fontFamily: font.black, fontSize: 26, letterSpacing: -0.4 }} numberOfLines={1} adjustsFontSizeToFit accessibilityLiveRegion="polite">{n} {plural}</Txt>
+              <Txt style={{ color: colors.faint, fontSize: 12 }} numberOfLines={1}>about {Math.round(grams)} g</Txt>
             </View>
             {roundBtn('add', `One more ${unit}`, () => set((n + 1) * unitG!))}
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {presets.map((c) => (
               <Pressable key={c} onPress={() => { Haptics.selectionAsync(); set(c * unitG!); }} accessibilityRole="button" accessibilityLabel={`${c} ${unit}`}
-                style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: c === n ? 'rgba(198,255,61,0.18)' : 'rgba(255,255,255,0.08)' }}>
-                <Txt style={{ fontFamily: font.bold, fontSize: 15 }}>{c}</Txt>
+                accessibilityState={{ selected: c === n }}
+                style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: c === n ? 'rgba(198,255,61,0.7)' : 'transparent', backgroundColor: c === n ? 'rgba(198,255,61,0.18)' : 'rgba(255,255,255,0.08)' }}>
+                <Txt style={{ fontFamily: font.bold, fontSize: 15, color: c === n ? colors.lime : colors.text }}>{c}</Txt>
               </Pressable>
             ))}
           </View>
@@ -93,24 +95,37 @@ export default function PortionSheet({ name, info, baseGrams, baseMacros, initia
             </View>
             {roundBtn('add', `${step} ${measure} more`, () => set(grams + step))}
           </View>
-          <View style={{ flexDirection: 'row', gap: 6 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
             {presets.map((v) => (
               <Pressable key={v} onPress={() => { Haptics.selectionAsync(); set(v); }} accessibilityRole="button" accessibilityLabel={`${v} ${measure}`}
-                style={{ flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: v === grams ? 'rgba(198,255,61,0.18)' : 'rgba(255,255,255,0.08)' }}>
-                <Txt style={{ fontFamily: font.bold, fontSize: 13 }}>{v}</Txt>
+                accessibilityState={{ selected: v === grams }}
+                style={{ flexGrow: 1, flexBasis: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: v === grams ? 'rgba(198,255,61,0.7)' : 'transparent', backgroundColor: v === grams ? 'rgba(198,255,61,0.18)' : 'rgba(255,255,255,0.08)' }}>
+                <Txt style={{ fontFamily: font.bold, fontSize: 13, color: v === grams ? colors.lime : colors.text }}>{v}</Txt>
               </Pressable>
             ))}
           </View>
         </>
       )}
 
-      <Txt style={{ color: colors.dim, fontSize: 13 }} numberOfLines={2}>
-        {macros ? `${Math.round(macros.kcal)} kcal · P ${Math.round(macros.protein)} · C ${Math.round(macros.carbs)} · F ${Math.round(macros.fat)} g` : 'Calories are worked out when you add it.'}
-      </Txt>
+      {macros ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', columnGap: 14, rowGap: 4, paddingVertical: 2 }} accessible
+          accessibilityLabel={`${Math.round(macros.kcal)} calories, ${Math.round(macros.protein)} grams protein, ${Math.round(macros.carbs)} grams carbs, ${Math.round(macros.fat)} grams fat`}>
+          <Txt style={{ fontFamily: font.black, fontSize: 18, letterSpacing: -0.3 }}>{Math.round(macros.kcal)}<Txt style={{ color: colors.dim, fontSize: 12, fontFamily: font.semibold }}> kcal</Txt></Txt>
+          {([['P', macros.protein, colors.pink], ['C', macros.carbs, colors.cyan], ['F', macros.fat, colors.amber]] as const).map(([l, v, c]) => (
+            <View key={l} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c }} />
+              <Txt style={{ color: colors.dim, fontSize: 13 }}>{l} <Txt style={{ color: colors.text, fontFamily: font.semibold, fontSize: 13 }}>{Math.round(v)} g</Txt></Txt>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Txt style={{ color: colors.dim, fontSize: 13 }} numberOfLines={2}>Calories are worked out when you add it.</Txt>
+      )}
 
       <Pressable onPress={() => onConfirm(count ? grams : (typed > 0 ? typed : grams))} disabled={busy}
         accessibilityRole="button" accessibilityLabel={count ? `${confirmLabel} ${n} ${plural} of ${name}` : `${confirmLabel} ${grams} ${measure} of ${name}`}
-        style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: colors.lime, opacity: busy ? 0.6 : 1 }}>
+        accessibilityState={{ disabled: !!busy, busy: !!busy }}
+        style={({ pressed }) => ({ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: colors.lime, opacity: busy ? 0.6 : pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] })}>
         {busy ? <ActivityIndicator color="#07080B" /> : <Txt style={{ fontFamily: font.bold, fontSize: 15, color: '#07080B' }}>{confirmLabel}</Txt>}
       </Pressable>
     </Card>

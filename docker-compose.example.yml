@@ -1,0 +1,21 @@
+# Example of what deploy/new_user.py generates as docker-compose.yml (that file is git-ignored; do not hand-edit it).
+services:
+  fitness-alice:
+    build: .
+    image: fitness-backend:local
+    restart: unless-stopped
+    env_file: deploy/shared.env
+    environment:
+      FITNESS_DATA_DIR: /data
+      API_TOKEN: "REPLACE_WITH_RANDOM"
+      ELEVEN_MONTHLY_CREDITS: "4500"
+    ports:
+      - "127.0.0.1:8001:8000"
+    volumes:
+      - data-alice:/data
+    labels:
+      fitness.user: "alice"
+volumes:
+  data-alice:
+    labels:
+      fitness.user: "alice"

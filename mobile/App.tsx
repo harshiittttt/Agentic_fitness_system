@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Pressable, StatusBar, View } from 'react-native';
+import { ActivityIndicator, Animated, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -13,11 +14,13 @@ import Nutrition from './src/screens/Nutrition';
 import Setup from './src/screens/Setup';
 import Onboarding from './src/screens/Onboarding';
 import { configurePush, onPushTap } from './src/push';
-import { API, flushQueue, getAgentStatus, getCoach, getHealth, getPlan } from './src/api';
+import { API, AUTH_HELP, flushQueue, getAgentStatus, getCoach, getHealth, getPlan, onAuthFailure } from './src/api';
+import { currentServer, installAuthFetch, loadServer, markLoaded } from './src/server';
+import ServerForm from './src/screens/ServerForm';
 import { loadHaptics } from './src/haptics';
 import { loadVoiceSettings, setRecognitionLang } from './src/voiceSettings';
-import { colors, font } from './src/theme';
-import { Ambient, FadeIn, GradientButton, OfflineBanner, OnlineCtx, ToastProvider, Txt, useToast } from './src/ui';
+import { colors, font, gradients } from './src/theme';
+import { Ambient, Avatar, Card, FadeIn, GradientButton, OfflineBanner, Orb, OnlineCtx, ToastProvider, Txt, useToast } from './src/ui';
 
 type Tab = 'today' | 'coach' | 'nutrition' | 'insights' | 'setup';
 const TABS: { k: Tab; label: string; on: string; off: string }[] = [
@@ -38,10 +41,10 @@ function TabBar({ tab, onChange, badges = {} }: { tab: Tab; onChange: (t: Tab) =
   }, [idx, w]);
   return (
     <View style={{ paddingHorizontal: 14, paddingTop: 6, paddingBottom: 8 }}>
-      <View style={{ backgroundColor: colors.card, borderRadius: 30, borderWidth: 1, borderColor: colors.border, padding: 6 }}>
+      <View accessibilityRole="tablist" style={{ backgroundColor: colors.card, borderRadius: 30, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 6, shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 14, shadowOffset: { width: 0, height: 6 }, elevation: 8 }}>
         <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ flexDirection: 'row' }}>
           {w > 0 && (
-            <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, width: w / TABS.length, borderRadius: 24, backgroundColor: 'rgba(198,255,61,0.14)', transform: [{ translateX: x }] }} />
+            <Animated.View style={{ position: 'absolute', top: 0, bottom: 0, width: w / TABS.length, borderRadius: 24, backgroundColor: 'rgba(198,255,61,0.14)', borderWidth: 1, borderColor: 'rgba(198,255,61,0.28)', transform: [{ translateX: x }] }} />
           )}
           {TABS.map((t) => {
             const active = tab === t.k;
@@ -52,11 +55,11 @@ function TabBar({ tab, onChange, badges = {} }: { tab: Tab; onChange: (t: Tab) =
                   <Ionicons name={(active ? t.on : t.off) as any} size={22} color={active ? colors.lime : colors.faint} />
                   {!!badges[t.k] && (
                     <View style={{ position: 'absolute', top: -4, right: -9, minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4, backgroundColor: colors.red, alignItems: 'center', justifyContent: 'center' }}>
-                      <Txt style={{ fontFamily: font.bold, fontSize: 10, color: '#fff' }}>{badges[t.k]}</Txt>
+                      <Txt maxFontSizeMultiplier={1.1} style={{ fontFamily: font.bold, fontSize: 10, color: '#fff' }}>{badges[t.k]}</Txt>
                     </View>
                   )}
                 </View>
-                <Txt style={{ fontSize: 11, fontFamily: active ? font.bold : font.medium, color: active ? colors.lime : colors.faint }}>{t.label}</Txt>
+                <Txt numberOfLines={1} maxFontSizeMultiplier={1.15} style={{ fontSize: 11, fontFamily: active ? font.bold : font.medium, color: active ? colors.lime : colors.faint }}>{t.label}</Txt>
               </Pressable>
             );
           })}
@@ -69,18 +72,31 @@ function TabBar({ tab, onChange, badges = {} }: { tab: Tab; onChange: (t: Tab) =
 export default function App() {
   const [tab, setTab] = useState<Tab>('today');
   const [loaded] = useFonts({ Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold });
-  const [gate, setGate] = useState<'loading' | 'offline' | 'onboard' | 'ready'>('loading');
+  const [gate, setGate] = useState<'loading' | 'offline' | 'connect' | 'onboard' | 'ready'>('loading');
+  const [notice, setNotice] = useState('');
+  const authFailed = useRef(false);
+  const booted = useRef(false);
   const [err, setErr] = useState('');
   const [pending, setPending] = useState(0);
   const [insightsSeg, setInsightsSeg] = useState<'trends' | 'decisions' | 'team' | undefined>(undefined);
   const check = useCallback(async () => {
     setGate('loading');
+    authFailed.current = false;
+    if (!booted.current) { installAuthFetch(); markLoaded(await loadServer()); booted.current = true; }
     try {
       const plan = await getPlan();
+      if (authFailed.current) return;               // a 401 already sent us to the connect screen
       if (plan) getCoach().then((c) => setRecognitionLang(c.tts?.lang)).catch(() => {});
       setGate(plan ? 'ready' : 'onboard');
-    } catch (e: any) { setErr(String(e?.message ?? e)); setGate('offline'); }
+    } catch (e: any) {
+      if (authFailed.current) return;
+      setErr(String(e?.message ?? e));
+      // Nothing saved and the default (local) address is not answering: ask for the server instead of a dead end.
+      if (!currentServer().saved) { setNotice(''); setGate('connect'); } else setGate('offline');
+    }
   }, []);
+  // Any 401 from the server (wrong or missing access key) opens the connect screen with a plain message.
+  useEffect(() => onAuthFailure(() => { authFailed.current = true; setNotice(AUTH_HELP); setGate('connect'); }), []);
   useEffect(() => { loadHaptics(); loadVoiceSettings(); check(); }, [check]);
   // A red badge on Insights when an agent is waiting for the athlete's OK (polled; cheap, and silent on failure).
   useEffect(() => {
@@ -102,18 +118,63 @@ export default function App() {
     });
   }, [gate]);
 
-  if (!loaded || gate === 'loading') return <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center' }}><ActivityIndicator color={colors.lime} /></View>;
+  if (!loaded || gate === 'loading') return (
+    <View accessibilityLabel="Loading your coach" accessibilityLiveRegion="polite" style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+      <StatusBar barStyle="light-content" />
+      <Orb state="idle" size={120} />
+      {loaded && <Txt style={{ color: colors.dim, fontSize: 14, fontFamily: font.medium, marginTop: -20 }}>Waking your coach...</Txt>}
+      {!loaded && <ActivityIndicator color={colors.lime} />}
+    </View>
+  );
 
   if (gate === 'offline') return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', padding: 28, gap: 14 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom']}>
       <StatusBar barStyle="light-content" />
-      <Ionicons name="cloud-offline" size={44} color={colors.amber} />
-      <Txt style={{ fontFamily: font.black, fontSize: 28 }}>Can't reach your coach</Txt>
-      <Txt style={{ color: colors.dim, lineHeight: 22 }}>The app is looking for the backend at:</Txt>
-      <Txt style={{ fontFamily: font.bold, color: colors.lime, fontSize: 15 }}>{API}</Txt>
-      {!!err && <Txt style={{ color: colors.amber, fontSize: 12.5, lineHeight: 18 }}>Error: {err}</Txt>}
-      <Txt style={{ color: colors.dim, lineHeight: 22 }}>Make sure the backend is running, your phone is on the same Wi-Fi, and EXPO_PUBLIC_API_URL in mobile/.env is your computer's address. Then restart Expo with a cleared cache.</Txt>
-      <GradientButton label="Try again" icon="refresh" onPress={check} />
+      <ScrollView contentContainerStyle={{ padding: 24, gap: 16, flexGrow: 1, justifyContent: 'center' }}>
+        <FadeIn style={{ gap: 14 }}>
+          <Avatar color={colors.amber} icon="cloud-offline" size={64} ring />
+          <Txt accessibilityRole="header" style={{ fontFamily: font.black, fontSize: 28, letterSpacing: -0.5 }}>Can't reach your coach</Txt>
+          <Txt style={{ color: colors.dim, lineHeight: 22 }}>Nothing is lost. Your plan and history are safe on the server, and anything you log is kept on this phone until you are back online.</Txt>
+          <Card style={{ gap: 4 }}>
+            <Txt style={{ color: colors.dim, fontSize: 12, letterSpacing: 0.8, fontFamily: font.semibold }}>LOOKING FOR YOUR COACH AT</Txt>
+            <Txt selectable style={{ fontFamily: font.bold, color: colors.lime, fontSize: 15 }}>{API}</Txt>
+            {!!err && <Txt style={{ color: colors.amber, fontSize: 12.5, lineHeight: 18, marginTop: 4 }}>Error: {err}</Txt>}
+          </Card>
+          <Card style={{ gap: 8 }}>
+            <Txt style={{ fontFamily: font.bold, fontSize: 15 }}>Things to check</Txt>
+            {['The coach server is running and reachable.', 'Your phone has a connection (same Wi-Fi if the server is on your computer).', 'The address above is right. If not, change it below.'].map((t) => (
+              <View key={t} style={{ flexDirection: 'row', gap: 10 }}>
+                <Ionicons name="ellipse" size={6} color={colors.faint} style={{ marginTop: 8 }} />
+                <Txt style={{ flex: 1, color: colors.dim, lineHeight: 21, fontSize: 14 }}>{t}</Txt>
+              </View>
+            ))}
+          </Card>
+          <GradientButton label="Try again" icon="refresh" onPress={check} />
+          <GradientButton label="Change server" icon="server" onPress={() => { setNotice(''); setGate('connect'); }} colorsArr={['#2A2F3D', '#2A2F3D']} dark={false} />
+        </FadeIn>
+      </ScrollView>
+    </SafeAreaView>
+  );
+
+  if (gate === 'connect') return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom']}>
+      <StatusBar barStyle="light-content" />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={{ padding: 24, gap: 16, flexGrow: 1, justifyContent: 'center' }} keyboardShouldPersistTaps="handled">
+          <FadeIn style={{ gap: 14 }}>
+            <LinearGradient colors={gradients.lime} style={{ width: 64, height: 64, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="link" size={30} color="#07080B" />
+            </LinearGradient>
+            <Txt accessibilityRole="header" style={{ fontFamily: font.black, fontSize: 30, letterSpacing: -0.6, lineHeight: 36 }}>Connect to your coach</Txt>
+            <Txt style={{ color: colors.dim, lineHeight: 22, fontSize: 15.5 }}>Your coaching team runs on a server you control. Enter its address and the access key you were given. You only do this once on this phone.</Txt>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+              <Ionicons name="lock-closed" size={14} color={colors.faint} />
+              <Txt style={{ color: colors.faint, fontSize: 12.5, flex: 1, lineHeight: 18 }}>The key is stored on this phone only and sent only to your server.</Txt>
+            </View>
+          </FadeIn>
+          <FadeIn delay={120}><ServerForm notice={notice} onSaved={check} /></FadeIn>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 

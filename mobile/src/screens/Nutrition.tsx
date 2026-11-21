@@ -9,6 +9,7 @@ import { DAYS, parseIso, shortDate } from '../dates';
 import { useVoice } from '../useVoice';
 import { colors, font, gradients } from '../theme';
 import { Card, CountUp, ErrorCard, FadeIn, IconButton, Ring, SectionTitle, Skeleton, Txt, useOnline, useToast } from '../ui';
+import AnimBar from '../ux/f_AnimBar';
 
 const GROUPS = [
   { key: 'breakfast', label: 'Breakfast', icon: 'sunny-outline', color: colors.amber },
@@ -52,23 +53,37 @@ function WeekStrip({ week, selected, onSelect }: { week: any[]; selected: string
   );
 }
 
-/** One macro = one slim bar and ONE number. (It used to be a ring + "g left" + "x / y g".) */
+/** One macro = one slim bar, the amount, and a calm "left" or "over" note. Over is amber, never red: one heavy meal is not a failure. */
 function MacroBar({ label, eaten, target, color }: { label: string; eaten: number; target: number; color: string }) {
-  const over = eaten > target;
+  const over = eaten > target * 1.05;
   const pct = Math.min(1, eaten / Math.max(1, target));
+  const left = Math.round(target - eaten);
+  const note = over ? `${Math.abs(left)} g over` : left <= 0 ? 'Goal reached' : `${left} g left`;
   return (
-    <View style={{ gap: 6 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <Txt style={{ fontFamily: font.semibold, fontSize: 13, color: colors.dim }}>{label}</Txt>
-        <Txt style={{ fontFamily: font.bold, fontSize: 13, color: over ? colors.amber : colors.text }}>
+    <View style={{ gap: 6 }} accessible accessibilityLabel={`${label}: ${Math.round(eaten)} of ${target} grams, ${note}`}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flexShrink: 1 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color }} />
+          <Txt style={{ fontFamily: font.semibold, fontSize: 13, color: colors.dim }} numberOfLines={1}>{label}</Txt>
+        </View>
+        <Txt style={{ fontFamily: font.bold, fontSize: 13, color: colors.text }} numberOfLines={1}>
           {Math.round(eaten)}<Txt style={{ color: colors.dim, fontFamily: font.medium }}> / {target} g</Txt>
+          <Txt style={{ color: over ? colors.amber : colors.faint, fontFamily: font.medium, fontSize: 12 }}>{'  '}{note}</Txt>
         </Txt>
       </View>
-      <View style={{ height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-        <View style={{ width: `${pct * 100}%`, height: '100%', borderRadius: 4, backgroundColor: over ? colors.amber : color }} />
-      </View>
+      <AnimBar value={pct} color={over ? colors.amber : color} />
     </View>
   );
+}
+
+/** One short, kind sentence about where the day stands. Never scolds. */
+function dayLine(eatenKcal: number, targetKcal: number, isToday: boolean): string {
+  if (eatenKcal <= 0) return isToday ? 'Nothing logged yet. Add your first meal below.' : 'Nothing was logged this day.';
+  const r = eatenKcal / Math.max(1, targetKcal);
+  if (r < 0.5) return isToday ? 'Plenty of room left for today.' : 'A light day.';
+  if (r < 0.9) return isToday ? 'On track. Keep going.' : 'A solid day.';
+  if (r <= 1.05) return 'Right on your goal.';
+  return 'A bit over today. That is fine, one day does not decide anything.';
 }
 
 export default function Nutrition() {
@@ -91,6 +106,7 @@ export default function Nutrition() {
   const [sheetInfo, setSheetInfo] = useState<PortionInfo | null>(null);
   const [editInfo, setEditInfo] = useState<PortionInfo | null>(null);
   const [sheetBusy, setSheetBusy] = useState(false);
+  const [focus, setFocus] = useState(false);
 
   const today = week.length ? week[week.length - 1].day : '';
   const isToday = !!selected && selected === today;
@@ -283,28 +299,32 @@ export default function Nutrition() {
         {!data && failed && <ErrorCard message="Couldn't load your meals" onRetry={() => loadAll(selected || undefined)} />}
 
         {data && !t && (
-          <Card style={{ gap: 6 }}>
-            <Txt style={{ fontFamily: font.bold, fontSize: 17 }}>{Math.round(e.kcal)} kcal logged</Txt>
-            <Txt style={{ color: colors.dim, lineHeight: 20 }}>Build your plan in Profile to get calorie and macro targets.</Txt>
+          <Card style={{ gap: 6, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Txt style={{ color: colors.dim, fontSize: 11, letterSpacing: 1.2, fontFamily: font.bold }}>LOGGED</Txt>
+              <Txt style={{ fontFamily: font.black, fontSize: 30, letterSpacing: -0.6 }} numberOfLines={1} adjustsFontSizeToFit>{Math.round(e.kcal)} <Txt style={{ color: colors.dim, fontSize: 14, fontFamily: font.medium }}>kcal</Txt></Txt>
+              <Txt style={{ color: colors.dim, lineHeight: 20, fontSize: 14 }}>Build your plan in Profile to get calorie and macro targets.</Txt>
+            </View>
           </Card>
         )}
 
         {/* The hero: one ring, one number that matters, three quiet bars. */}
         {data && t && (
           <FadeIn>
-            <Card style={{ gap: 22, padding: 22 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 22 }}>
-                <Ring size={132} stroke={12} progress={Math.min(e.kcal / t.kcal, 1)} from={over ? colors.amber : colors.lime} to={over ? colors.red : colors.mint}>
+            <Card style={{ gap: 20, padding: 20 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
+                <Ring size={124} stroke={12} progress={Math.min(e.kcal / t.kcal, 1)} from={over ? colors.amber : colors.lime} to={over ? colors.red : colors.mint}>
                   <CountUp value={Math.round(e.kcal)} style={{ fontFamily: font.black, fontSize: 28, letterSpacing: -0.6 }} />
                   <Txt style={{ color: colors.dim, fontSize: 11, fontFamily: font.semibold }}>EATEN</Txt>
                 </Ring>
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Txt style={{ color: colors.dim, fontSize: 11, letterSpacing: 1.2, fontFamily: font.bold }}>{over ? 'OVER BY' : 'LEFT TODAY'}</Txt>
-                  <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Txt style={{ color: colors.dim, fontSize: 11, letterSpacing: 1.2, fontFamily: font.bold }}>{over ? 'OVER BY' : isToday ? 'LEFT TODAY' : 'LEFT THAT DAY'}</Txt>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline' }} accessible accessibilityLabel={`${Math.abs(Math.round(rem.kcal))} calories ${over ? 'over' : 'left'}`}>
                     <CountUp value={Math.abs(Math.round(rem.kcal))} style={{ fontFamily: font.black, fontSize: 40, letterSpacing: -1, color: over ? colors.amber : colors.text }} />
                     <Txt style={{ color: colors.dim, fontSize: 14, fontFamily: font.medium }}> kcal</Txt>
                   </View>
-                  <Pressable onPress={() => { Haptics.selectionAsync(); setWhy((w) => !w); }} accessibilityRole="button" accessibilityLabel="Where does my calorie goal come from?" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Txt style={{ color: colors.dim, fontSize: 13, lineHeight: 18 }}>{dayLine(e.kcal, t.kcal, isToday)}</Txt>
+                  <Pressable onPress={() => { Haptics.selectionAsync(); setWhy((w) => !w); }} accessibilityRole="button" accessibilityState={{ expanded: why }} accessibilityLabel={`Goal ${t.kcal} calories. Where does it come from?`} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                     <Txt style={{ color: colors.dim, fontSize: 12.5 }}>of {t.kcal} kcal goal</Txt>
                     <Ionicons name="information-circle-outline" size={16} color={colors.dim} />
                   </Pressable>
@@ -347,7 +367,7 @@ export default function Nutrition() {
               <View style={{ width: 12 }} />
               {quick.map((q) => (
                 <Pressable key={q.key} onPress={q.run} accessibilityRole="button" accessibilityLabel={`Add ${q.title}, choose amount`} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingLeft: 14, paddingRight: 12, borderRadius: 999, borderWidth: 1,
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingVertical: 8, paddingLeft: 14, paddingRight: 12, borderRadius: 999, borderWidth: 1,
                     backgroundColor: q.hot ? 'rgba(255,92,158,0.10)' : 'rgba(255,255,255,0.05)', borderColor: q.hot ? 'rgba(255,92,158,0.40)' : 'rgba(255,255,255,0.10)' }}>
                     <View>
                       <Txt style={{ fontFamily: font.semibold, fontSize: 13, textTransform: 'capitalize' }}>{q.title}</Txt>
@@ -368,9 +388,16 @@ export default function Nutrition() {
           const info: PortionInfo = { name: it.name, known: it.known, unit: it.unit, unit_g: it.unit_g, mode: it.mode, measure: it.measure, per100: null };
           return (
             <View style={{ gap: 8 }}>
-              <Txt style={{ fontFamily: font.bold, fontSize: 15 }} accessibilityLiveRegion="polite">
-                How much? {ask.missing.length > 1 ? `${ask.step + 1} of ${ask.missing.length}` : ''}
-              </Txt>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Txt style={{ fontFamily: font.bold, fontSize: 15 }} accessibilityLiveRegion="polite">
+                  How much? {ask.missing.length > 1 ? `${ask.step + 1} of ${ask.missing.length}` : ''}
+                </Txt>
+                {ask.missing.length > 1 && (
+                  <View style={{ flexDirection: 'row', gap: 5 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                    {ask.missing.map((_, k) => <View key={k} style={{ width: k === ask.step ? 18 : 6, height: 6, borderRadius: 3, backgroundColor: k <= ask.step ? colors.lime : 'rgba(255,255,255,0.14)' }} />)}
+                  </View>
+                )}
+              </View>
               <PortionSheet key={`${ask.step}-${it.name}`} name={it.name} info={info} baseGrams={it.grams} baseMacros={{ kcal: it.kcal, protein: it.protein, carbs: it.carbs, fat: it.fat }}
                 confirmLabel={last ? 'Add meal' : 'Next'} busy={busy}
                 onConfirm={(g) => { const chosen = { ...ask.chosen, [i]: g }; if (last) confirmAsk(chosen); else setAsk({ ...ask, chosen, step: ask.step + 1 }); }}
@@ -395,28 +422,31 @@ export default function Nutrition() {
             <FadeIn key={g.key} delay={gi * 60}>
               <Card style={{ padding: 0, gap: 0, overflow: 'hidden' }}>
                 <Pressable onPress={() => { Haptics.selectionAsync(); setOpenGroup((o) => ({ ...o, [g.key]: !open })); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 }}>
+                  accessibilityRole="button" accessibilityState={{ expanded: open }}
+                  accessibilityLabel={`${g.label}, ${g.kcal} calories, ${g.meals.length} ${g.meals.length === 1 ? 'item' : 'items'}. ${open ? 'Collapse' : 'Expand'}`}
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, minHeight: 64, backgroundColor: pressed ? 'rgba(255,255,255,0.04)' : 'transparent' })}>
                   <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: g.color + '22', alignItems: 'center', justifyContent: 'center' }}>
                     <Ionicons name={g.icon as any} size={19} color={g.color} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Txt style={{ fontFamily: font.bold, fontSize: 16 }}>{g.label}</Txt>
-                    <Txt style={{ color: colors.dim, fontSize: 12 }}>P {g.p} · C {g.c} · F {g.f} g</Txt>
+                    <Txt style={{ color: colors.dim, fontSize: 12 }} numberOfLines={1}>{g.meals.length} {g.meals.length === 1 ? 'item' : 'items'} · P {g.p} · C {g.c} · F {g.f} g</Txt>
                   </View>
-                  <Txt style={{ fontFamily: font.black, fontSize: 18, letterSpacing: -0.3 }}>{g.kcal}<Txt style={{ color: colors.dim, fontSize: 11, fontFamily: font.semibold }}> kcal</Txt></Txt>
+                  <Txt style={{ fontFamily: font.black, fontSize: 18, letterSpacing: -0.3 }} numberOfLines={1}>{g.kcal}<Txt style={{ color: colors.dim, fontSize: 11, fontFamily: font.semibold }}> kcal</Txt></Txt>
                   <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.faint} />
                 </Pressable>
                 {open && g.meals.map((m: any) => (
                   <View key={m.id} style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.06)' }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: 16, paddingRight: 6 }}>
                       <Pressable onPress={() => startEdit(m)} accessibilityRole="button" accessibilityLabel={`${m.name}, ${Math.round(m.kcal)} calories. Tap to change the portion`}
-                        style={{ flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        accessibilityState={{ expanded: editing === m.id }}
+                        style={({ pressed }) => ({ flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 10, opacity: pressed ? 0.7 : 1 })}>
                         <Txt style={{ flex: 1, fontSize: 14.5, fontFamily: font.medium }} numberOfLines={1}>
                           <Txt style={{ textTransform: 'capitalize' }}>{m.name}</Txt>
                           {!!m.grams && <Txt style={{ color: colors.dim, fontSize: 12.5 }}>  {Math.round(m.grams)}g</Txt>}
                           {!!m.estimated && <Txt style={{ color: colors.amber, fontSize: 10.5, fontFamily: font.bold }}>  EST</Txt>}
                         </Txt>
-                        <Txt style={{ color: colors.dim, fontFamily: font.semibold, fontSize: 14 }}>{Math.round(m.kcal)}</Txt>
+                        <Txt style={{ color: editing === m.id ? colors.lime : colors.dim, fontFamily: font.semibold, fontSize: 14 }}>{Math.round(m.kcal)}</Txt>
                       </Pressable>
                       <IconButton icon="close" label={`Remove ${m.name}`} onPress={() => remove(m)} size={18} />
                     </View>
@@ -448,7 +478,7 @@ export default function Nutrition() {
       {/* Docked composer: log food from anywhere on the screen */}
       <View style={{ paddingHorizontal: 14, paddingTop: 6, paddingBottom: 6, gap: 6 }}>
         {!!note && <Txt style={{ color: colors.amber, fontSize: 12.5, lineHeight: 18, paddingHorizontal: 6 }}>{note}</Txt>}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(22,26,36,0.96)', borderRadius: 30, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 6 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(22,26,36,0.96)', borderRadius: 30, borderWidth: 1, borderColor: focus ? 'rgba(198,255,61,0.45)' : 'rgba(255,255,255,0.10)', padding: 6 }}>
           {voice.available && (
             <Pressable onPress={() => (voice.listening ? voice.stop() : voice.start())} disabled={busy} accessibilityRole="button" accessibilityLabel={voice.listening ? 'Stop listening' : 'Say what you ate'}>
               <LinearGradient colors={voice.listening ? gradients.warm : ['#232838', '#1A1E28']} style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
@@ -457,9 +487,12 @@ export default function Nutrition() {
             </Pressable>
           )}
           <TextInput value={typed} onChangeText={setTyped} placeholder={voice.listening ? 'Listening…' : isToday ? 'What did you eat?' : `Add to ${shortDate(selected)}…`}
-            placeholderTextColor={colors.faint} onSubmitEditing={() => submit(typed)} returnKeyType="send" accessibilityLabel="What did you eat?"
-            style={{ flex: 1, color: colors.text, fontFamily: font.medium, fontSize: 15, paddingHorizontal: 8, paddingVertical: 10 }} />
-          <Pressable onPress={() => submit(typed)} disabled={busy || !typed.trim()} accessibilityRole="button" accessibilityLabel="Add this meal">
+            placeholderTextColor={colors.faint} onSubmitEditing={() => submit(typed)} returnKeyType="send" accessibilityLabel="What did you eat?" onFocus={() => setFocus(true)} onBlur={() => setFocus(false)}
+            style={{ flex: 1, minHeight: 44, color: colors.text, fontFamily: font.medium, fontSize: 15, paddingHorizontal: 8, paddingVertical: 10 }} />
+          {!!typed && !busy && (
+            <IconButton icon="close-circle" label="Clear what you typed" onPress={() => setTyped('')} size={20} color={colors.faint} />
+          )}
+          <Pressable onPress={() => submit(typed)} disabled={busy || !typed.trim()} accessibilityRole="button" accessibilityLabel="Add this meal" accessibilityState={{ disabled: busy || !typed.trim(), busy }}>
             <LinearGradient colors={typed.trim() ? gradients.lime : ['#232838', '#1A1E28']} style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' }}>
               {busy ? <ActivityIndicator color="#07080B" /> : <Ionicons name="arrow-up" size={22} color={typed.trim() ? '#07080B' : colors.faint} />}
             </LinearGradient>

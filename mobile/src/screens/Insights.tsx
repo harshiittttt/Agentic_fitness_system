@@ -16,7 +16,7 @@ export default function Insights({ pending = 0, onPending, initialSeg, onOpenPro
       <View style={{ paddingHorizontal: 20, paddingTop: 12, gap: 14 }}>
         <View>
           <Txt style={{ color: colors.dim, fontFamily: font.medium, fontSize: 14 }}>How you're doing</Txt>
-          <Txt style={{ fontFamily: font.black, fontSize: 32, letterSpacing: -0.5 }}>Insights</Txt>
+          <Txt accessibilityRole="header" style={{ fontFamily: font.black, fontSize: 32, letterSpacing: -0.5 }} numberOfLines={1} adjustsFontSizeToFit>Insights</Txt>
         </View>
         <Segmented
           options={[{ key: 'trends', label: 'Your trends' }, { key: 'decisions', label: pending > 0 ? `Your team · ${pending}` : 'Your team' }, { key: 'scorecard', label: 'Scorecard' }]}

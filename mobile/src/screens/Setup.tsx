@@ -12,7 +12,7 @@ import { PersonaId, personaById } from '../personas';
 import { hasVoiceFor, speak } from '../tts';
 import { VoiceMode, getVoiceMode, loadVoiceSettings, setRecognitionLang, setVoiceMode } from '../voiceSettings';
 import { colors, font } from '../theme';
-import { Bar, Card, FadeIn, GradientButton, SectionTitle, Segmented, Skeleton, Txt } from '../ui';
+import { Bar, Card, FadeIn, GradientButton, SectionTitle, Segmented, Skeleton, Txt, useOnline } from '../ui';
 import { Nudge, Pill } from '../ux/controls';
 import Sparkline from '../ux/Sparkline';
 import ConfirmSheet, { Confirm } from '../ux/ConfirmSheet';
@@ -22,6 +22,8 @@ import Trace from './Trace';
 import Intake from './Intake';
 import Research from './Research';
 import PushSettings from './PushSettings';
+import ServerForm from './ServerForm';
+import CoachShell from './CoachShell';
 
 const GOALS = [
   { k: 'bulk', label: 'Build muscle', sub: 'Eat a little above maintenance, lift progressively', icon: 'trending-up', color: colors.lime },
@@ -67,7 +69,28 @@ function Scale5({ label, low, high, value, onChange, icon, color }: { label: str
   );
 }
 
+/** A big tappable shortcut with a status line, so the two things people hunt for (what the coach knows, the server) are one tap from the top. */
+function Shortcut({ icon, color, title, status, statusColor, onPress }: { icon: string; color: string; title: string; status: string; statusColor: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={`${title}. ${status}`} onPress={() => { Haptics.selectionAsync(); onPress(); }}
+      style={({ pressed }) => ({ flex: 1, minHeight: 88, borderRadius: 22, padding: 14, gap: 8, backgroundColor: colors.card, borderWidth: 1, borderColor: color + '44', opacity: pressed ? 0.75 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ width: 34, height: 34, borderRadius: 11, backgroundColor: color + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={icon as any} size={18} color={color} /></View>
+        <Ionicons name="chevron-forward" size={16} color={colors.faint} />
+      </View>
+      <View style={{ gap: 2 }}>
+        <Txt maxFontSizeMultiplier={1.3} style={{ fontFamily: font.bold, fontSize: 14.5, lineHeight: 19 }}>{title}</Txt>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: statusColor }} />
+          <Txt maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ color: colors.dim, fontSize: 12.5, flexShrink: 1 }}>{status}</Txt>
+        </View>
+      </View>
+    </Pressable>
+  );
+}
+
 export default function Profile({ onReset }: { onReset?: () => void }) {
+  const { online } = useOnline();
   const [data, setData] = useState<any>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [series, setSeries] = useState<any>(null);
@@ -80,6 +103,7 @@ export default function Profile({ onReset }: { onReset?: () => void }) {
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [knows, setKnows] = useState(false);                       // the "What I know about you" screen
   const [knowsPct, setKnowsPct] = useState<number | null>(null);
+  const [serverOpen, setServerOpen] = useState(false);   // Setup > Server: address + access key
   const [coachTool, setCoachTool] = useState<'agenda' | 'intake' | 'research' | 'trace' | null>(null);   // calendar / interview / evidence screens
 
   // check-in + weigh-in
@@ -295,6 +319,14 @@ export default function Profile({ onReset }: { onReset?: () => void }) {
               </LinearGradient>
             </FadeIn>
 
+            {/* shortcuts: the two things people look for first */}
+            <FadeIn delay={40}>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <Shortcut icon="sparkles" color={colors.violet} title="What I know about you" status={knowsPct == null ? 'Tap to review' : `${knowsPct}% of the basics`} statusColor={colors.violet} onPress={() => setKnows(true)} />
+                <Shortcut icon="server" color={colors.cyan} title="Your coach server" status={online ? 'Connected' : 'Not reachable'} statusColor={online ? colors.mint : colors.amber} onPress={() => setServerOpen(true)} />
+              </View>
+            </FadeIn>
+
             {/* today: check-in + weigh-in */}
             <FadeIn delay={70} style={{ gap: 12 }}>
               <SectionTitle>Today</SectionTitle>
@@ -389,6 +421,7 @@ export default function Profile({ onReset }: { onReset?: () => void }) {
             <FadeIn delay={260}>
               <PushSettings />
               <Group title="App">
+                <Row icon="server" color={colors.cyan} title="Server" value={API.replace(/^https?:\/\//, '')} onPress={() => setServerOpen(true)} />
                 <Row icon="phone-portrait" color={colors.violet} title="Vibration"
                   right={<Switch accessibilityLabel="Vibration" value={vibrate} trackColor={{ false: colors.cardHi, true: colors.lime }} thumbColor="#fff"
                     onValueChange={async (on) => { setVibrate(on); await Haptics.setHapticsEnabled(on); if (on) Haptics.selectionAsync(); }} />} />
@@ -447,6 +480,11 @@ export default function Profile({ onReset }: { onReset?: () => void }) {
       )}
 
       <KnowsYou visible={knows} onClose={() => setKnows(false)} />
+      <CoachShell visible={serverOpen} onClose={() => setServerOpen(false)} title="Server" subtitle="Where your coach lives">
+        <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
+          <ServerForm onSaved={() => { setServerOpen(false); onReset?.(); }} />
+        </ScrollView>
+      </CoachShell>
       <Agenda visible={coachTool === 'agenda'} onClose={() => setCoachTool(null)} />
       <Intake visible={coachTool === 'intake'} onClose={() => { setCoachTool(null); load(); }} />
       <Research visible={coachTool === 'research'} onClose={() => setCoachTool(null)} />

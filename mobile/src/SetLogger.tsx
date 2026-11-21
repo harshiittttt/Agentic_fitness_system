@@ -6,7 +6,7 @@ import * as Haptics from './haptics';
 import { LoggedSet, Prefill, deleteSet, getPrefill, getSessionSets, getWorkoutSummary, logSet } from './api';
 import { Sheet } from './forms';
 import { colors, font, gradients } from './theme';
-import { Txt } from './ui';
+import { FadeIn, Txt } from './ui';
 import { Nudge } from './ux/controls';
 import WorkoutSummary from './ux/WorkoutSummary';
 
@@ -147,9 +147,9 @@ export default function SetLogger({ target, done, session, onClose, onLogged, on
 
   const cta = (label: string, onPress: () => void, icon: string, disabled?: boolean) => (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} disabled={disabled} style={({ pressed }) => ({ opacity: pressed || disabled ? 0.8 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}>
-      <LinearGradient colors={gradients.lime} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 20, minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+      <LinearGradient colors={gradients.lime} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 20, minHeight: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 12 }}>
         {busy ? <ActivityIndicator color="#07080B" /> : <Ionicons name={icon as any} size={22} color="#07080B" />}
-        <Txt style={{ color: '#07080B', fontFamily: font.black, fontSize: 17 }}>{label}</Txt>
+        <Txt numberOfLines={1} style={{ color: '#07080B', fontFamily: font.black, fontSize: 17, flexShrink: 1 }}>{label}</Txt>
       </LinearGradient>
     </Pressable>
   );
@@ -167,12 +167,18 @@ export default function SetLogger({ target, done, session, onClose, onLogged, on
             <View style={{ backgroundColor: 'rgba(198,255,61,0.14)', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
               <Txt style={{ color: colors.lime, fontFamily: font.bold, fontSize: 13 }}>Target {total} × {target?.reps}{hold ? ' s' : ''}{target?.target_rpe ? ` @ RPE ${target.target_rpe}` : ''}</Txt>
             </View>
+            <View accessible accessibilityRole="progressbar" accessibilityLabel={`${Math.min(count, total)} of ${total} sets logged`} style={{ flexDirection: 'row', gap: 5, alignItems: 'center' }}>
+              {Array.from({ length: Math.min(total, 12) }).map((_, k) => (
+                <View key={k} style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: k < count ? colors.lime : k === count && !finished ? 'transparent' : 'rgba(255,255,255,0.14)', borderWidth: k === count && !finished ? 2 : 0, borderColor: colors.lime }} />
+              ))}
+            </View>
             {loading ? <ActivityIndicator size="small" color={colors.lime} /> : !!hint && <Txt style={{ color: colors.dim, fontSize: 13.5, flexShrink: 1 }}>{hint}</Txt>}
           </View>
 
           {!!msg && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 16, backgroundColor: (msg.tone === 'ok' ? colors.mint : colors.red) + '1C', borderWidth: 1, borderColor: (msg.tone === 'ok' ? colors.mint : colors.red) + '55' }}>
-              <Txt style={{ flex: 1, color: msg.tone === 'ok' ? colors.mint : colors.red, fontFamily: font.semibold, fontSize: 14, lineHeight: 20 }}>{msg.text}</Txt>
+            <FadeIn key={msg.text} distance={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 16, backgroundColor: (msg.tone === 'ok' ? colors.mint : colors.red) + '1C', borderWidth: 1, borderColor: (msg.tone === 'ok' ? colors.mint : colors.red) + '55' }}>
+              <Ionicons name={msg.tone === 'ok' ? 'checkmark-circle' : 'alert-circle'} size={20} color={msg.tone === 'ok' ? colors.mint : colors.red} />
+              <Txt accessibilityLiveRegion="polite" style={{ flex: 1, color: msg.tone === 'ok' ? colors.mint : colors.red, fontFamily: font.semibold, fontSize: 14, lineHeight: 20 }}>{msg.text}</Txt>
               {msg.undo && lastSet && (
                 <Pressable accessibilityRole="button" accessibilityLabel="Wrong set? Undo it" onPress={() => undo(lastSet)} disabled={busy}
                   style={({ pressed }) => ({ minHeight: 48, minWidth: 76, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1.5, borderColor: colors.amber, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, opacity: pressed || busy ? 0.6 : 1 })}>
@@ -180,7 +186,7 @@ export default function SetLogger({ target, done, session, onClose, onLogged, on
                   <Txt style={{ color: colors.amber, fontFamily: font.bold, fontSize: 15 }}>Undo</Txt>
                 </Pressable>
               )}
-            </View>
+            </FadeIn>
           )}
 
           {finished && (
@@ -196,7 +202,7 @@ export default function SetLogger({ target, done, session, onClose, onLogged, on
               <Dial label={bw ? 'Added weight' : 'Weight'} unit="kg" value={weight} onChange={setWeight} step={step} min={0} max={600} decimals />
               <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
                 {STEPS.map((x) => (
-                  <Pressable key={x} accessibilityRole="button" accessibilityLabel={`Change weight in steps of ${x} kilos`} onPress={() => { Haptics.selectionAsync(); setStep(x); }}>
+                  <Pressable key={x} accessibilityRole="button" accessibilityLabel={`Change weight in steps of ${x} kilos`} accessibilityState={{ selected: step === x }} onPress={() => { Haptics.selectionAsync(); setStep(x); }}>
                     <View style={{ minHeight: 44, minWidth: 64, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, backgroundColor: step === x ? colors.lime : 'rgba(255,255,255,0.05)', borderColor: step === x ? colors.lime : 'rgba(255,255,255,0.12)' }}>
                       <Txt style={{ fontFamily: font.bold, fontSize: 14, color: step === x ? '#07080B' : colors.dim }}>±{x}</Txt>
                     </View>
@@ -212,7 +218,7 @@ export default function SetLogger({ target, done, session, onClose, onLogged, on
                   {RPE.map((r) => {
                     const on = rpe === r.v;
                     return (
-                      <Pressable key={r.v} accessibilityRole="button" accessibilityLabel={`Effort ${r.v}, ${r.hint}`} onPress={() => { Haptics.selectionAsync(); setRpe(on ? null : r.v); }} style={{ flex: 1 }}>
+                      <Pressable key={r.v} accessibilityRole="button" accessibilityLabel={`Effort ${r.v}, ${r.hint}`} accessibilityState={{ selected: on }} onPress={() => { Haptics.selectionAsync(); setRpe(on ? null : r.v); }} style={{ flex: 1 }}>
                         <View style={{ alignItems: 'center', justifyContent: 'center', minHeight: 56, borderRadius: 16, borderWidth: 1, backgroundColor: on ? colors.lime + '22' : 'rgba(255,255,255,0.05)', borderColor: on ? colors.lime : 'rgba(255,255,255,0.10)' }}>
                           <Txt style={{ fontFamily: font.black, fontSize: 18, color: on ? colors.lime : colors.text }}>{r.v}</Txt>
                           <Txt style={{ fontSize: 11, color: on ? colors.lime : colors.dim, fontFamily: font.semibold }}>{r.hint}</Txt>
@@ -234,7 +240,7 @@ export default function SetLogger({ target, done, session, onClose, onLogged, on
                     <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.lime + '22', alignItems: 'center', justifyContent: 'center' }}>
                       <Txt style={{ fontFamily: font.black, fontSize: 13, color: colors.lime }}>{i + 1}</Txt>
                     </View>
-                    <Txt style={{ flex: 1, fontFamily: font.bold, fontSize: 16 }} numberOfLines={1}>
+                    <Txt style={{ flex: 1, fontFamily: font.bold, fontSize: 16 }} numberOfLines={2}>
                       {bw && !s.weight ? 'Bodyweight' : `${fmt(+(s.weight ?? 0))} kg`} × {s.reps}{hold ? ' s' : ''}
                       {s.rpe ? <Txt style={{ color: colors.dim, fontFamily: font.medium, fontSize: 13 }}>{`  RPE ${s.rpe}`}</Txt> : null}
                     </Txt>

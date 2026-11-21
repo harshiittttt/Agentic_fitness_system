@@ -44,7 +44,7 @@ const clock = (t: number) => {
 };
 
 /** Three dots that bob in turn, inside a coach bubble: "your coach is thinking". */
-function TypingBubble({ accent, icon }: { accent: string; icon: string }) {
+function TypingBubble({ accent, icon, name }: { accent: string; icon: string; name: string }) {
   const dots = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
   useEffect(() => {
     const loops = dots.map((d, i) => Animated.loop(Animated.sequence([
@@ -57,12 +57,13 @@ function TypingBubble({ accent, icon }: { accent: string; icon: string }) {
     return () => loops.forEach((l) => l.stop());
   }, []);
   return (
-    <View accessibilityLabel="Your coach is typing" accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, alignSelf: 'flex-start' }}>
+    <View accessibilityLabel={`${name} is typing`} accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, alignSelf: 'flex-start' }}>
       <Avatar size={28} color={accent} icon={icon} />
-      <View style={{ flexDirection: 'row', gap: 6, paddingHorizontal: 16, height: 44, alignItems: 'center', borderRadius: 22, borderBottomLeftRadius: 6, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }}>
+      <View style={{ flexDirection: 'row', gap: 6, paddingHorizontal: 16, minHeight: 44, alignItems: 'center', borderRadius: 22, borderBottomLeftRadius: 6, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }}>
         {dots.map((d, i) => (
           <Animated.View key={i} style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: accent, opacity: d.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }), transform: [{ translateY: d.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }] }} />
         ))}
+        <Txt style={{ color: colors.dim, fontSize: 12.5, fontFamily: font.medium, marginLeft: 4 }}>{name} is thinking</Txt>
       </View>
     </View>
   );
@@ -157,8 +158,8 @@ export default function Coach({ onOpenTeam }: { onOpenTeam?: () => void }) {
       <View style={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 6, flexDirection: 'row', alignItems: 'center', gap: 13 }}>
         <Avatar size={46} color={accent} icon={persona.icon} ring />
         <View style={{ flex: 1 }}>
-          <Txt style={{ fontFamily: font.black, fontSize: 22, letterSpacing: -0.4 }}>{persona.name}</Txt>
-          <Txt style={{ color: accent, fontSize: 12.5, fontFamily: font.semibold }}>{persona.short} · knows your plan and your team</Txt>
+          <Txt style={{ fontFamily: font.black, fontSize: 22, letterSpacing: -0.4 }} numberOfLines={1} accessibilityRole="header">{persona.name}</Txt>
+          <Txt style={{ color: accent, fontSize: 12.5, fontFamily: font.semibold }} numberOfLines={2}>{persona.short} · knows your plan and your team</Txt>
         </View>
         <IconButton icon="people-circle-outline" label="Ask the whole team" onPress={() => { Haptics.selectionAsync(); setTable(true); }} size={28} color={colors.mint} />
         {msgs.length > 0 && <IconButton icon="refresh-circle-outline" label="Start a new chat" onPress={clear} size={26} />}
@@ -196,7 +197,7 @@ export default function Coach({ onOpenTeam }: { onOpenTeam?: () => void }) {
           const endsGroup = !next || next.me !== m.me || next.at - m.at > 5 * 60000;
           const mt = startsGroup && i > 0 ? 10 : 0;
           return m.me ? (
-            <View key={m.id} style={{ alignSelf: 'flex-end', maxWidth: '84%', marginTop: mt, alignItems: 'flex-end', gap: 3 }}>
+            <FadeIn key={m.id} distance={8} style={{ alignSelf: 'flex-end', maxWidth: '84%', marginTop: mt, alignItems: 'flex-end', gap: 3 }}>
               <Pressable disabled={!m.failed} onPress={() => send(m.t, m.id)} accessibilityRole={m.failed ? 'button' : undefined} accessibilityLabel={m.failed ? `Message not sent. Tap to retry: ${m.t}` : undefined}
                 style={{ padding: 14, borderRadius: 22, borderBottomRightRadius: endsGroup ? 6 : 22, backgroundColor: m.failed ? 'rgba(255,90,95,0.14)' : 'rgba(198,255,61,0.16)', borderWidth: 1, borderColor: m.failed ? colors.red + '88' : 'rgba(198,255,61,0.4)' }}>
                 <Txt selectable style={{ fontFamily: font.medium, fontSize: 15.5, lineHeight: 22 }}>{m.t}</Txt>
@@ -206,9 +207,9 @@ export default function Coach({ onOpenTeam }: { onOpenTeam?: () => void }) {
                     <Ionicons name="alert-circle" size={15} color={colors.red} /><Txt style={{ color: colors.red, fontFamily: font.bold, fontSize: 12.5 }}>Couldn't reach {persona.name}. Tap to try again</Txt>
                   </Pressable>
                 : endsGroup && <Txt style={{ color: colors.dim, fontSize: 11 }}>{clock(m.at)}</Txt>}
-            </View>
+            </FadeIn>
           ) : (
-            <View key={m.id} style={{ marginTop: mt, gap: 2, maxWidth: '94%', alignSelf: 'flex-start' }}>
+            <FadeIn key={m.id} distance={8} style={{ marginTop: mt, gap: 2, maxWidth: '94%', alignSelf: 'flex-start' }}>
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
                 {endsGroup ? <Avatar size={28} color={accent} icon={persona.icon} /> : <View style={{ width: 28 }} />}
                 <View style={{ flexShrink: 1, padding: 14, borderRadius: 22, borderBottomLeftRadius: endsGroup ? 6 : 22, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', borderTopColor: 'rgba(255,255,255,0.16)' }}>
@@ -238,10 +239,10 @@ export default function Coach({ onOpenTeam }: { onOpenTeam?: () => void }) {
                   {m.id === lastCoachId && <IconButton icon="reload" label="Ask again for a different answer" onPress={regenerate} size={17} disabled={typing} />}
                 </View>
               )}
-            </View>
+            </FadeIn>
           );
         })}
-        {typing && <View style={{ marginTop: 8 }}><TypingBubble accent={accent} icon={persona.icon} /></View>}
+        {typing && <View style={{ marginTop: 8 }}><TypingBubble accent={accent} icon={persona.icon} name={persona.name} /></View>}
       </ScrollView>
 
       {msgs.length > 0 && !typing && (
@@ -256,13 +257,15 @@ export default function Coach({ onOpenTeam }: { onOpenTeam?: () => void }) {
         </ScrollView>
       )}
 
+      {!online && msgs.length > 0 && <Txt accessibilityLiveRegion="polite" style={{ color: colors.amber, fontSize: 12.5, textAlign: 'center', paddingTop: 6, paddingHorizontal: 20 }}>Offline. {persona.name} will answer when you are back online.</Txt>}
       <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 8, alignItems: 'center' }}>
         <TextInput value={text} onChangeText={setText} placeholder={online ? `Message ${persona.name}` : `Offline. ${persona.name} can't answer yet.`} placeholderTextColor={colors.faint}
           onSubmitEditing={() => send(text)} returnKeyType="send" accessibilityLabel={`Message ${persona.name}`} onFocus={() => setTimeout(() => scroll.current?.scrollToEnd({ animated: true }), 250)}
           style={{ flex: 1, minHeight: 52, backgroundColor: 'rgba(255,255,255,0.06)', color: colors.text, borderRadius: 26, paddingHorizontal: 20, paddingVertical: 14, fontFamily: font.medium, fontSize: 15, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)' }} />
         <Pressable onPress={() => (text.trim() ? send(text) : voice.available && (voice.listening ? voice.stop() : voice.start()))} disabled={typing}
+          hitSlop={4} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.94 : 1 }] })}
           accessibilityRole="button" accessibilityLabel={text.trim() ? 'Send message' : voice.listening ? 'Stop listening' : voice.available ? 'Speak to your coach' : 'Type a message to send'}>
-          <LinearGradient colors={voice.listening ? gradients.warm : gradients.lime} style={{ width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', opacity: typing ? 0.5 : 1 }}>
+          <LinearGradient colors={voice.listening ? gradients.warm : gradients.lime} style={{ width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', opacity: typing ? 0.5 : 1, shadowColor: voice.listening ? colors.pink : colors.lime, shadowOpacity: 0.35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 }}>
             <Ionicons name={text.trim() ? 'arrow-up' : voice.listening ? 'stop' : 'mic'} size={24} color="#07080B" />
           </LinearGradient>
         </Pressable>

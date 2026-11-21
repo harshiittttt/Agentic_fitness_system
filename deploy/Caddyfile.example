@@ -1,0 +1,11 @@
+# One HTTPS host per person, reverse-proxied to that person's container port (published on 127.0.0.1 only).
+# Needs DNS A records (or a wildcard *.example.com) pointing at the server; Caddy gets certificates automatically.
+# Ports match what deploy/new_user.py printed.
+
+alice.example.com {
+	reverse_proxy 127.0.0.1:8001
+}
+
+bob.example.com {
+	reverse_proxy 127.0.0.1:8002
+}

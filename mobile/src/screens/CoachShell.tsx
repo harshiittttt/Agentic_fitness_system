@@ -12,10 +12,10 @@ export default function CoachShell({ visible, onClose, title, subtitle, children
           <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingTop: Platform.OS === 'ios' ? 56 : 28, paddingBottom: 8 }}>
               <View style={{ flex: 1 }}>
-                <Txt accessibilityRole="header" style={{ fontFamily: font.black, fontSize: 24, letterSpacing: -0.4 }}>{title}</Txt>
-                <Txt style={{ color: colors.dim, fontSize: 13 }}>{subtitle}</Txt>
+                <Txt accessibilityRole="header" maxFontSizeMultiplier={1.4} style={{ fontFamily: font.black, fontSize: 24, letterSpacing: -0.4 }}>{title}</Txt>
+                <Txt style={{ color: colors.dim, fontSize: 13, lineHeight: 18 }}>{subtitle}</Txt>
               </View>
-              <IconButton icon="close" label="Close" onPress={onClose} size={26} color={colors.text} bg="rgba(255,255,255,0.07)" />
+              <IconButton icon="close" label={`Close ${title}`} onPress={onClose} size={26} color={colors.text} bg="rgba(255,255,255,0.07)" />
             </View>
             {visible && children}
           </KeyboardAvoidingView>

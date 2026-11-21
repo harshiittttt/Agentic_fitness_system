@@ -39,7 +39,7 @@ export default function SwapSheet({ exercise, dayIndex, onClose, onSwapped, perm
 
   return (
     <Sheet visible={!!exercise} onClose={onClose} title="Swap exercise">
-      <Txt style={{ fontFamily: font.black, fontSize: 20, marginBottom: -4 }}>{exercise ? cap(exercise) : ''}</Txt>
+      <Txt accessibilityRole="header" style={{ fontFamily: font.black, fontSize: 20, marginBottom: -4 }}>{exercise ? cap(exercise) : ''}</Txt>
       {!permanent && <Segmented<'today' | 'plan'> options={[{ key: 'today', label: 'Just today' }, { key: 'plan', label: 'From now on' }]} value={scope} onChange={setScope} />}
       <Txt style={{ color: colors.dim, fontSize: 14, lineHeight: 20 }}>
         {scope === 'today' ? 'Only like-for-like moves that suit your injuries. Your plan stays the same after today.' : 'Your plan changes for good and your coach will remember this preference.'}
@@ -55,7 +55,7 @@ export default function SwapSheet({ exercise, dayIndex, onClose, onSwapped, perm
         <View style={{ alignItems: 'center', gap: 10, paddingVertical: 12 }}>
           <Ionicons name="cloud-offline" size={32} color={colors.amber} />
           <Txt style={{ color: colors.dim, textAlign: 'center', lineHeight: 21 }}>Couldn't load the options. Check your connection.</Txt>
-          <Pressable accessibilityRole="button" onPress={load} style={{ minHeight: 48, paddingHorizontal: 24, borderRadius: 24, borderWidth: 1.5, borderColor: colors.lime, alignItems: 'center', justifyContent: 'center' }}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Try loading the options again" onPress={load} style={{ minHeight: 48, paddingHorizontal: 24, borderRadius: 24, borderWidth: 1.5, borderColor: colors.lime, alignItems: 'center', justifyContent: 'center' }}>
             <Txt style={{ color: colors.lime, fontFamily: font.bold, fontSize: 15 }}>Try again</Txt>
           </Pressable>
         </View>
@@ -67,11 +67,12 @@ export default function SwapSheet({ exercise, dayIndex, onClose, onSwapped, perm
           <Txt style={{ color: colors.dim, textAlign: 'center', lineHeight: 21 }}>Nothing else matches this movement without loading your problem areas. Ask your coach in the Coach tab.</Txt>
         </View>
       )}
+      {alts && alts.length > 0 && <Txt style={{ color: colors.dim, fontSize: 12, letterSpacing: 1.2, fontFamily: font.bold }}>SAFE ALTERNATIVES</Txt>}
       {alts?.map((a) => (
-        <Pressable key={a.name} accessibilityRole="button" accessibilityLabel={`Swap to ${a.name}`} onPress={() => apply(a.name)} disabled={!!busy}
+        <Pressable key={a.name} accessibilityRole="button" accessibilityLabel={`Swap to ${a.name}, ${scope === 'today' ? 'just today' : 'from now on'}`} accessibilityState={{ busy: busy === a.name, disabled: !!busy }} onPress={() => apply(a.name)} disabled={!!busy}
           style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, opacity: pressed || (!!busy && busy !== a.name) ? 0.6 : 1 })}>
           <View style={{ flex: 1 }}>
-            <Txt style={{ fontFamily: font.bold, fontSize: 17 }}>{cap(a.name)}</Txt>
+            <Txt style={{ fontFamily: font.bold, fontSize: 17 }} numberOfLines={2}>{cap(a.name)}</Txt>
             <Txt style={{ color: colors.dim, fontSize: 13.5, textTransform: 'capitalize' }}>{a.muscle}{a.compound ? ' · compound' : ' · isolation'}</Txt>
           </View>
           {busy === a.name ? <ActivityIndicator color={colors.lime} /> : <Ionicons name="swap-horizontal" size={22} color={colors.lime} />}

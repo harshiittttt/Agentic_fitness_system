@@ -7,7 +7,21 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timezone
 
-DB_PATH = os.environ.get("FITNESS_DB", os.path.join(os.path.dirname(__file__), "..", "..", "fitness.db"))
+def _default_db_path() -> str:
+    """FITNESS_DB (explicit file) > FITNESS_DATA_DIR/fitness.db > repo-root fitness.db (local dev). Everything else that
+    persists (tts_cache/, traces, memory, push, wearables, credit counters) lives in this DB or beside it, so one
+    FITNESS_DATA_DIR relocates all state (one isolated instance per person)."""
+    explicit = os.environ.get("FITNESS_DB")
+    if explicit:
+        return explicit
+    data_dir = (os.environ.get("FITNESS_DATA_DIR") or "").strip()
+    if data_dir:
+        os.makedirs(data_dir, exist_ok=True)
+        return os.path.join(data_dir, "fitness.db")
+    return os.path.join(os.path.dirname(__file__), "..", "..", "fitness.db")
+
+
+DB_PATH = _default_db_path()
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS profile (

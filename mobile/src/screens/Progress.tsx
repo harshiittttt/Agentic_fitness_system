@@ -23,10 +23,10 @@ type Range = '8' | '20' | 'all';
 function Stat({ label, value, unit, sub }: { label: string; value: number; unit?: string; sub?: string }) {
   return (
     <Card style={{ flex: 1, padding: 14, gap: 2 }}>
-      <Txt style={{ color: colors.dim, fontSize: 11, letterSpacing: 0.8, fontFamily: font.semibold }} numberOfLines={1}>{label.toUpperCase()}</Txt>
+      <Txt style={{ color: colors.dim, fontSize: 11, letterSpacing: 0.8, fontFamily: font.semibold }} numberOfLines={1} accessibilityLabel={`${label}: ${value}${unit ? ' ' + unit : ''}${sub ? ', ' + sub : ''}`}>{label.toUpperCase()}</Txt>
       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-        <CountUp value={value} style={{ fontFamily: font.black, fontSize: 26 }} />
-        {!!unit && <Txt style={{ color: colors.dim, fontSize: 13, fontFamily: font.medium }}> {unit}</Txt>}
+        <CountUp value={value} style={{ fontFamily: font.black, fontSize: 26, letterSpacing: -0.5 }} />
+        {!!unit && <Txt style={{ color: colors.dim, fontSize: 13, fontFamily: font.medium }} numberOfLines={1}> {unit}</Txt>}
       </View>
       {!!sub && <Txt style={{ color: colors.dim, fontSize: 11.5 }} numberOfLines={1}>{sub}</Txt>}
     </Card>
@@ -116,7 +116,12 @@ export default function Progress({ embedded = false, onOpenProfile }: { embedded
         </View>
       )}
 
-      {!series && !failed && (<><Skeleton height={76} /><Skeleton height={230} /><Skeleton height={230} /></>)}
+      {!series && !failed && (
+        <>
+          <View style={{ flexDirection: 'row', gap: 10 }}><Skeleton height={92} width="31%" radius={26} style={{ flex: 1 }} /><Skeleton height={92} width="31%" radius={26} style={{ flex: 1 }} /><Skeleton height={92} width="31%" radius={26} style={{ flex: 1 }} /></View>
+          <Skeleton height={64} /><Skeleton height={220} /><Skeleton height={220} />
+        </>
+      )}
       {!series && failed && <ErrorCard message="Couldn't load your trends" onRetry={load} />}
 
       {series && (
@@ -149,10 +154,11 @@ export default function Progress({ embedded = false, onOpenProfile }: { embedded
           <SectionTitle>Personal bests</SectionTitle>
           <Card style={{ gap: 0, padding: 4 }}>
             {summary.prs.map((p, i) => (
-              <View key={p.lift} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
+              <View key={p.lift} accessible accessibilityLabel={`${p.lift}: estimated one-rep max ${Math.round(p.best_e1rm)} kilograms. ${p.at_best ? 'At your best.' : `Now ${Math.round(p.latest_e1rm)} kilograms.`}`}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, minHeight: 64, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
                 <View style={{ width: 8, height: 36, borderRadius: 4, backgroundColor: LIFT_COLOR[p.lift] ?? colors.lime }} />
                 <View style={{ flex: 1, gap: 2 }}>
-                  <Txt style={{ fontFamily: font.semibold, fontSize: 15, textTransform: 'capitalize' }}>{p.lift}</Txt>
+                  <Txt style={{ fontFamily: font.semibold, fontSize: 15, textTransform: 'capitalize' }} numberOfLines={1}>{p.lift}</Txt>
                   <Txt style={{ color: colors.dim, fontSize: 12.5 }} numberOfLines={1}>Heaviest: {p.heaviest.weight} kg × {p.heaviest.reps} · {niceDate(p.heaviest.date)}</Txt>
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: 2 }}>
@@ -185,22 +191,20 @@ export default function Progress({ embedded = false, onOpenProfile }: { embedded
         return (
           <FadeIn key={name} delay={li * 90}>
             <Card style={{ gap: 12 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
                 <View style={{ gap: 2, flexShrink: 1 }}>
                   <Txt style={{ fontFamily: font.semibold, fontSize: 15, textTransform: 'capitalize', color: colors.dim }}>{name}</Txt>
                   <CountUp value={vals[vals.length - 1]} style={{ fontFamily: font.black, fontSize: 28 }} suffix=" kg" />
                   {vals.length > 1 && <Delta value={gain} unit="kg" />}
                 </View>
                 {t && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.color + '22', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
+                  <View accessible accessibilityLabel={`Trend: ${t.label}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: t.color + '22', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
                     <Ionicons name={t.icon as any} size={14} color={t.color} />
                     <Txt style={{ color: t.color, fontSize: 12, fontFamily: font.bold }}>{t.label}</Txt>
                   </View>
                 )}
               </View>
-              {vals.length > 1
-                ? <LineChart data={vals} labels={dates} color={LIFT_COLOR[name] ?? colors.lime} id={name.replace(/\s/g, '')} unit=" kg" markPeak window={vals.length > 10 ? 8 : undefined} />
-                : <Txt style={{ color: colors.dim, fontSize: 13.5, lineHeight: 20 }}>One session so far. Log another and a line will appear.</Txt>}
+              <LineChart data={vals} labels={dates} color={LIFT_COLOR[name] ?? colors.lime} id={name.replace(/\s/g, '')} unit=" kg" markPeak window={vals.length > 10 ? 8 : undefined} />
               {!!sentence && <Txt style={{ color: info?.trend === 'down' ? colors.amber : colors.dim, fontSize: 13, lineHeight: 19 }}>{sentence}</Txt>}
               {vals.length > 10 && <Txt style={{ color: colors.dim, fontSize: 11.5 }}>Drag on the chart to inspect. The shaded band is the last 8 sessions your coach judges trends over.</Txt>}
             </Card>

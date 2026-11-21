@@ -14,8 +14,14 @@
         }
       ],
       "expo-asset",
-      "expo-notifications",
-      "expo-font"
+      [
+        "expo-notifications",
+        {
+          "color": "#07080B"
+        }
+      ],
+      "expo-font",
+      "expo-secure-store"
     ],
     "icon": "./assets/icon.png",
     "splash": {
@@ -28,10 +34,15 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#07080B"
-      }
+      },
+      "package": "com.harshiittttt.aicoach",
+      "versionCode": 1
     },
     "ios": {
-      "supportsTablet": false
-    }
+      "supportsTablet": false,
+      "bundleIdentifier": "com.harshiittttt.aicoach",
+      "buildNumber": "1"
+    },
+    "scheme": "aicoach"
   }
 }

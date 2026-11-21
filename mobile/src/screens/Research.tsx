@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ResearchAnswer, askResearch } from '../api';
 import * as Haptics from '../haptics';
 import { colors, font } from '../theme';
-import { Card, FadeIn, GradientButton, Txt } from '../ui';
+import { Card, FadeIn, GradientButton, Skeleton, Txt } from '../ui';
 import { Pill } from '../ux/controls';
 import SpeakButton from '../ux/SpeakButton';
 import CoachShell, { inputStyle } from './CoachShell';
@@ -38,9 +38,15 @@ function Body() {
         {!res && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>{EXAMPLES.map((e) => <Pill key={e} label={e} onPress={() => { setQ(e); ask(e); }} />)}</View>}
       </View>
 
-      {!!err && <Card glow={colors.amber}><Txt accessibilityRole="alert" style={{ fontSize: 14, lineHeight: 20 }}>{err}</Txt></Card>}
+      {busy && <View accessibilityLiveRegion="polite" accessibilityLabel="Looking through the evidence library" style={{ gap: 10 }}><Skeleton height={120} /><Skeleton height={60} /></View>}
+      {!!err && !busy && (
+        <Card glow={colors.amber} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+          <Ionicons name="cloud-offline" size={20} color={colors.amber} />
+          <Txt accessibilityRole="alert" style={{ flex: 1, fontSize: 14, lineHeight: 20 }}>{err}</Txt>
+        </Card>
+      )}
 
-      {!!res && (
+      {!!res && !busy && (
         <FadeIn key={res.question + res.answer.length}>
           {res.referred ? (
             <Card glow={colors.red} style={{ gap: 8 }}>

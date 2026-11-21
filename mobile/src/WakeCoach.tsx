@@ -240,13 +240,13 @@ export default function WakeCoach() {
   return (
     <View pointerEvents="none" style={{ position: 'absolute', top: insets.top + 6, left: 0, right: 0, alignItems: 'center', gap: 8, zIndex: 50, elevation: 50 }}>
       {ws.status === 'listening' || phase !== 'idle' ? (
-        <View accessibilityLabel={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: hot ? 'rgba(198,255,61,0.22)' : 'rgba(20,24,36,0.82)', borderWidth: 1, borderColor: hot ? colors.lime : colors.border }}>
+        <View accessibilityLabel={label} accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, maxWidth: '88%', backgroundColor: hot ? 'rgba(198,255,61,0.22)' : 'rgba(20,24,36,0.82)', borderWidth: 1, borderColor: hot ? colors.lime : colors.border }}>
           <Ionicons name={hot ? 'mic' : 'mic-outline'} size={14} color={hot ? colors.lime : colors.faint} />
-          <Txt style={{ fontFamily: font.semibold, fontSize: 12, color: hot ? colors.lime : colors.faint }}>{label}</Txt>
+          <Txt numberOfLines={1} style={{ fontFamily: font.semibold, fontSize: 12, color: hot ? colors.lime : colors.faint, flexShrink: 1 }}>{label}</Txt>
         </View>
       ) : null}
       {!!bubble && (
-        <View accessibilityLiveRegion="polite" style={{ maxWidth: '88%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, backgroundColor: '#222838', borderWidth: 1, borderColor: 'rgba(198,255,61,0.35)' }}>
+        <View accessibilityLiveRegion="polite" style={{ maxWidth: '88%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 16, backgroundColor: '#222838', borderWidth: 1, borderColor: 'rgba(198,255,61,0.35)', shadowColor: '#000', shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 8 }}>
           <Txt style={{ fontSize: 14, lineHeight: 19 }} numberOfLines={4}>{bubble}</Txt>
         </View>
       )}

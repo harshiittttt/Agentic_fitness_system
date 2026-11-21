@@ -61,8 +61,8 @@ function Body() {
   return (
     <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
       <FadeIn>
-        <Card style={{ gap: 8 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+        <Card style={{ gap: 8 }} >
+          <View accessible accessibilityRole="progressbar" accessibilityLabel={remaining === 0 ? 'Basics complete' : `${shown} of ${CORE} basics answered, ${remaining} to go`} accessibilityValue={{ min: 0, max: CORE, now: shown }} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Txt style={{ fontFamily: font.bold, fontSize: 14 }}>{remaining === 0 ? 'Basics complete' : `${shown} of ${CORE} basics`}</Txt>
             <Txt style={{ color: colors.dim, fontSize: 13 }}>{remaining === 0 ? 'Done' : `${remaining} to go`}</Txt>
           </View>
@@ -119,7 +119,10 @@ function Body() {
             <Txt style={{ color: colors.dim, fontSize: 12, letterSpacing: 0.8, fontFamily: font.semibold }}>{q.required ? 'NEEDED FOR YOUR PLAN' : 'OPTIONAL'}</Txt>
             <Txt accessibilityRole="header" style={{ fontFamily: font.black, fontSize: 20, lineHeight: 27 }}>{q.question}</Txt>
             <SpeakButton text={q.question} agent="intake" name="the question" label />
-            <Txt style={{ color: colors.dim, fontSize: 13.5, lineHeight: 20 }}>Why I ask: {q.why}</Txt>
+            <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+              <Ionicons name="help-circle-outline" size={17} color={colors.faint} style={{ marginTop: 2 }} />
+              <Txt style={{ flex: 1, color: colors.dim, fontSize: 13.5, lineHeight: 20 }}>Why I ask: {q.why}</Txt>
+            </View>
             {!!q.chips?.length && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {q.chips.map((c) => <Pill key={c} label={c} onPress={() => send(c)} />)}

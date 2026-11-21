@@ -73,7 +73,16 @@ export function LineChart({ data, labels, color = colors.lime, height = 170, id 
     onPanResponderTerminate: release,
   })).current;
 
-  if (n < 2) return <View style={{ height }} onLayout={(e) => setW(e.nativeEvent.layout.width)} />;
+  if (n < 2) {
+    // Empty or one point: say so plainly instead of drawing an empty box.
+    return (
+      <View style={{ minHeight: Math.min(height, 84), alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.12)', padding: 12 }}
+        onLayout={(e) => setW(e.nativeEvent.layout.width)} accessible accessibilityLabel={n === 1 ? `One reading so far: ${decimals ? data[0].toFixed(decimals) : Math.round(data[0])}${unit}` : 'No readings yet'}>
+        {n === 1 && <Txt style={{ fontFamily: font.black, fontSize: 20 }}>{decimals ? data[0].toFixed(decimals) : Math.round(data[0])}{unit}</Txt>}
+        <Txt style={{ color: colors.dim, fontSize: 12.5, textAlign: 'center' }}>{n === 1 ? 'One reading so far. A line appears after the next one.' : 'No readings yet.'}</Txt>
+      </View>
+    );
+  }
 
   const hi0 = Math.max(...data), lo0 = Math.min(...data);
   const span = hi0 - lo0 || Math.max(1, Math.abs(hi0) * 0.1);
@@ -154,7 +163,8 @@ export function LineChart({ data, labels, color = colors.lime, height = 170, id 
           </Svg>
           </Animated.View>
 
-          <View style={StyleSheet.absoluteFill} {...pan.panHandlers} />
+          <View style={StyleSheet.absoluteFill} {...pan.panHandlers} accessible accessibilityRole="image"
+            accessibilityLabel={`Chart of ${n} readings, from ${fmt(data[0])}${unit} to ${fmt(data[n - 1])}${unit}. Lowest ${fmt(lo0)}, highest ${fmt(hi0)}. Touch and drag to inspect.`} />
 
           {active !== null && (
             <View pointerEvents="none" style={{
@@ -186,13 +196,14 @@ export function BarChart({ data, labels, color = colors.cyan, height = 130, form
   const step = data.length > 8 ? 3 : 1;
   return (
     <View>
-      <View style={{ height, flexDirection: 'row', gap: 6 }}>
+      <View style={{ height, flexDirection: 'row', gap: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.10)' }}>
         {data.map((v, i) => (
-          <Pressable key={i} onPress={() => { Haptics.selectionAsync(); setSel(i); }} style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
-            {sel === i && <Txt style={{ fontSize: 10.5, fontFamily: font.bold, marginBottom: 4 }}>{fmt(v)}</Txt>}
+          <Pressable key={i} onPress={() => { Haptics.selectionAsync(); setSel(i); }} accessibilityRole="button" accessibilityState={{ selected: sel === i }}
+            accessibilityLabel={`${labels?.[i] ? `Week of ${shortDate(labels[i])}: ` : ''}${fmt(v)}`} style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'center' }}>
+            {sel === i && <Txt style={{ fontSize: 10.5, fontFamily: font.bold, marginBottom: 4 }} numberOfLines={1}>{fmt(v)}</Txt>}
             <Animated.View style={{
               width: '100%', borderRadius: 7, backgroundColor: sel === i ? color : color + '3A',
-              height: grow.interpolate({ inputRange: [0, 1], outputRange: [0, Math.max(4, (v / max) * (height - 22))] }),
+              height: grow.interpolate({ inputRange: [0, 1], outputRange: [0, v > 0 ? Math.max(4, (v / max) * (height - 22)) : 2] }),
             }} />
           </Pressable>
         ))}
@@ -261,7 +272,8 @@ export function Heatmap({ activity, weeks = 12, color = colors.lime }: { activit
                   const lv = a ? level(a.tonnage) : 0;
                   const isSel = sel === iso;
                   return (
-                    <Pressable key={r} disabled={future} onPress={() => { Haptics.selectionAsync(); setSel(isSel ? null : iso); }}
+                    <Pressable key={r} disabled={future} hitSlop={2} onPress={() => { Haptics.selectionAsync(); setSel(isSel ? null : iso); }}
+                      accessibilityRole="button" accessibilityLabel={`${shortDate(iso)}: ${a ? `${a.sets} sets` : 'rest day'}`} accessibilityState={{ selected: isSel }}
                       style={{
                         width: cell, height: cell, borderRadius: Math.max(3, cell * 0.26), marginBottom: r < 6 ? gap : 0,
                         backgroundColor: a ? color : '#FFFFFF', opacity: future ? 0.03 : a ? alpha[lv] : 0.07,
@@ -272,7 +284,12 @@ export function Heatmap({ activity, weeks = 12, color = colors.lime }: { activit
               </View>
             ))}
           </View>
-          <Txt style={{ color: colors.dim, fontSize: 12, minHeight: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <Txt style={{ color: colors.faint, fontSize: 10.5 }}>Less</Txt>
+            {alpha.map((al, k) => <View key={k} style={{ width: 11, height: 11, borderRadius: 3, backgroundColor: k === 0 ? '#FFFFFF' : color, opacity: k === 0 ? 0.07 : al }} />)}
+            <Txt style={{ color: colors.faint, fontSize: 10.5 }}>More</Txt>
+          </View>
+          <Txt style={{ color: colors.dim, fontSize: 12, minHeight: 16 }} accessibilityLiveRegion="polite">
             {sel ? `${DAYS[(parseIso(sel).getDay() + 6) % 7]}, ${shortDate(sel)} · ${selA ? `${selA.sets} sets · ${(selA.tonnage / 1000).toFixed(1)} t moved` : 'rest day'}` : 'Tap a day for details'}
           </Txt>
         </>

@@ -17,10 +17,10 @@ type Phase = 'idle' | 'thinking' | 'speaking';
 function Quick({ label, icon, color = colors.text, onPress }: { label: string; icon: string; color?: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={() => { Haptics.selectionAsync(); onPress(); }}
-      style={({ pressed }) => ({ width: '48.5%', minHeight: 52, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 10,
+      style={({ pressed }) => ({ width: '48.5%', minHeight: 56, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 10,
         backgroundColor: pressed ? colors.cardHi : colors.card, borderWidth: 1, borderColor: color === colors.text ? colors.border : color + '55' })}>
       <Ionicons name={icon as any} size={18} color={color} />
-      <Txt style={{ fontFamily: font.bold, fontSize: 15, color }} numberOfLines={1}>{label}</Txt>
+      <Txt style={{ fontFamily: font.bold, fontSize: 15, color, flexShrink: 1 }} numberOfLines={2}>{label}</Txt>
     </Pressable>
   );
 }
@@ -185,12 +185,12 @@ export default function Live({ onClose }: { onClose: () => void }) {
             <Pressable onPress={onOrb} accessibilityRole="button" accessibilityLabel={voice.listening ? 'Stop listening' : 'Talk to your coach'}>
               <Orb state={display} color={accent} size={170} />
             </Pressable>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: -26, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, backgroundColor: stateColor + '1F', borderWidth: 1, borderColor: stateColor + '55' }}>
+            <View accessibilityLiveRegion="polite" accessibilityLabel={opening ? 'Getting your session ready' : status} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: -26, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, backgroundColor: stateColor + '1F', borderWidth: 1, borderColor: stateColor + '55' }}>
               {opening ? <ActivityIndicator size="small" color={colors.amber} /> : <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: stateColor }} />}
-              <Txt style={{ color: opening ? colors.amber : display === 'idle' ? colors.text : stateColor, fontFamily: font.semibold, fontSize: 15 }}>{opening ? 'Getting your session ready…' : status}</Txt>
+              <Txt style={{ color: opening ? colors.amber : display === 'idle' ? colors.text : stateColor, fontFamily: font.semibold, fontSize: 15, flexShrink: 1, textAlign: 'center' }}>{opening ? 'Getting your session ready…' : status}</Txt>
             </View>
             {!!line && <Txt style={{ fontFamily: font.bold, fontSize: line.length > 110 ? 20 : 24, lineHeight: line.length > 110 ? 28 : 33, textAlign: 'center', letterSpacing: -0.2 }}>{line}</Txt>}
-            {!!heard && <Txt style={{ color: colors.dim, fontSize: 15, textAlign: 'center' }}>You said: {heard}</Txt>}
+            {!!heard && <Txt style={{ color: colors.dim, fontSize: 15, textAlign: 'center', lineHeight: 21 }}>You said: <Txt style={{ color: colors.text, fontFamily: font.medium }}>{heard}</Txt></Txt>}
             {!!problem && (
               <Card style={{ alignSelf: 'stretch', borderColor: colors.amber + '66', gap: 10 }}>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -207,15 +207,15 @@ export default function Live({ onClose }: { onClose: () => void }) {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                   <View style={{ flex: 1 }}>
                     <Txt style={{ color: colors.dim, fontSize: 12, letterSpacing: 1.2, fontFamily: font.semibold }}>NOW</Txt>
-                    <Txt style={{ fontFamily: font.black, fontSize: 26, letterSpacing: -0.4, textTransform: 'capitalize' }}>{cur.name}</Txt>
-                    <Txt style={{ color: colors.text, opacity: 0.8, fontSize: 16, marginTop: 2 }}>Set {cur.set_no} of {cur.sets} · {cur.reps} reps · RPE {cur.target_rpe}</Txt>
+                    <Txt style={{ fontFamily: font.black, fontSize: 26, letterSpacing: -0.4, textTransform: 'capitalize' }} numberOfLines={2}>{cur.name}</Txt>
+                    <Txt style={{ color: colors.text, opacity: 0.85, fontSize: 16, lineHeight: 22, marginTop: 2 }}>Set {cur.set_no} of {cur.sets} · {cur.reps} reps · RPE {cur.target_rpe}</Txt>
                   </View>
                   <View style={{ alignItems: 'center', minWidth: 56 }}>
                     <Txt style={{ fontFamily: font.black, fontSize: 32, color: accent }}>{state.remaining_sets}</Txt>
                     <Txt style={{ color: colors.dim, fontSize: 12 }}>sets left</Txt>
                   </View>
                 </View>
-                <View style={{ flexDirection: 'row', gap: 5 }}>
+                <View style={{ flexDirection: 'row', gap: 5 }} accessible accessibilityRole="progressbar" accessibilityLabel={`Set ${cur.set_no} of ${cur.sets}`}>
                   {Array.from({ length: cur.sets }).map((_, k) => (
                     <View key={k} style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: k < cur.set_no - 1 ? accent : 'rgba(255,255,255,0.14)' }} />
                   ))}
@@ -226,12 +226,16 @@ export default function Live({ onClose }: { onClose: () => void }) {
             {rest > 0 && (
               <Card style={{ alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 16 }}>
                 <Ring size={76} stroke={8} progress={rest / restTotal.current} from={colors.cyan} to={colors.violet}>
-                  <Txt style={{ fontFamily: font.black, fontSize: 22 }}>{rest}</Txt>
+                  <Txt style={{ fontFamily: font.black, fontSize: rest >= 60 ? 18 : 22 }}>{rest >= 60 ? `${Math.floor(rest / 60)}:${String(rest % 60).padStart(2, '0')}` : rest}</Txt>
                 </Ring>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1 }} accessible accessibilityLabel={`Resting, ${rest} seconds left`}>
                   <Txt style={{ fontFamily: font.bold, fontSize: 18 }}>Resting</Txt>
                   <Txt style={{ color: colors.dim, fontSize: 14, lineHeight: 20 }}>I'll call you back in. You can still talk to me.</Txt>
                 </View>
+                <Pressable accessibilityRole="button" accessibilityLabel="Add 30 seconds of rest" onPress={() => { Haptics.selectionAsync(); restTotal.current += 30; setRest((r) => r + 30); }}
+                  style={({ pressed }) => ({ minWidth: 52, height: 52, paddingHorizontal: 8, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)' })}>
+                  <Txt style={{ fontFamily: font.bold, fontSize: 13 }}>+30s</Txt>
+                </Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel="Skip rest" onPress={() => { if (tick.current) clearInterval(tick.current); restRunning.current = false; setRest(0); }}
                   style={{ width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.07)' }}>
                   <Ionicons name="play-skip-forward" size={22} color={colors.text} />
@@ -262,8 +266,8 @@ export default function Live({ onClose }: { onClose: () => void }) {
             accessibilityLabel="Tell your coach what you did" onSubmitEditing={sendTyped} returnKeyType="send"
             style={{ flex: 1, minHeight: 52, backgroundColor: colors.card, color: colors.text, borderRadius: 26, paddingHorizontal: 18, paddingVertical: 13, fontFamily: font.medium, fontSize: 16, borderWidth: 1, borderColor: colors.border }} />
           {phase === 'thinking' ? <ActivityIndicator color={accent} style={{ width: 52 }} /> : (
-            <Pressable accessibilityRole="button" accessibilityLabel="Send" onPress={sendTyped}
-              style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: accent, alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Send" onPress={sendTyped} disabled={!typed.trim()}
+              style={({ pressed }) => ({ width: 52, height: 52, borderRadius: 26, backgroundColor: accent, alignItems: 'center', justifyContent: 'center', opacity: typed.trim() ? 1 : 0.45, transform: [{ scale: pressed ? 0.94 : 1 }] })}>
               <Ionicons name="arrow-up" size={26} color="#07080B" />
             </Pressable>
           )}

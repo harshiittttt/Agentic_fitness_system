@@ -22,6 +22,7 @@ function greeting() {
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
 }
 
+const mmss = (n: number) => (n >= 60 ? `${Math.floor(n / 60)}:${String(n % 60).padStart(2, '0')}` : String(n));
 const dateLabel = () => new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
 function readinessWord(score?: number) {
@@ -180,6 +181,7 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
   }, [allDone, loaded]);
   const weekDone = !!tstate?.week_done && !allDone && doneSets === 0;
   const nextUp = tstate?.next;
+  const nextEx = day?.exercises.find((e: any) => Math.min(e.sets, done[e.name] ?? 0) < e.sets);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -273,6 +275,11 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
                   <Txt style={{ color: colors.dim, fontFamily: font.medium, fontSize: 14 }}>
                     {day ? `${day.exercises.length} lifts · ${totalSets} sets · ~${day.est_minutes ?? '?'} min` : 'Head to Profile to build your program'}
                   </Txt>
+                  {!!nextEx && !weekDone && (
+                    <Txt style={{ color: colors.text, fontFamily: font.semibold, fontSize: 14, lineHeight: 20, textTransform: 'capitalize' }} numberOfLines={2}>
+                      {doneSets > 0 ? 'Up next' : 'First up'}: {nextEx.name}
+                    </Txt>
+                  )}
                   {weekDone && <Txt style={{ color: colors.dim, fontSize: 13, lineHeight: 19 }}>You've trained {tstate?.week?.sessions} of {tstate?.week?.target} days this week. Resting is part of the plan. Train anyway only if you feel good.</Txt>}
                 </View>
                 <View style={{ alignItems: 'center', gap: 6 }}>
@@ -284,13 +291,13 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
               </View>
 
               {day && (
-                <View style={{ gap: 8 }}>
+                <View style={{ gap: 8 }} accessible accessibilityRole="progressbar" accessibilityLabel={`${doneSets} of ${totalSets} sets done`}>
                   <View style={{ flexDirection: 'row', gap: 5 }}>
                     {Array.from({ length: Math.min(totalSets, 24) }).map((_, k) => (
                       <View key={k} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: k < doneSets ? colors.lime : 'rgba(255,255,255,0.10)' }} />
                     ))}
                   </View>
-                  <Txt style={{ color: colors.dim, fontSize: 12.5, fontFamily: font.medium }}>{doneSets} of {totalSets} sets done{doneSets === 0 ? '. Tap below to start.' : ''}</Txt>
+                  <Txt style={{ color: colors.dim, fontSize: 12.5, fontFamily: font.medium }}>{doneSets} of {totalSets} sets done{doneSets === 0 ? '. Tap below to start.' : ` · ${Math.round((doneSets / Math.max(1, totalSets)) * 100)}%`}</Txt>
                 </View>
               )}
 
@@ -303,7 +310,7 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
                       <Ionicons name="mic" size={19} color={colors.lime} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Txt style={{ color: '#07080B', fontFamily: font.black, fontSize: 17, letterSpacing: -0.2 }}>{doneSets > 0 ? 'Continue with' : weekDone ? 'Train anyway with' : 'Train with'} {coachName}</Txt>
+                      <Txt numberOfLines={2} style={{ color: '#07080B', fontFamily: font.black, fontSize: 17, letterSpacing: -0.2 }}>{doneSets > 0 ? 'Continue with' : weekDone ? 'Train anyway with' : 'Train with'} {coachName}</Txt>
                       <Txt style={{ color: 'rgba(7,8,11,0.75)', fontFamily: font.semibold, fontSize: 12 }}>Voice-guided, hands-free</Txt>
                     </View>
                     <Ionicons name="arrow-forward" size={22} color="#07080B" />
@@ -326,9 +333,9 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
           <Card glow={colors.cyan} style={{ gap: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
               <Ring size={76} stroke={8} progress={rest / restTotal.current} from={colors.cyan} to={colors.violet}>
-                <Txt style={{ fontFamily: font.black, fontSize: 20 }}>{rest}</Txt>
+                <Txt style={{ fontFamily: font.black, fontSize: rest >= 60 ? 17 : 20 }}>{mmss(rest)}</Txt>
               </Ring>
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1 }} accessible accessibilityLabel={`Rest, ${rest} seconds left`}>
                 <Txt style={{ fontFamily: font.bold, fontSize: 17 }}>Rest</Txt>
                 <Txt style={{ color: colors.dim, fontSize: 13, lineHeight: 18 }}>{rest} seconds left. Breathe. Next set when the ring fills.</Txt>
               </View>
@@ -336,7 +343,7 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
             <View style={{ flexDirection: 'row', gap: 10 }}>
               {[{ l: '+30 s', f: () => { restTotal.current += 30; setRest((r) => r + 30); } }, { l: 'Skip rest', f: () => { if (tick.current) clearInterval(tick.current); setRest(0); } }].map((b) => (
                 <Pressable key={b.l} onPress={() => { Haptics.selectionAsync(); b.f(); }} accessibilityRole="button" accessibilityLabel={b.l === '+30 s' ? 'Add 30 seconds of rest' : 'Skip rest'}
-                  style={({ pressed }) => ({ flex: 1, minHeight: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', opacity: pressed ? 0.7 : 1 })}>
+                  style={({ pressed }) => ({ flex: 1, minHeight: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', opacity: pressed ? 0.7 : 1 })}>
                   <Txt style={{ fontFamily: font.bold, fontSize: 14 }}>{b.l}</Txt>
                 </Pressable>
               ))}
@@ -368,28 +375,34 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
         {day?.exercises.map((e: any, i: number) => {
           const n = Math.min(e.sets, done[e.name] ?? 0);
           const complete = n >= e.sets;
+          const isNext = !complete && nextEx?.name === e.name && !allDone;
           return (
             <FadeIn key={e.name} delay={140 + i * 70}>
-              <Card onPress={() => { Haptics.selectionAsync(); setLogging({ name: e.name, sets: e.sets, reps: e.reps, target_rpe: e.target_rpe }); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, opacity: complete ? 0.72 : 1 }}>
+              <Pressable onPress={() => { Haptics.selectionAsync(); setLogging({ name: e.name, sets: e.sets, reps: e.reps, target_rpe: e.target_rpe }); }}
+                accessibilityRole="button" accessibilityLabel={`${e.name}, ${n} of ${e.sets} sets done, ${e.reps} reps. Tap to log a set`}
+                style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }], opacity: pressed ? 0.92 : 1 })}>
+              <Card glow={isNext ? colors.lime : undefined} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, opacity: complete ? 0.72 : 1 }}>
                 <LinearGradient colors={complete ? gradients.lime : ['#232838', '#1A1E28']} style={{ width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' }}>
                   {complete ? <Ionicons name="checkmark" size={24} color="#07080B" /> : <Txt style={{ fontFamily: font.bold, color: colors.dim }}>{i + 1}</Txt>}
                 </LinearGradient>
                 <View style={{ flex: 1 }}>
-                  <Txt style={{ fontFamily: font.semibold, fontSize: 16, textTransform: 'capitalize' }}>{e.name}</Txt>
+                  {isNext && <Txt style={{ color: colors.lime, fontFamily: font.bold, fontSize: 10.5, letterSpacing: 1.1 }}>UP NEXT</Txt>}
+                  <Txt style={{ fontFamily: font.semibold, fontSize: 16, textTransform: 'capitalize' }} numberOfLines={2}>{e.name}</Txt>
                   <Txt style={{ color: colors.dim, fontSize: 13 }}>{e.sets} × {e.reps} · RPE {e.target_rpe}</Txt>
                 </View>
-                <View style={{ flexDirection: 'row', gap: 5 }}>
+                <View style={{ flexDirection: 'row', gap: 5, maxWidth: 90, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                   {Array.from({ length: e.sets }).map((_, k) => (
                     <View key={k} style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: k < n ? colors.lime : 'rgba(255,255,255,0.12)' }} />
                   ))}
                 </View>
-                <Pressable onPress={() => setSwapping(e.name)} accessibilityRole="button" accessibilityLabel={`Swap ${e.name}`} hitSlop={4} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+                <Pressable onPress={() => setSwapping(e.name)} accessibilityRole="button" accessibilityLabel={`Swap ${e.name}`} hitSlop={4} style={({ pressed }) => ({ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed ? 'rgba(255,255,255,0.08)' : 'transparent' })}>
                   <Ionicons name="swap-horizontal" size={20} color={colors.dim} />
                 </Pressable>
                 <View style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: complete ? 'transparent' : 'rgba(198,255,61,0.14)', borderWidth: complete ? 0 : 1, borderColor: 'rgba(198,255,61,0.45)' }}>
                   <Ionicons name={complete ? 'checkmark-circle' : 'add'} size={complete ? 24 : 20} color={colors.lime} />
                 </View>
               </Card>
+              </Pressable>
             </FadeIn>
           );
         })}
@@ -399,6 +412,7 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
           <Card style={{ borderColor: result.safety_flag ? colors.red : 'rgba(198,255,61,0.35)' }}>
             {!!result.error && <Txt style={{ color: colors.amber, fontSize: 13, lineHeight: 18 }}>{result.error}</Txt>}
             {result.queued && <Txt style={{ color: colors.amber, fontSize: 13, lineHeight: 18 }}>You're offline. Saved on your phone, and it will be sent when you reconnect.</Txt>}
+            {!!result.saved?.length && <Txt style={{ color: colors.lime, fontFamily: font.bold, fontSize: 11, letterSpacing: 1.2 }}>LOGGED</Txt>}
             {result.saved?.map((x: any, i: number) => (
               <Txt key={i} style={{ fontFamily: font.semibold, fontSize: 16, textTransform: 'capitalize' }}>
                 {x.exercise}  {x.weight}kg × {x.reps}{x.rpe ? `  @${x.rpe}` : ''}
@@ -437,9 +451,9 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
                   </View>
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     <TextInput value={typed} onChangeText={setTyped} placeholder="bench press 80 for 8 rpe 8" placeholderTextColor={colors.faint}
-                      onSubmitEditing={() => submit(typed)} returnKeyType="send"
-                      style={{ flex: 1, backgroundColor: colors.card, color: colors.text, borderRadius: 18, paddingHorizontal: 18, paddingVertical: 15, fontFamily: font.medium, fontSize: 15, borderWidth: 1, borderColor: colors.border }} />
-                    <Pressable onPress={() => submit(typed)} accessibilityRole="button" accessibilityLabel="Log this set">
+                      onSubmitEditing={() => submit(typed)} returnKeyType="send" accessibilityLabel="Type a set, for example bench press 80 for 8"
+                      style={{ flex: 1, minHeight: 54, backgroundColor: colors.card, color: colors.text, borderRadius: 18, paddingHorizontal: 18, paddingVertical: 15, fontFamily: font.medium, fontSize: 15, borderWidth: 1, borderColor: colors.border }} />
+                    <Pressable onPress={() => submit(typed)} accessibilityRole="button" accessibilityLabel="Log this set" disabled={busy || !typed.trim()} style={({ pressed }) => ({ opacity: !typed.trim() ? 0.5 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] })}>
                       <LinearGradient colors={gradients.lime} style={{ width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }}>
                         <Ionicons name="arrow-up" size={24} color="#07080B" />
                       </LinearGradient>

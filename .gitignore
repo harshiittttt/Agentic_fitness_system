@@ -39,3 +39,19 @@ dist/
 Thumbs.db
 .vscode/
 .idea/
+
+# deploy (generated per deployment; secrets inside)
+deploy/shared.env
+deploy/users/
+docker-compose.yml
+
+# deploy/local (token-routed gateway host)
+deploy/local/users/
+deploy/local/data/
+deploy/local/logs/
+deploy/local/backups/
+deploy/local/run/
+deploy/local/shared.env
+
+# Expo access token (local only)
+.expo_token

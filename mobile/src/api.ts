@@ -1,6 +1,21 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const API = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000';
+import { normalizeUrl } from './serverCore';
+
+/** Where the app looks for the backend when nothing has been saved in Setup > Server (local development). */
+export const DEFAULT_API = normalizeUrl(process.env.EXPO_PUBLIC_API_URL) || 'http://localhost:8000';
+/** Live binding: reassigned by setApiConfig after the saved server is loaded, so every `${API}/...` follows it. */
+export let API = DEFAULT_API;
+let apiToken = '';
+export function setApiConfig(url: string, token: string) { API = url || DEFAULT_API; apiToken = token; }
+export const getApiToken = () => apiToken;
+const authListeners = new Set<() => void>();
+/** Subscribe to "the server said 401" (wrong or missing access key). Returns the unsubscribe function. */
+export const onAuthFailure = (cb: () => void) => { authListeners.add(cb); return () => { authListeners.delete(cb); }; };
+export const notifyAuthFailure = () => authListeners.forEach((cb) => cb());
+export const AUTH_HELP = 'Wrong or missing access key. Check Setup > Server.';
+/** Header for anything that cannot go through the wrapped fetch (native downloads). Empty when no key is set. */
+export const authHeaders = (): Record<string, string> => (apiToken ? { Authorization: `Bearer ${apiToken}` } : {});
 const QUEUE_KEY = 'offline_queue_v1';
 
 type Queued = { path: string; body: unknown };
@@ -38,6 +53,7 @@ export function summarizeDetail(body: any): string | null {
 
 /** Read a failed response and build the error to throw. Never throws itself. */
 export async function apiError(r: Response, what = ''): Promise<ApiError> {
+  if (r.status === 401) return new ApiError(401, AUTH_HELP);
   let detail: string | null = null;
   try { detail = summarizeDetail(await r.json()); } catch { /* body was not JSON */ }
   if (detail) return new ApiError(r.status, detail);

@@ -139,7 +139,7 @@ function Body() {
             const extra = [e.minutes ? `${e.minutes} min sessions` : '', (e.equipment ?? []).join(', ')].filter(Boolean).join(' · ');
             return (
               <FadeIn key={e.id} delay={i * 40}>
-                <Card style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Card glow={e.active ? k.color : undefined} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <View style={{ width: 40, height: 40, borderRadius: 13, backgroundColor: k.color + '22', alignItems: 'center', justifyContent: 'center' }}>
                     <Ionicons name={k.icon as any} size={20} color={k.color} />
                   </View>

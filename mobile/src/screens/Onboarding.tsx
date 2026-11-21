@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from '../haptics';
 import { onboard } from '../api';
 import { colors, font, gradients } from '../theme';
-import { Bar, Card, GradientButton, Orb, Ring, Txt } from '../ui';
+import { Bar, Card, FadeIn, GradientButton, Orb, Ring, Txt } from '../ui';
 import PersonaPicker from '../PersonaPicker';
 import { Choice, Label, Stepper } from '../forms';
 import { PersonaId, personaById } from '../personas';
@@ -24,6 +24,7 @@ const EQUIPMENT = [
   { k: 'cable', title: 'Cables', sub: 'Pulldowns, pushdowns, face pulls', icon: 'git-network', color: colors.amber },
   { k: 'bodyweight', title: 'Bodyweight', sub: 'Pull ups, push ups, planks', icon: 'body', color: colors.mint },
 ] as const;
+const STEP_NAMES = ['Welcome', 'About you', 'Your goal', 'Your training', 'Equipment', 'Protect', 'Your coach', 'Review'];
 const ALL_EQ: string[] = EQUIPMENT.map((e) => e.k);
 const BUILD_LINES = ['Reading your goal and schedule', 'Choosing exercises that fit your equipment', 'Keeping your problem areas safe', 'Setting your calories and protein'];
 const goalWord = (g: string) => (g === 'bulk' ? 'Build muscle' : g === 'cut' ? 'Lose fat' : 'Stay fit');
@@ -92,7 +93,10 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
       <Animated.View style={{ flex: 1, opacity: fade, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 18 }}>
         <Orb state="thinking" size={170} />
         <Txt style={{ fontFamily: font.black, fontSize: 26, textAlign: 'center', marginTop: -24 }}>Building your plan</Txt>
-        <Txt style={{ color: colors.dim, fontSize: 15.5, textAlign: 'center', lineHeight: 23, minHeight: 46 }}>{BUILD_LINES[buildLine]}…</Txt>
+        <Txt accessibilityLiveRegion="polite" style={{ color: colors.dim, fontSize: 15.5, textAlign: 'center', lineHeight: 23, minHeight: 46 }}>{BUILD_LINES[buildLine]}…</Txt>
+        <View accessibilityLabel={`Step ${buildLine + 1} of ${BUILD_LINES.length}`} style={{ flexDirection: 'row', gap: 6 }}>
+          {BUILD_LINES.map((_, i) => <View key={i} style={{ width: i === buildLine ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i <= buildLine ? colors.lime : 'rgba(255,255,255,0.14)' }} />)}
+        </View>
         <Txt style={{ color: colors.faint, fontSize: 13, textAlign: 'center' }}>This can take up to half a minute.</Txt>
       </Animated.View>
     );
@@ -104,27 +108,43 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
     return (
       <Animated.View style={{ flex: 1, opacity: fade }}>
         <ScrollView contentContainerStyle={{ padding: 22, gap: 16, paddingBottom: 30 }}>
-          {head('Your plan is ready', 'Built from your goal, schedule and equipment. It adapts as you train.')}
-          <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 28, padding: 22, gap: 4 }}>
-            <Txt style={{ color: 'rgba(255,255,255,0.75)', fontFamily: font.semibold, fontSize: 12, letterSpacing: 1.2 }}>TRAINING</Txt>
-            <Txt style={{ fontFamily: font.black, fontSize: 26 }}>{plan.days.length} days / week</Txt>
-            <Txt style={{ color: 'rgba(255,255,255,0.85)', lineHeight: 20 }}>{plan.days.map((d: any) => d.name).join(' · ')}</Txt>
-          </LinearGradient>
-          <Txt style={{ color: colors.dim, fontSize: 13.5, lineHeight: 20 }}>Tap any exercise to swap it for a safe alternative. Swaps here are permanent.</Txt>
+          <FadeIn style={{ gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.lime} />
+              <Txt style={{ color: colors.lime, fontFamily: font.bold, fontSize: 12, letterSpacing: 1.2 }}>{name.trim() ? `READY, ${name.trim().toUpperCase()}` : 'ALL SET'}</Txt>
+            </View>
+            {head('Your plan is ready', 'Built from your goal, schedule and equipment. It adapts as you train.')}
+          </FadeIn>
+          <FadeIn delay={90}>
+            <LinearGradient colors={gradients.hero} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ borderRadius: 28, padding: 22, gap: 4 }}>
+              <Txt style={{ color: 'rgba(255,255,255,0.75)', fontFamily: font.semibold, fontSize: 12, letterSpacing: 1.2 }}>TRAINING</Txt>
+              <Txt style={{ fontFamily: font.black, fontSize: 26 }}>{plan.days.length} days / week</Txt>
+              <Txt style={{ color: 'rgba(255,255,255,0.85)', lineHeight: 20 }}>{plan.days.map((d: any) => d.name).join(' · ')}</Txt>
+            </LinearGradient>
+          </FadeIn>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="swap-horizontal" size={16} color={colors.dim} />
+            <Txt style={{ flex: 1, color: colors.dim, fontSize: 13.5, lineHeight: 20 }}>Tap any exercise to swap it for a safe alternative. Swaps here are permanent.</Txt>
+          </View>
           {plan.days.map((d: any, di: number) => (
-            <Card key={d.name} style={{ gap: 6, padding: 14 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Ionicons name="barbell" size={20} color={colors.lime} />
-                <Txt style={{ fontFamily: font.semibold, fontSize: 15 }}>{d.name}</Txt>
+            <FadeIn key={d.name} delay={150 + Math.min(di, 5) * 60}>
+            <Card style={{ gap: 2, padding: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 }}>
+                <View style={{ width: 30, height: 30, borderRadius: 10, backgroundColor: colors.lime + '22', alignItems: 'center', justifyContent: 'center' }}>
+                  <Txt style={{ fontFamily: font.black, fontSize: 13, color: colors.lime }}>{di + 1}</Txt>
+                </View>
+                <Txt style={{ fontFamily: font.bold, fontSize: 16, flex: 1 }}>{d.name}</Txt>
+                <Txt style={{ color: colors.faint, fontSize: 12 }}>{d.exercises.length} exercises</Txt>
               </View>
               {d.exercises.map((e: any) => (
                 <Pressable key={e.name} accessibilityRole="button" accessibilityLabel={`Swap ${e.name}`} onPress={() => setSwapping({ day: di, name: e.name })}
-                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, opacity: pressed ? 0.6 : 1 })}>
-                  <Txt style={{ flex: 1, color: colors.dim, fontSize: 14, textTransform: 'capitalize' }}>{e.name}</Txt>
+                  style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 44, paddingVertical: 4, borderTopWidth: 1, borderTopColor: colors.border, opacity: pressed ? 0.6 : 1 })}>
+                  <Txt style={{ flex: 1, color: colors.text, fontSize: 14.5, lineHeight: 20, textTransform: 'capitalize' }}>{e.name}</Txt>
                   <Ionicons name="swap-horizontal" size={20} color={colors.dim} />
                 </Pressable>
               ))}
             </Card>
+            </FadeIn>
           ))}
           {plan.excluded?.length > 0 && (
             <Card style={{ borderColor: 'rgba(255,184,77,0.4)', flexDirection: 'row', gap: 12 }}>
@@ -189,6 +209,10 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
           <View style={{ flex: 1 }}><Txt style={{ fontFamily: font.bold, fontSize: 16 }}>{t}</Txt><Txt style={{ color: colors.dim, fontSize: 14 }}>{s}</Txt></View>
         </View>
       ))}
+      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+        <Ionicons name="lock-closed" size={14} color={colors.faint} />
+        <Txt style={{ flex: 1, color: colors.faint, fontSize: 12.5, lineHeight: 18 }}>Your answers stay with your coach server. Nothing is posted anywhere.</Txt>
+      </View>
     </View>,
     // 1 about you
     <View key="1" style={{ gap: 14 }}>
@@ -285,14 +309,19 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
   const blocked = step === 4 && equipment.length === 0;
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <View style={{ paddingHorizontal: 10, paddingTop: 8, flexDirection: 'row', alignItems: 'center', gap: 6, height: 56 }}>
+      <View style={{ paddingHorizontal: 10, paddingTop: 8, flexDirection: 'row', alignItems: 'center', gap: 6, height: 64 }}>
         {step > 0 ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => { stopSpeaking(); setStep(step - 1); }} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Back to the previous step" onPress={() => { stopSpeaking(); setStep(step - 1); }} style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="chevron-back" size={28} color={colors.text} />
           </Pressable>
         ) : <View style={{ width: 48 }} />}
-        <View style={{ flex: 1 }}><Bar value={(step + 1) / STEPS} color={colors.lime} /></View>
-        <Txt accessibilityLabel={`Step ${step + 1} of ${STEPS}`} style={{ color: colors.dim, fontSize: 13, fontFamily: font.semibold, minWidth: 48, textAlign: 'center' }}>{step + 1} of {STEPS}</Txt>
+        <View style={{ flex: 1, gap: 6 }}>
+          <Txt numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ color: colors.dim, fontSize: 12, letterSpacing: 0.8, fontFamily: font.semibold }}>{STEP_NAMES[step].toUpperCase()}</Txt>
+          <View accessibilityRole="progressbar" accessibilityLabel={`Step ${step + 1} of ${STEPS}, ${STEP_NAMES[step]}`} accessibilityValue={{ min: 1, max: STEPS, now: step + 1 }} style={{ flexDirection: 'row', gap: 4 }}>
+            {Array.from({ length: STEPS }, (_, i) => <View key={i} style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: i <= step ? colors.lime : 'rgba(255,255,255,0.10)' }} />)}
+          </View>
+        </View>
+        <Txt maxFontSizeMultiplier={1.3} style={{ color: colors.dim, fontSize: 13, fontFamily: font.semibold, minWidth: 48, textAlign: 'center' }}>{step + 1} of {STEPS}</Txt>
       </View>
       <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: fade.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }}>
         <ScrollView ref={scroller} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 22, paddingBottom: 12, flexGrow: 1 }} showsVerticalScrollIndicator={false}>{body[step]}</ScrollView>

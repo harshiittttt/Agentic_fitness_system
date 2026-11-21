@@ -66,7 +66,7 @@ export default function Roundtable({ visible, onClose, onOpenTeam }: { visible: 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingTop: Platform.OS === 'ios' ? 56 : 28, paddingBottom: 8 }}>
             <Avatar size={44} color={TEAM.moderator.color} icon={TEAM.moderator.icon} ring />
             <View style={{ flex: 1 }}>
-              <Txt style={{ fontFamily: font.black, fontSize: 22, letterSpacing: -0.3 }}>Ask the whole team</Txt>
+              <Txt accessibilityRole="header" style={{ fontFamily: font.black, fontSize: 22, letterSpacing: -0.3 }} numberOfLines={2}>Ask the whole team</Txt>
               <Txt style={{ color: colors.dim, fontSize: 13 }}>A moderator picks who should weigh in</Txt>
             </View>
             <IconButton icon="close" label="Close" onPress={onClose} size={26} />
@@ -99,7 +99,7 @@ export default function Roundtable({ visible, onClose, onOpenTeam }: { visible: 
                   <View style={{ gap: 8, marginTop: 4 }}>
                     <Txt style={{ color: colors.dim, fontSize: 12.5, fontFamily: font.semibold, letterSpacing: 0.6 }}>OR TRY</Txt>
                     {SUGGESTIONS.map((s) => (
-                      <Pressable key={s} onPress={() => ask(s)} accessibilityRole="button" style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, padding: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', minHeight: 48, justifyContent: 'center' })}>
+                      <Pressable key={s} onPress={() => ask(s)} accessibilityRole="button" accessibilityLabel={`Ask the team: ${s}`} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, padding: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', minHeight: 48, justifyContent: 'center' })}>
                         <Txt style={{ fontFamily: font.medium, fontSize: 14.5, lineHeight: 20 }}>{s}</Txt>
                       </Pressable>
                     ))}
@@ -153,7 +153,7 @@ export default function Roundtable({ visible, onClose, onOpenTeam }: { visible: 
                                 <Avatar size={34} color={w.color} icon={w.icon} />
                                 <View style={{ flex: 1, padding: 13, borderRadius: 20, borderTopLeftRadius: 6, backgroundColor: w.color + '14', borderWidth: 1, borderColor: w.color + '44', gap: 6 }}>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <Txt style={{ color: w.color, fontFamily: font.bold, fontSize: 12.5 }}>{w.label}</Txt>
+                                    <Txt style={{ color: w.color, fontFamily: font.bold, fontSize: 12.5, flexShrink: 1 }}>{w.label}</Txt>
                                     {!!t.text && (
                                       <Pressable onPress={() => say(`${r}-${i}`, t.text, t.agent)} accessibilityRole="button" accessibilityLabel={speakingKey === `${r}-${i}` ? `Stop ${w.label}` : `Hear ${w.label}`} hitSlop={8}
                                         style={{ width: 44, height: 44, marginVertical: -12, marginRight: -10, alignItems: 'center', justifyContent: 'center' }}>
@@ -204,7 +204,7 @@ export default function Roundtable({ visible, onClose, onOpenTeam }: { visible: 
                             );
                           })}
                           {onOpenTeam && res.results.some((r) => r.status === 'pending_approval' || r.status === 'pending_veto') && (
-                            <Pressable onPress={() => { onClose(); onOpenTeam(); }} accessibilityRole="button" style={{ minHeight: 44, justifyContent: 'center' }}>
+                            <Pressable onPress={() => { onClose(); onOpenTeam(); }} accessibilityRole="button" accessibilityLabel="Review the suggestions in Your team" style={{ minHeight: 44, justifyContent: 'center' }}>
                               <Txt style={{ color: colors.cyan, fontFamily: font.bold, fontSize: 14.5 }}>Review it in Your team →</Txt>
                             </Pressable>
                           )}
@@ -213,7 +213,7 @@ export default function Roundtable({ visible, onClose, onOpenTeam }: { visible: 
                     </>
                   )}
 
-                  <Pressable onPress={reset} accessibilityRole="button" style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}>
+                  <Pressable onPress={reset} accessibilityRole="button" accessibilityLabel="Ask something else" style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}>
                     <Txt style={{ fontFamily: font.bold, fontSize: 15 }}>Ask something else</Txt>
                   </Pressable>
                 </View>
