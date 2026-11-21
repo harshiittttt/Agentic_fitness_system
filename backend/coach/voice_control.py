@@ -76,7 +76,7 @@ def _set_pend(**kw) -> None:
 # ------------------------------------------------------------------ result
 def _out(intent: str, reply: str, actions: list | None = None, expects: str | None = None, **extra) -> dict:
     base = {"reply": reply, "intent": intent, "actions": actions or [], "expects": expects, "moment": False, "pr": False, "safety_flag": None,
-            "state": None, "saved": [], "next_set": None}
+            "state": None, "saved": [], "next_set": None, "did": []}
     base.update(extra)
     base["actions"] = [a for a in base["actions"] if valid_action(a)]
     return base
@@ -841,12 +841,17 @@ OFFLINE_HINT = ("I can log food, like 'I ate two eggs', open any screen, like 'o
                 "For anything fancier I need my AI connection, and it isn't available right now.")
 
 
-def _router(text: str, screen: str, ambient: bool, addressed: bool) -> dict:
+def _router(text: str, screen: str, ambient: bool, addressed: bool, note: str = "") -> dict:
     pid, name = _ctx()
     if not have_key():
         return _out("fallback", OFFLINE_HINT)
     if ambient and not addressed and not live.QUESTION_RE.match(text.lower()):
         return _out("ignored", "")
+    try:                      # the autonomous multi-step agent first (backend/coach/voice_agent.py); the single-shot router below is its fallback
+        from backend.coach import voice_agent
+        return voice_agent.run(text, screen, pid, name, history_note=note)
+    except Exception:
+        _pend.clear()
     try:
         tools, handlers = build_tools(text)
         trace: list[dict] = []
@@ -916,6 +921,14 @@ def handle(transcript: str, screen: str = "unknown", day: str | None = None, amb
             _pend.clear()
             return _out("cancelled", "Okay, leaving it as it is.")
         _pend.clear()      # something else entirely: the question is dropped, never answered by accident later
+    aq = _pend_get("agent_q")
+    if aq:       # the voice agent asked a question: this utterance is the answer, the original request is replayed with it
+        aq = dict(aq)
+        _pend.clear()
+        if CANCEL_RE.match(low):
+            return _out("cancelled", "Okay, leaving it.")
+        note = f"[Earlier request: {aq.get('original', '')}. You asked: {aq.get('question', '')}. Already done: {'; '.join(aq.get('did') or []) or 'nothing'}. The athlete's answer follows.]"
+        return _router(body, screen, False, True, note=note)
     if _pend_get("food"):
         r = _food_answer(body, low)
         if r:
