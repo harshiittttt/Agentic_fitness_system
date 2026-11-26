@@ -7,12 +7,13 @@
 //     speaking   the answer; the microphone is muted meanwhile so the coach never hears itself
 //     back to listening, by itself.  Tap again to stop.
 export type TalkPhase = 'idle' | 'listening' | 'thinking' | 'speaking' | 'followup';
-export type TalkState = { phase: TalkPhase; heard: string; note: string; error: boolean; session: boolean };
+/** `endReason`: why the LAST session ended ('' = the user stopped it, or none yet) so a dead session is never silent. `connecting`: live voice is still opening its connection. */
+export type TalkState = { phase: TalkPhase; heard: string; note: string; error: boolean; session: boolean; endReason: string; connecting: boolean };
 
-let state: TalkState = { phase: 'idle', heard: '', note: '', error: false, session: false };
+let state: TalkState = { phase: 'idle', heard: '', note: '', error: false, session: false, endReason: '', connecting: false };
 const subs = new Set<(s: TalkState) => void>();
 let starter: (() => void) | null = null;
-let stopper: (() => void) | null = null;
+let stopper: ((why?: string) => void) | null = null;
 let muter: ((ms: number, exact?: boolean) => void) | null = null;
 let skipper: (() => void) | null = null;
 const replySubs = new Set<(r: any) => void>();
@@ -20,14 +21,14 @@ const replySubs = new Set<(r: any) => void>();
 export const getTalkState = () => state;
 export function setTalkState(p: Partial<TalkState>) {
   const next = { ...state, ...p };
-  if (next.phase === state.phase && next.heard === state.heard && next.note === state.note && next.error === state.error && next.session === state.session) return;
+  if (next.phase === state.phase && next.heard === state.heard && next.note === state.note && next.error === state.error && next.session === state.session && next.endReason === state.endReason && next.connecting === state.connecting) return;
   state = next;
   subs.forEach((f) => { try { f(state); } catch { /* a bad subscriber must not break talking */ } });
 }
 export const onTalkState = (fn: (s: TalkState) => void) => { subs.add(fn); return () => { subs.delete(fn); }; };
 
 /** WakeCoach registers how to start / stop a voice session and how to mute the microphone for a while. */
-export function registerTalk(start: () => void, stop: () => void, mute?: (ms: number, exact?: boolean) => void, skip?: () => void) {
+export function registerTalk(start: () => void, stop: (why?: string) => void, mute?: (ms: number, exact?: boolean) => void, skip?: () => void) {
   starter = start; stopper = stop; muter = mute ?? null; skipper = skip ?? null;
   return () => { if (starter === start) { starter = null; stopper = null; muter = null; skipper = null; } };
 }
@@ -35,11 +36,14 @@ export function registerTalk(start: () => void, stop: () => void, mute?: (ms: nu
 export function toggleTalk(): boolean {
   if (!starter) return false;
   if (state.session && state.phase === 'speaking' && skipper) skipper();          // the coach is talking: the tap cuts the sentence short and keeps listening
-  else if (state.session || state.phase !== 'idle') stopper?.(); else starter();
+  else if (state.session || state.phase !== 'idle') stopper?.('tap'); else starter();
   return true;
 }
 export const talkAvailable = () => !!starter;
-export const stopTalk = () => { if (state.session || state.phase !== 'idle') stopper?.(); };
+/** `why` goes to the diagnostics log: 'screen' = the workout screen closed (a leave the user may not have meant), 'tap' = the mic button. */
+export const stopTalk = (why = 'screen') => { if (state.session || state.phase !== 'idle') stopper?.(why); };
+/** Start a session again (the one-tap "Resume voice"). false when no engine is registered (Expo Go). */
+export const resumeTalk = (): boolean => { if (!starter) return false; if (!state.session) starter(); return true; };
 /** A screen that speaks by itself (a button press) tells the engine to ignore the microphone, so the coach's own voice is not heard as the user's. Call it with a
  *  generous `ms` when speech starts, and with a short `ms` and exact=true when it ends: the mute then ends exactly there (not at the generous estimate). */
 export const muteVoice = (ms: number, exact = false) => { muter?.(ms, exact); };

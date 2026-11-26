@@ -8,8 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from '../haptics';
 import * as Speech from 'expo-speech';
 import SpeakButton from '../ux/SpeakButton';
-import { Decision, TodayState, fitSession, flushQueue, getCoach, getDecisions, getLiveState, getPlan, getProfile, getReadiness, getTodayState, logVoice, restoreSession } from '../api';
+import { Decision, TodayState, fitSession, flushQueue, getCoach, getDecisions, getLiveState, getPlan, getProfile, getReadiness, getTodayState, liveUnskip, logVoice, restoreSession } from '../api';
 import Live from './Live';
+import { handleLiveBack } from '../liveBack';
 import SwapSheet from '../SwapSheet';
 import SetLogger, { LogTarget } from '../SetLogger';
 import { useVoice } from '../useVoice';
@@ -193,6 +194,11 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
     setFitting(false);
   };
   const restore = async () => { Haptics.selectionAsync(); try { setPlan(await restoreSession()); } catch {} };
+  /** Undo a skipped exercise (server: POST /live/unskip). */
+  const putBack = async (name: string) => {
+    try { await liveUnskip(name); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (e: any) { setResult({ error: e?.status === 404 || e?.status === 405 ? "Your coach server doesn't have Undo skip yet. Update the server, then try again." : "Couldn't put that back. Check your connection and try again.", saved: [] }); return; }
+    refresh();
+  };
   const score = ready?.readiness?.score;
   const rw = readinessWord(score);
   const totalSets = day?.exercises.reduce((a: number, e: any) => a + (skipped[e.name] ? 0 : e.sets), 0) ?? 0;
@@ -414,7 +420,14 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
                 </LinearGradient>
                 <View style={{ flex: 1 }}>
                   {isNext && <Txt style={{ color: colors.lime, fontFamily: font.bold, fontSize: 10.5, letterSpacing: 1.1 }}>UP NEXT</Txt>}
-                  {sk && <Txt style={{ color: colors.amber, fontFamily: font.bold, fontSize: 10.5, letterSpacing: 1.1 }}>SKIPPED TODAY</Txt>}
+                  {sk && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Txt style={{ color: colors.amber, fontFamily: font.bold, fontSize: 10.5, letterSpacing: 1.1 }}>SKIPPED TODAY</Txt>
+                      <Pressable accessibilityRole="button" accessibilityLabel={`Put ${e.name} back`} hitSlop={8} onPress={() => { Haptics.selectionAsync(); putBack(e.name); }}>
+                        <Txt style={{ color: colors.lime, fontFamily: font.bold, fontSize: 12.5 }}>Put back</Txt>
+                      </Pressable>
+                    </View>
+                  )}
                   <Txt style={{ fontFamily: font.semibold, fontSize: 16, textTransform: 'capitalize', textDecorationLine: sk ? 'line-through' : 'none' }} numberOfLines={2}>{e.name}</Txt>
                   <Txt style={{ color: colors.dim, fontSize: 13 }}>{e.sets} × {e.reps} · RPE {e.target_rpe}</Txt>
                 </View>
@@ -498,7 +511,7 @@ export default function Today({ onOpenTeam, onOpenProfile }: { onOpenTeam?: () =
         )}
       </ScrollView>
 
-      <Modal visible={live} animationType="slide" onRequestClose={() => { setLive(false); refresh(); }}>
+      <Modal visible={live} animationType="slide" onRequestClose={() => { if (handleLiveBack()) return; setLive(false); refresh(); }}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom']}>
           {live && <Live onClose={() => { setLive(false); refresh(); }} />}
         </SafeAreaView>

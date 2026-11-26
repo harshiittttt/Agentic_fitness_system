@@ -1,0 +1,17 @@
+{
+ "scenarios": 65,
+ "passed": 64,
+ "turns": 65,
+ "fallback_turns": 0,
+ "first_token_ms": {
+  "p50": 1011,
+  "p95": 1250,
+  "n": 54
+ },
+ "first_say_ms": {
+  "p50": 1011,
+  "p95": 1250,
+  "n": 56
+ }
+}
+FAIL neg-15 | I'm not skipping, let's go. -> Love that energy. Let us crush this squat, Golu. | [('control_rest', 'ok')] | [('no_write_tools', "wrote ['control_rest']")]

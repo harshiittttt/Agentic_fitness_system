@@ -1,0 +1,1189 @@
+[
+ {
+  "id": "neg-01",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "We are not skipping anything, we are doing every exercise.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-02",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I am not skipping the goblet squat.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-03",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "You're not skipping anything. We are doing every exercise.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-04",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Skipping anything.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-05",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Please don't skip it.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-06",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "no skip",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-07",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I'm not going to skip squats.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-08",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "We are not skipping the squat.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-09",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Nobody is skipping today.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-10",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I would never skip leg day.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-11",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Don't skip anything.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-12",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "No skipping please.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-13",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I said we're not skipping.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-14",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Not skipping, keep going.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-15",
+  "tags": [
+   "negative",
+   "skip",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I'm not skipping, let's go.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-16",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "What is the next exercise?",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-17",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "what's next",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-18",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Which exercise is next?",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-19",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Should I skip this one?",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-20",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "How many sets are left?",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-21",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Okay, next set.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-22",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "What's the plan for today?",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-23",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Can I skip deadlifts?",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-24",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Do I have to do leg extension?",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-25",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "What weight should I use?",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-26",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "how am I doing",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-27",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "what did I do last time",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-28",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Is it okay if I skip?",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-29",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "how many sets left on squats",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-30",
+  "tags": [
+   "negative",
+   "question",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "what comes after this",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-31",
+  "tags": [
+   "negative",
+   "vague",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Let's move on.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-32",
+  "tags": [
+   "negative",
+   "vague",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "Next exercise please.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-33",
+  "tags": [
+   "negative",
+   "vague",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I want to move on.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-34",
+  "tags": [
+   "negative",
+   "vague",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "machine's busy",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-35",
+  "tags": [
+   "negative",
+   "vague",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I can't do this one right now.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-36",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "skip mat karna",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-37",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "skip nahi karna hai",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-38",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "sab karenge, kuch skip nahi karna",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-39",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "agla exercise kaunsa hai",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-40",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "kitne set bache hain",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-41",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "aaj ka plan kya hai",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-42",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "abhi skip mat karo",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-43",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "main skip nahi kar raha",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-44",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "next set kab hai",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-45",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "mujhe skip nahi karna",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-46",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "kaunsa exercise next hai",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-47",
+  "tags": [
+   "negative",
+   "hinglish",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "kitna weight lagaun",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "neg-48",
+  "tags": [
+   "negative",
+   "asr"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos five reps done",
+    "asr": {
+     "unclear": true
+    },
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-49",
+  "tags": [
+   "negative",
+   "asr"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos five reps done",
+    "asr": {
+     "avg_logprob": -1.6
+    },
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-50",
+  "tags": [
+   "negative",
+   "asr"
+  ],
+  "turns": [
+   {
+    "say": "[[unclear]]",
+    "asr": null,
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-51",
+  "tags": [
+   "negative",
+   "asr"
+  ],
+  "turns": [
+   {
+    "say": "안녕하세요 운동 시작합니다",
+    "asr": null,
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-52",
+  "tags": [
+   "negative",
+   "asr"
+  ],
+  "turns": [
+   {
+    "say": "skip this exercise",
+    "asr": {
+     "unclear": true
+    },
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-53",
+  "tags": [
+   "negative",
+   "asr"
+  ],
+  "turns": [
+   {
+    "say": "what is the next exercise",
+    "asr": {
+     "avg_logprob": -2.0
+    },
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-54",
+  "tags": [
+   "negative",
+   "noise"
+  ],
+  "turns": [
+   {
+    "say": "Boxing, wipes hands, adjust straps.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-55",
+  "tags": [
+   "negative",
+   "noise"
+  ],
+  "turns": [
+   {
+    "say": "Copy.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-56",
+  "tags": [
+   "negative",
+   "noise"
+  ],
+  "turns": [
+   {
+    "say": "hmm",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-57",
+  "tags": [
+   "negative",
+   "noise"
+  ],
+  "turns": [
+   {
+    "say": "Right.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-58",
+  "tags": [
+   "negative",
+   "noise"
+  ],
+  "turns": [
+   {
+    "say": "Hello.",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-59",
+  "tags": [
+   "negative",
+   "incomplete"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-60",
+  "tags": [
+   "negative",
+   "incomplete"
+  ],
+  "turns": [
+   {
+    "say": "five reps",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-61",
+  "tags": [
+   "negative",
+   "incomplete"
+  ],
+  "turns": [
+   {
+    "say": "I did some squats",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-62",
+  "tags": [
+   "negative",
+   "implausible"
+  ],
+  "turns": [
+   {
+    "say": "six hundred kilos five reps",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-63",
+  "tags": [
+   "negative",
+   "implausible"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos fifty reps",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-64",
+  "tags": [
+   "negative",
+   "implausible"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos zero reps",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "neg-65",
+  "tags": [
+   "negative",
+   "implausible",
+   "jump"
+  ],
+  "setup": {
+   "sets_done": {
+    "squat": 1
+   },
+   "weights": {
+    "squat": 20
+   }
+  },
+  "turns": [
+   {
+    "say": "sixty kilos five reps",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ }
+]

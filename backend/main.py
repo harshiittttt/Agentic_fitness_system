@@ -52,6 +52,8 @@ from backend.routes_diag import router as diag_router  # noqa: E402  (the phone'
 app.include_router(diag_router)
 from backend.routes_voice import router as voice_router  # noqa: E402  (universal voice commands: food, navigation, settings, workout, tools)
 app.include_router(voice_router)
+from backend.routes_convo import router as convo_router  # noqa: E402  (the Conversation Core: /convo/turn streaming events, interrupt, proactive events, tools)
+app.include_router(convo_router)
 
 
 def _run_agents_bg(event_type: str, payload: dict) -> None:

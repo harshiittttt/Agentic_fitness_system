@@ -1,0 +1,3350 @@
+[
+ {
+  "id": "pos-001",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos five reps done",
+    "said": "Squat: 60 for 5. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1349,
+    "first_token_ms": 1225,
+    "total_ms": 1349,
+    "wall_ms": 1349,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-002",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "80 kilos 8 reps done",
+    "said": "Squat: 80 for 8. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 853,
+    "first_token_ms": 736,
+    "total_ms": 853,
+    "wall_ms": 853,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-003",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "forty-five kilos ten reps done",
+    "said": "Solid start, Golu. Let us lock in the target weight next.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1030,
+    "first_token_ms": 879,
+    "total_ms": 1030,
+    "wall_ms": 1030,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-004",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "100 kilos 3 reps done",
+    "said": "Squat: 100 for 3. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 787,
+    "first_token_ms": 664,
+    "total_ms": 787,
+    "wall_ms": 787,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-005",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "sixty-two point five kilos six reps done",
+    "said": "Solid start, Golu. Nice and deep.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 919,
+    "first_token_ms": 759,
+    "total_ms": 919,
+    "wall_ms": 919,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-006",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "70 kilos 8 reps done",
+    "said": "Solid work, Golu. First set in the books.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1309,
+    "first_token_ms": 1133,
+    "total_ms": 1309,
+    "wall_ms": 1309,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-007",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "fifty-five kilos twelve reps done",
+    "said": "Crushed it, Golu. Twelve reps is huge.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 922,
+    "first_token_ms": 768,
+    "total_ms": 922,
+    "wall_ms": 922,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-008",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "90 kilos 5 reps done",
+    "said": "Squat: 90 for 5. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 882,
+    "first_token_ms": 719,
+    "total_ms": 882,
+    "wall_ms": 882,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-009",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "seventy-five kilos six reps done",
+    "said": "Strong start Golu, let's keep that momentum.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 886,
+    "first_token_ms": 727,
+    "total_ms": 886,
+    "wall_ms": 886,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-010",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "60 for 5",
+    "said": "Squat: 60 for 5. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1076,
+    "first_token_ms": 963,
+    "total_ms": 1076,
+    "wall_ms": 1076,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-011",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "eighty for eight",
+    "said": "Solid start, Golu. Let us keep moving.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1359,
+    "first_token_ms": 1174,
+    "total_ms": 1359,
+    "wall_ms": 1359,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-012",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "45 for 10",
+    "said": "Good start, Golu. Ten solid reps.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 814,
+    "first_token_ms": 655,
+    "total_ms": 814,
+    "wall_ms": 814,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-013",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "one hundred for three",
+    "said": "Squat: 100 for 3. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 954,
+    "first_token_ms": 842,
+    "total_ms": 954,
+    "wall_ms": 954,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-014",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "62.5 for 6",
+    "said": "Solid set, Golu. Let us keep that momentum rolling.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1213,
+    "first_token_ms": 1059,
+    "total_ms": 1213,
+    "wall_ms": 1213,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-015",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "seventy for eight",
+    "said": "Strong start, Golu. Let us keep moving.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 998,
+    "first_token_ms": 843,
+    "total_ms": 998,
+    "wall_ms": 998,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-016",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "55 for 12",
+    "said": "Nice reps, Golu. Now let us hit those heavy working sets.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1370,
+    "first_token_ms": 1244,
+    "total_ms": 1370,
+    "wall_ms": 1370,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-017",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "ninety for five",
+    "said": "Solid start, Golu. Let us keep that groove going.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 877,
+    "first_token_ms": 775,
+    "total_ms": 877,
+    "wall_ms": 893,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-018",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "75 for 6",
+    "said": "Solid set, Golu. Hit it again.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 902,
+    "first_token_ms": 772,
+    "total_ms": 902,
+    "wall_ms": 902,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-019",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did five reps at sixty",
+    "said": "Strong first set, Golu. Two minutes rest.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1001,
+    "first_token_ms": 875,
+    "total_ms": 1001,
+    "wall_ms": 1001,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-020",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did 8 reps at 80",
+    "said": "Strong set, Golu. Let us match that next round.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 862,
+    "first_token_ms": 747,
+    "total_ms": 862,
+    "wall_ms": 862,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-021",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did ten reps at forty-five",
+    "said": "Ten reps at forty-five, logged. Strong start.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1260,
+    "first_token_ms": 1141,
+    "total_ms": 1260,
+    "wall_ms": 1260,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-022",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did 3 reps at 100",
+    "said": "Squat: 100 for 3. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 870,
+    "first_token_ms": 772,
+    "total_ms": 870,
+    "wall_ms": 870,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-023",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did six reps at sixty-two point five",
+    "said": "Solid set, Golu. Let's keep that momentum.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1285,
+    "first_token_ms": 1172,
+    "total_ms": 1285,
+    "wall_ms": 1301,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-024",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did 8 reps at 70",
+    "said": "Solid start, Golu. Nice and crisp.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 890,
+    "first_token_ms": 715,
+    "total_ms": 890,
+    "wall_ms": 890,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-025",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did twelve reps at fifty-five",
+    "said": "Strong start. Let's hit that target weight now.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1665,
+    "first_token_ms": 1511,
+    "total_ms": 1665,
+    "wall_ms": 1681,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-026",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did 5 reps at 90",
+    "said": "Squat: 90 for 5. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 978,
+    "first_token_ms": 791,
+    "total_ms": 978,
+    "wall_ms": 978,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-027",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did six reps at seventy-five",
+    "said": "Squat: 75 for 6. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1129,
+    "first_token_ms": 954,
+    "total_ms": 1129,
+    "wall_ms": 1129,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-028",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "60 kg times 5",
+    "said": "Squat: 60 for 5. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 936,
+    "first_token_ms": 772,
+    "total_ms": 936,
+    "wall_ms": 936,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-029",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "eighty kg times eight",
+    "said": "Eight reps at eighty. Strong start, Golu.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1279,
+    "first_token_ms": 1127,
+    "total_ms": 1279,
+    "wall_ms": 1279,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-030",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "45 kg times 10",
+    "said": "Squat: 45 for 10. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 964,
+    "first_token_ms": 802,
+    "total_ms": 964,
+    "wall_ms": 979,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-031",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "one hundred kg times three",
+    "said": "Squat: 100 for 3. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1321,
+    "first_token_ms": 1136,
+    "total_ms": 1321,
+    "wall_ms": 1321,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-032",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "62.5 kg times 6",
+    "said": "Solid set, Golu. Let's keep that momentum going.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1091,
+    "first_token_ms": 932,
+    "total_ms": 1091,
+    "wall_ms": 1091,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-033",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "seventy kg times eight",
+    "said": "Solid opening set, Golu. Let's keep moving.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 995,
+    "first_token_ms": 835,
+    "total_ms": 995,
+    "wall_ms": 995,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-034",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "55 kg times 12",
+    "said": "Solid set, Golu. Nice work.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1249,
+    "first_token_ms": 1097,
+    "total_ms": 1249,
+    "wall_ms": 1249,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-035",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "ninety kg times five",
+    "said": "Solid opening set. Keep that focus.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1145,
+    "first_token_ms": 972,
+    "total_ms": 1145,
+    "wall_ms": 1145,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-036",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "75 kg times 6",
+    "said": "Solid set, Golu. Let us keep that momentum going.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1387,
+    "first_token_ms": 1225,
+    "total_ms": 1387,
+    "wall_ms": 1387,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-037",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished five at sixty kilos",
+    "said": "Solid opening set, Golu. Two minutes rest and go again.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 986,
+    "first_token_ms": 839,
+    "total_ms": 986,
+    "wall_ms": 986,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-038",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished 8 at 80 kilos",
+    "said": "Solid set, Golu. Let's keep that momentum going.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 954,
+    "first_token_ms": 778,
+    "total_ms": 954,
+    "wall_ms": 954,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-039",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished ten at forty-five kilos",
+    "said": "Nailed it. Rest up for the next set.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1028,
+    "first_token_ms": 870,
+    "total_ms": 1028,
+    "wall_ms": 1028,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-040",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished 3 at 100 kilos",
+    "said": "Three reps at a hundred. Nice start, Golu.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1002,
+    "first_token_ms": 831,
+    "total_ms": 1002,
+    "wall_ms": 1002,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-041",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished six at sixty-two point five kilos",
+    "said": "Solid start, Golu. Well locked in.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1237,
+    "first_token_ms": 1076,
+    "total_ms": 1237,
+    "wall_ms": 1237,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-042",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished 8 at 70 kilos",
+    "said": "Solid start, Golu. Eight reps at seventy.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1182,
+    "first_token_ms": 1017,
+    "total_ms": 1182,
+    "wall_ms": 1189,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-043",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished twelve at fifty-five kilos",
+    "said": "Squat: 55 for 12. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1652,
+    "first_token_ms": 1083,
+    "total_ms": 1652,
+    "wall_ms": 1652,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-044",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished 5 at 90 kilos",
+    "said": "Squat: 90 for 5. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1162,
+    "first_token_ms": 734,
+    "total_ms": 1162,
+    "wall_ms": 1162,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-045",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished six at seventy-five kilos",
+    "said": "Solid set, Golu. Nice work.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1328,
+    "first_token_ms": 1153,
+    "total_ms": 1328,
+    "wall_ms": 1328,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-046",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was 60 for 5, felt heavy",
+    "said": "Heavy is where it counts. Rest up.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1367,
+    "first_token_ms": 1202,
+    "total_ms": 1367,
+    "wall_ms": 1367,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-047",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was eighty for eight, felt heavy",
+    "said": "Heavy is where the gains live, Golu.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1254,
+    "first_token_ms": 1085,
+    "total_ms": 1254,
+    "wall_ms": 1254,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-048",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was 45 for 10, felt heavy",
+    "said": "Heavy is how it starts. Two minutes rest, let's go.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1262,
+    "first_token_ms": 1073,
+    "total_ms": 1262,
+    "wall_ms": 1262,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-049",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was one hundred for three, felt heavy",
+    "said": "One hundred for three. Heavy means you are working hard.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1245,
+    "first_token_ms": 1071,
+    "total_ms": 1245,
+    "wall_ms": 1245,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-050",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was 62.5 for 6, felt heavy",
+    "said": "Heavy is where you grow. Take a breath.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 985,
+    "first_token_ms": 823,
+    "total_ms": 985,
+    "wall_ms": 985,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-051",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was seventy for eight, felt heavy",
+    "said": "Seventy kilos, eight reps. Heavy is how we grow.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1486,
+    "first_token_ms": 879,
+    "total_ms": 1486,
+    "wall_ms": 1501,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-052",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was 55 for 12, felt heavy",
+    "said": "Heavy is where the growth happens. Good start.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1061,
+    "first_token_ms": 771,
+    "total_ms": 1061,
+    "wall_ms": 1061,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-053",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was ninety for five, felt heavy",
+    "said": "Heavy is the point. Breathe, two minutes, then go again.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1266,
+    "first_token_ms": 1113,
+    "total_ms": 1266,
+    "wall_ms": 1266,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-054",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was 75 for 6, felt heavy",
+    "said": "Heavy is the point, Golu. Good set.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1229,
+    "first_token_ms": 1061,
+    "total_ms": 1229,
+    "wall_ms": 1229,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-055",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos... five",
+    "said": "Squat: 60 for 5. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1249,
+    "first_token_ms": 1081,
+    "total_ms": 1249,
+    "wall_ms": 1249,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-056",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "80 kilos... 8",
+    "said": "Solid first set, Golu. Let us keep that pace.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1308,
+    "first_token_ms": 1137,
+    "total_ms": 1308,
+    "wall_ms": 1308,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-057",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "forty-five kilos... ten",
+    "said": "Solid opening set, Golu. Let's keep that rhythm.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1010,
+    "first_token_ms": 842,
+    "total_ms": 1010,
+    "wall_ms": 1010,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-058",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "100 kilos... 3",
+    "said": "How many reps did you hit at a hundred?",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 980,
+    "first_token_ms": 817,
+    "total_ms": 1003,
+    "wall_ms": 1003,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-059",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "sixty-two point five kilos... six",
+    "said": "Solid first set. Take a breather.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1080,
+    "first_token_ms": 920,
+    "total_ms": 1080,
+    "wall_ms": 1080,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-060",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "70 kilos... 8",
+    "said": "Squat: 70 for 8. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 956,
+    "first_token_ms": 793,
+    "total_ms": 956,
+    "wall_ms": 956,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-061",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "fifty-five kilos... twelve",
+    "said": "Twelve reps? That was an endurance test, Golu.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 981,
+    "first_token_ms": 823,
+    "total_ms": 981,
+    "wall_ms": 981,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-062",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "90 kilos... 5",
+    "said": "Squat: 90 for 5. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1271,
+    "first_token_ms": 1101,
+    "total_ms": 1271,
+    "wall_ms": 1271,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-063",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "seventy-five kilos... six",
+    "said": "Solid first set. Take a breath, we go again.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1240,
+    "first_token_ms": 1083,
+    "total_ms": 1240,
+    "wall_ms": 1240,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-064",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, 60 kilos, 5 reps",
+    "said": "Solid first set, Golu. Nice and crisp.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 963,
+    "first_token_ms": 801,
+    "total_ms": 963,
+    "wall_ms": 963,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-065",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, eighty kilos, eight reps",
+    "said": "Solid start, Golu. Let us keep that momentum.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 965,
+    "first_token_ms": 786,
+    "total_ms": 965,
+    "wall_ms": 965,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-066",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, 45 kilos, 10 reps",
+    "said": "Strong start, Golu. Let us lock in the rest timer.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 940,
+    "first_token_ms": 765,
+    "total_ms": 940,
+    "wall_ms": 940,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-067",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, one hundred kilos, three reps",
+    "said": "Squat: 100 for 3. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 977,
+    "first_token_ms": 795,
+    "total_ms": 977,
+    "wall_ms": 977,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-068",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, 62.5 kilos, 6 reps",
+    "said": "Solid work, Golu. That six rep opener looked strong.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1279,
+    "first_token_ms": 1094,
+    "total_ms": 1279,
+    "wall_ms": 1279,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-069",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, seventy kilos, eight reps",
+    "said": "Solid start, Golu. Let us keep that momentum going.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1276,
+    "first_token_ms": 1126,
+    "total_ms": 1276,
+    "wall_ms": 1276,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-070",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, 55 kilos, 12 reps",
+    "said": "Solid set, Golu. Let's keep that momentum rolling.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1156,
+    "first_token_ms": 987,
+    "total_ms": 1156,
+    "wall_ms": 1158,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-071",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, ninety kilos, five reps",
+    "said": "Squat: 90 for 5. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1241,
+    "first_token_ms": 1108,
+    "total_ms": 1241,
+    "wall_ms": 1241,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-072",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, 75 kilos, 6 reps",
+    "said": "Squat: 75 for 6. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 847,
+    "first_token_ms": 694,
+    "total_ms": 847,
+    "wall_ms": 847,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-073",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "five reps with sixty",
+    "said": "Solid start, Golu. How did that feel?",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1416,
+    "first_token_ms": 1253,
+    "total_ms": 1437,
+    "wall_ms": 1437,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-074",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "8 reps with 80",
+    "said": "Squat: 80 for 8. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1212,
+    "first_token_ms": 1047,
+    "total_ms": 1212,
+    "wall_ms": 1227,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-075",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "ten reps with forty-five",
+    "said": "Strong start, Golu. Two minutes rest and back at it.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 978,
+    "first_token_ms": 809,
+    "total_ms": 978,
+    "wall_ms": 990,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-076",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "3 reps with 100",
+    "said": "Three at a hundred. Good start, Golu.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1229,
+    "first_token_ms": 1050,
+    "total_ms": 1229,
+    "wall_ms": 1229,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-077",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "six reps with sixty-two point five",
+    "said": "Solid opening set, Golu. Nice depth.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 957,
+    "first_token_ms": 809,
+    "total_ms": 957,
+    "wall_ms": 973,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-078",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "8 reps with 70",
+    "said": "Solid start, Golu. Good depth on those.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 956,
+    "first_token_ms": 806,
+    "total_ms": 956,
+    "wall_ms": 956,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-079",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "twelve reps with fifty-five",
+    "said": "Twelve with fifty-five? That is a lot of reps.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1025,
+    "first_token_ms": 805,
+    "total_ms": 1025,
+    "wall_ms": 1025,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-080",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "5 reps with 90",
+    "said": "Solid first set. Take a breather.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1117,
+    "first_token_ms": 931,
+    "total_ms": 1117,
+    "wall_ms": 1117,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-081",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "six reps with seventy-five",
+    "said": "Squat: 75 for 6. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 985,
+    "first_token_ms": 814,
+    "total_ms": 985,
+    "wall_ms": 985,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-082",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "60 kilo 5 reps ho gaye",
+    "said": "Badhiya. Ek aur set, aag laga de.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 957,
+    "first_token_ms": 787,
+    "total_ms": 957,
+    "wall_ms": 957,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-083",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "eighty kilo eight reps ho gaye",
+    "said": "Arre wah, mast lift. Agla set aur bhi tagda!",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1118,
+    "first_token_ms": 944,
+    "total_ms": 1118,
+    "wall_ms": 1118,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-084",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "45 kilo 10 reps ho gaye",
+    "said": "Bohot sahi, shuruat toh solid hai.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1001,
+    "first_token_ms": 839,
+    "total_ms": 1001,
+    "wall_ms": 1001,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-085",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "one hundred kilo three reps ho gaye",
+    "said": "Bohot badhiya! Target paanch ka tha, teen pe kyun ruk gaya?",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1519,
+    "first_token_ms": 1344,
+    "total_ms": 1528,
+    "wall_ms": 1545,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-086",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "62.5 kilo 6 reps ho gaye",
+    "said": "Mast lift, Golu! Ek dum solid start.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1039,
+    "first_token_ms": 879,
+    "total_ms": 1039,
+    "wall_ms": 1039,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-087",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "seventy kilo eight reps ho gaye",
+    "said": "Damdaar shuruat, Golu! Ekdum solid.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 983,
+    "first_token_ms": 811,
+    "total_ms": 983,
+    "wall_ms": 983,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-088",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "55 kilo 12 reps ho gaye",
+    "said": "Badhiya, shuruat toh solid hai.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1248,
+    "first_token_ms": 1092,
+    "total_ms": 1248,
+    "wall_ms": 1264,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-089",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "ninety kilo five reps ho gaye",
+    "said": "Sahi shuruat, Golu. Ekdam solid!",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 882,
+    "first_token_ms": 709,
+    "total_ms": 882,
+    "wall_ms": 884,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-090",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "75 kilo 6 reps ho gaye",
+    "said": "Shaandaar, Golu! Ek number set.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1322,
+    "first_token_ms": 1150,
+    "total_ms": 1322,
+    "wall_ms": 1322,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-091",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "five reps maare sixty kilo pe",
+    "said": "Shandaar, pehla set done!",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1393,
+    "first_token_ms": 1238,
+    "total_ms": 1393,
+    "wall_ms": 1393,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-092",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "8 reps maare 80 kilo pe",
+    "said": "Aath reps assi pe, shandar! Aise hi chalte reh.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1052,
+    "first_token_ms": 872,
+    "total_ms": 1052,
+    "wall_ms": 1054,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-093",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "ten reps maare forty-five kilo pe",
+    "said": "Solid start, Golu. Target was five though!",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1013,
+    "first_token_ms": 839,
+    "total_ms": 1013,
+    "wall_ms": 1013,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-094",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "3 reps maare 100 kilo pe",
+    "said": "Sau kilo, teen reps. Strong start, Golu!",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1262,
+    "first_token_ms": 1096,
+    "total_ms": 1262,
+    "wall_ms": 1262,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-095",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "6 reps maare 62.5 kilo pe",
+    "said": "Solid set, Golu! Ek number, chhe reps maare.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1206,
+    "first_token_ms": 1016,
+    "total_ms": 1206,
+    "wall_ms": 1206,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-096",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "8 reps maare 70 kilo pe",
+    "said": "Solid lift, Golu! Mast pace hai.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 977,
+    "first_token_ms": 795,
+    "total_ms": 977,
+    "wall_ms": 977,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-097",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "twelve reps maare fifty-five kilo pe",
+    "said": "Arre wah, barah reps! Par plan paanch ka tha, dhyan rakh.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1380,
+    "first_token_ms": 1202,
+    "total_ms": 1380,
+    "wall_ms": 1380,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-098",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "5 reps maare 90 kilo pe",
+    "said": "Bahut badhiya! Pehla set khatam, ab saans le lo.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1361,
+    "first_token_ms": 1206,
+    "total_ms": 1361,
+    "wall_ms": 1361,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-099",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "six reps maare seventy-five kilo pe",
+    "said": "Mast! Pehla set ho gaya, ab saans le.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1411,
+    "first_token_ms": 1227,
+    "total_ms": 1411,
+    "wall_ms": 1411,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-100",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "60 kilo ka set ho gaya, 5 reps",
+    "said": "Bahut badhiya, Golu! Ek dum solid start.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1411,
+    "first_token_ms": 1236,
+    "total_ms": 1411,
+    "wall_ms": 1411,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-101",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "eighty kilo ka set ho gaya, eight reps",
+    "said": "Mast set, Golu! Ekdum solid shuruat.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1066,
+    "first_token_ms": 908,
+    "total_ms": 1066,
+    "wall_ms": 1066,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-102",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "45 kilo ka set ho gaya, 10 reps",
+    "said": "Badhiya, shuruat toh solid hai Golu.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 958,
+    "first_token_ms": 778,
+    "total_ms": 958,
+    "wall_ms": 958,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-103",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "one hundred kilo ka set ho gaya, three reps",
+    "said": "Ek sau kilo, teen reps. Tagda shuruat Golu.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1200,
+    "first_token_ms": 1036,
+    "total_ms": 1200,
+    "wall_ms": 1200,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-104",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "62.5 kilo ka set ho gaya, 6 reps",
+    "said": "Shandar, Golu! Ek number set tha.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 957,
+    "first_token_ms": 789,
+    "total_ms": 957,
+    "wall_ms": 973,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-105",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "seventy kilo ka set ho gaya, eight reps",
+    "said": "Wah Golu, kamaal kar diya! Chal, saans le thoda.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 987,
+    "first_token_ms": 818,
+    "total_ms": 987,
+    "wall_ms": 987,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-106",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "55 kilo ka set ho gaya, 12 reps",
+    "said": "Shaandar! Ekdum solid shuruat, Golu.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1377,
+    "first_token_ms": 1194,
+    "total_ms": 1377,
+    "wall_ms": 1377,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-107",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "ninety kilo ka set ho gaya, five reps",
+    "said": "Wah Golu! Ekdum solid, next set ki tayyari kar.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1390,
+    "first_token_ms": 1205,
+    "total_ms": 1390,
+    "wall_ms": 1390,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pos-108",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "75 kilo ka set ho gaya, 6 reps",
+    "said": "Bhai kya shuruat hai, ekdam solid lift!",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1338,
+    "first_token_ms": 1169,
+    "total_ms": 1338,
+    "wall_ms": 1338,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ }
+]

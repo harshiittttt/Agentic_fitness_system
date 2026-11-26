@@ -1,0 +1,10 @@
+[
+ {"id":"s-neg1","tags":["negative"],"turns":[{"say":"We are not skipping anything, we are doing every exercise.","expect":{"no_write_tools":true,"skipped":[],"sets_logged_delta":0,"say_not_matches":["\bskipped\b"]}}]},
+ {"id":"s-neg2","tags":["negative"],"turns":[{"say":"What is the next exercise?","expect":{"no_write_tools":true,"skipped":[],"sets_logged_delta":0}}]},
+ {"id":"s-neg3","tags":["negative"],"turns":[{"say":"Should I skip this one?","expect":{"no_write_tools":true,"skipped":[],"sets_logged_delta":0}}]},
+ {"id":"s-vague","tags":["negative"],"turns":[{"say":"Let's move on.","expect":{"no_write_tools":true,"skipped":[],"sets_logged_delta":0}}]},
+ {"id":"s-pos1","tags":["positive"],"turns":[{"say":"sixty kilos five reps done","expect":{"tools":["log_set"],"last_set":{"weight":60,"reps":5},"sets_logged_delta":1}}]},
+ {"id":"s-corr","tags":["correction"],"turns":[{"say":"sixty kilos five reps done","expect":{"tools":["log_set"],"last_set":{"weight":60,"reps":5},"sets_logged_delta":1}},{"say":"no, sixty-five","expect":{"tools":["correct_last_set"],"last_set":{"weight":65,"reps":5},"sets_logged_delta":0}}]},
+ {"id":"s-skip","tags":["skip"],"turns":[{"say":"Skip this exercise, my shoulder hurts.","expect":{"tools":["skip_exercise"],"sets_logged_delta":0}}]},
+ {"id":"s-hi","tags":["hinglish"],"setup":{"language":"hinglish"},"turns":[{"say":"saath kilo paanch reps ho gaye","expect":{"tools":["log_set"],"last_set":{"weight":60,"reps":5},"sets_logged_delta":1}}]}
+]

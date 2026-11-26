@@ -1,0 +1,50 @@
+# Conversation-level behaviour a "conversational" coach should have (these are expected to FAIL on the legacy brain; they are the target for the converse brain).
+# Same plan assumption as ledger.yaml. Turns are scored with the same expect keys (see voice_agent/eval/scorers.py).
+scenarios:
+  - name: remembers-what-was-just-said
+    tags: [conversation, memory]
+    lang: en
+    turns:
+      - {say: "Sixty kilos, five reps, done.", expect: {sets: [{weight: 60, reps: 5}]}}
+      - {say: "What was that weight again?", expect: {reply_contains_any: ["60", "sixty"]}}
+
+  - name: answers-in-the-language-spoken-english
+    tags: [conversation, language]
+    lang: en
+    turns:
+      - {say: "How many sets are left?", expect: {lang: en}}
+      - {say: "What should I do next?", expect: {lang: en}}
+
+  - name: mirrors-hinglish
+    tags: [conversation, language, hinglish]
+    lang: hinglish
+    turns:
+      - {say: "Kitne set bache hain?", expect: {lang: hinglish}}
+      - {say: "Agla exercise kaunsa hai bhai?", expect: {lang: hinglish}}
+
+  - name: short-during-a-set
+    tags: [conversation, brevity]
+    lang: en
+    turns:
+      - {say: "Sixty kilos, five reps, felt heavy.", expect: {sets: [{weight: 60, reps: 5}], reply_max_words: 30}}
+      - {say: "Sixty kilos, five reps, felt heavy again.", expect: {sets: [{weight: 60, reps: 5}], reply_max_words: 30}}
+
+  - name: asks-for-the-missing-number
+    tags: [conversation, clarify]
+    lang: en
+    turns:
+      - {say: "I did sixty.", expect: {asks: true}}
+      - {say: "Five reps.", expect: {sets: [{weight: 60, reps: 5}]}}
+
+  - name: question-then-action-same-topic
+    tags: [conversation, context]
+    lang: en
+    turns:
+      - {say: "What weight should I use for squats?", expect: {}}
+      - {say: "Okay, sixty then, five reps, done.", expect: {sets: [{weight: 60, reps: 5}]}}
+
+  - name: honest-about-not-knowing
+    tags: [conversation, honesty]
+    lang: en
+    turns:
+      - {say: "What was my best squat last year?", expect: {grounded: true}}

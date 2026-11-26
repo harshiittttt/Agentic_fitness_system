@@ -1,0 +1,2513 @@
+[
+ {
+  "id": "pos-001",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos five reps done",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-002",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "80 kilos 8 reps done",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-003",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "forty-five kilos ten reps done",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-004",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "100 kilos 3 reps done",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-005",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "sixty-two point five kilos six reps done",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-006",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "70 kilos 8 reps done",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-007",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "fifty-five kilos twelve reps done",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-008",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "90 kilos 5 reps done",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-009",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "seventy-five kilos six reps done",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-010",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "60 for 5",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-011",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "eighty for eight",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-012",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "45 for 10",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-013",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "one hundred for three",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-014",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "62.5 for 6",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-015",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "seventy for eight",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-016",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "55 for 12",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-017",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "ninety for five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-018",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "75 for 6",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-019",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did five reps at sixty",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-020",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did 8 reps at 80",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-021",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did ten reps at forty-five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-022",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did 3 reps at 100",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-023",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did six reps at sixty-two point five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-024",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did 8 reps at 70",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-025",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did twelve reps at fifty-five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-026",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did 5 reps at 90",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-027",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "I did six reps at seventy-five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-028",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "60 kg times 5",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-029",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "eighty kg times eight",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-030",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "45 kg times 10",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-031",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "one hundred kg times three",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-032",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "62.5 kg times 6",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-033",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "seventy kg times eight",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-034",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "55 kg times 12",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-035",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "ninety kg times five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-036",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "75 kg times 6",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-037",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished five at sixty kilos",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-038",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished 8 at 80 kilos",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-039",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished ten at forty-five kilos",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-040",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished 3 at 100 kilos",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-041",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished six at sixty-two point five kilos",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-042",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished 8 at 70 kilos",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-043",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished twelve at fifty-five kilos",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-044",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished 5 at 90 kilos",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-045",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "just finished six at seventy-five kilos",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-046",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was 60 for 5, felt heavy",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-047",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was eighty for eight, felt heavy",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-048",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was 45 for 10, felt heavy",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-049",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was one hundred for three, felt heavy",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-050",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was 62.5 for 6, felt heavy",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-051",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was seventy for eight, felt heavy",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-052",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was 55 for 12, felt heavy",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-053",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was ninety for five, felt heavy",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-054",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "that was 75 for 6, felt heavy",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-055",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos... five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-056",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "80 kilos... 8",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-057",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "forty-five kilos... ten",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-058",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "100 kilos... 3",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-059",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "sixty-two point five kilos... six",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-060",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "70 kilos... 8",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-061",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "fifty-five kilos... twelve",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-062",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "90 kilos... 5",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-063",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "seventy-five kilos... six",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-064",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, 60 kilos, 5 reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-065",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, eighty kilos, eight reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-066",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, 45 kilos, 10 reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-067",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, one hundred kilos, three reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-068",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, 62.5 kilos, 6 reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-069",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, seventy kilos, eight reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-070",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, 55 kilos, 12 reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-071",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, ninety kilos, five reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-072",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "set done, 75 kilos, 6 reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-073",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "five reps with sixty",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-074",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "8 reps with 80",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-075",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "ten reps with forty-five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-076",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "3 reps with 100",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-077",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "six reps with sixty-two point five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-078",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "8 reps with 70",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-079",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "twelve reps with fifty-five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-080",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "5 reps with 90",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-081",
+  "tags": [
+   "positive",
+   "en"
+  ],
+  "turns": [
+   {
+    "say": "six reps with seventy-five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "pos-082",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "60 kilo 5 reps ho gaye",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-083",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "eighty kilo eight reps ho gaye",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-084",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "45 kilo 10 reps ho gaye",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-085",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "one hundred kilo three reps ho gaye",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-086",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "62.5 kilo 6 reps ho gaye",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-087",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "seventy kilo eight reps ho gaye",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-088",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "55 kilo 12 reps ho gaye",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-089",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "ninety kilo five reps ho gaye",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-090",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "75 kilo 6 reps ho gaye",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-091",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "five reps maare sixty kilo pe",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-092",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "8 reps maare 80 kilo pe",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-093",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "ten reps maare forty-five kilo pe",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-094",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "3 reps maare 100 kilo pe",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-095",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "6 reps maare 62.5 kilo pe",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-096",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "8 reps maare 70 kilo pe",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-097",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "twelve reps maare fifty-five kilo pe",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-098",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "5 reps maare 90 kilo pe",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-099",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "six reps maare seventy-five kilo pe",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-100",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "60 kilo ka set ho gaya, 5 reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-101",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "eighty kilo ka set ho gaya, eight reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-102",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "45 kilo ka set ho gaya, 10 reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 45,
+      "reps": 10
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-103",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "one hundred kilo ka set ho gaya, three reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 100,
+      "reps": 3
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-104",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "62.5 kilo ka set ho gaya, 6 reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 62.5,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-105",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "seventy kilo ka set ho gaya, eight reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 8
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-106",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "55 kilo ka set ho gaya, 12 reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 12
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-107",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "ninety kilo ka set ho gaya, five reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 90,
+      "reps": 5
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "pos-108",
+  "tags": [
+   "positive",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "75 kilo ka set ho gaya, 6 reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 75,
+      "reps": 6
+     },
+     "sets_logged_delta": 1,
+     "skipped": []
+    },
+    "lang": "hinglish"
+   }
+  ]
+ }
+]

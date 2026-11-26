@@ -1,0 +1,196 @@
+[
+ {
+  "id": "chat-01",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "that was heavy",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "chat-02",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "I'm tired today",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "chat-03",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "what weight did I do last time on squats",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "chat-04",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "how many sets are left",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "chat-05",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "is it okay to go heavier",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "chat-06",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "my back feels a bit tight",
+    "expect": {
+     "no_write_tools": false,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "chat-07",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "this music is terrible",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "chat-08",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "how long is the rest",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "chat-09",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "bhai aaj bahut thaka hua hoon",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "chat-10",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "kya main weight badhaun",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    },
+    "lang": "hinglish"
+   }
+  ]
+ },
+ {
+  "id": "chat-11",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "what's the plan after squats",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "chat-12",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "give me a tip for squats",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": [],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ }
+]

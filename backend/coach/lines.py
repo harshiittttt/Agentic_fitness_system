@@ -255,6 +255,13 @@ SLOTS.update(ASK_SLOTS)
 for _p, _d in ASK.items():
     BANKS[_p].update(_d)
 
+# Skipping: confirm before skipping, put an exercise back, "what is next", a repeated set.
+from backend.coach.lines_skip import SKIP, SKIP_SLOTS  # noqa: E402
+
+SLOTS.update(SKIP_SLOTS)
+for _p, _d in SKIP.items():
+    BANKS[_p].update(_d)
+
 HI_PERSONAS = {"haryanvi", "roast"}
 HI_TOD = {"Morning": "सुबह", "Afternoon": "दोपहर", "Evening": "शाम"}
 HI_REST = {"a minute": "एक मिनट", "about a minute": "करीब एक मिनट", "a minute and a half": "डेढ़ मिनट", "two minutes": "दो मिनट",

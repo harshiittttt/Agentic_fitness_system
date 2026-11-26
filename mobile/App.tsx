@@ -22,7 +22,8 @@ import WakeCoach from './src/WakeCoach';
 import { getTalkState, onTalkState, toggleTalk, TalkState } from './src/voiceTalk';
 import { dlog, installCrashLog } from './src/diag';
 import { onVoiceAction } from './src/voiceBus';
-import { setVoiceTab } from './src/voiceScreen';
+import { getVoiceScreen, setVoiceTab } from './src/voiceScreen';
+import { blockedWhileLive } from './src/liveSession';
 import { loadVoiceSettings, setRecognitionLang } from './src/voiceSettings';
 import { colors, font, gradients } from './src/theme';
 import { Ambient, Avatar, Card, FadeIn, GradientButton, OfflineBanner, Orb, OnlineCtx, ToastProvider, Txt, useToast } from './src/ui';
@@ -158,6 +159,8 @@ export default function App() {
   useEffect(() => {
     if (gate !== 'ready') return;
     return onVoiceAction((a) => {
+      // The full-screen workout covers the tab bar: switching the tab under it would unmount it and end the voice session (E-008). A misheard "open Fuel" is dropped.
+      if (blockedWhileLive(getVoiceScreen(), a as any)) { dlog('live_nav_blocked', { type: a.type, to: (a as any).tab ?? (a as any).screen }); return true; }
       if (a.type === 'navigate') { if (a.tab !== 'insights') setInsightsSeg(undefined); setTab(a.tab as Tab); return true; }
       if (a.type === 'open' && a.screen === 'decisions') { setInsightsSeg('decisions'); setTab('insights'); return true; }
       if (a.type === 'open' && a.screen === 'roundtable') { setInsightsSeg('team'); setTab('insights'); return true; }

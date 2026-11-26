@@ -1,0 +1,307 @@
+[
+ {
+  "id": "chat-01",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "that was heavy",
+    "said": "Heavy is the point.",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1225,
+    "first_token_ms": 1225,
+    "total_ms": 1242,
+    "wall_ms": 1259,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-02",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "I'm tired today",
+    "said": "Tired days make the best lifts, Golu. Get under the bar and let's go.",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1088,
+    "first_token_ms": 1088,
+    "total_ms": 1101,
+    "wall_ms": 1101,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-03",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "what weight did I do last time on squats",
+    "said": "I do not have your previous log right here, but let's check your screen. What are we putting on the bar for set one?",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 715,
+    "first_token_ms": 715,
+    "total_ms": 771,
+    "wall_ms": 791,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-04",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "how many sets are left",
+    "said": "Three sets on squats, fifteen total for the whole session. Let's get this first one rolling, Golu.",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1172,
+    "first_token_ms": 1172,
+    "total_ms": 1187,
+    "wall_ms": 1187,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-05",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "is it okay to go heavier",
+    "said": "Depends on how that first warm-up felt, Golu. If it moved fast, add a little.",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 876,
+    "first_token_ms": 876,
+    "total_ms": 904,
+    "wall_ms": 904,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-06",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "my back feels a bit tight",
+    "said": "Stop that movement. If it still hurts when you rest, get it looked at.",
+    "tools": [
+     [
+      "log_note",
+      "ok"
+     ]
+    ],
+    "intent": "note",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1319,
+    "first_token_ms": 1270,
+    "total_ms": 1339,
+    "wall_ms": 1339,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-07",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "this music is terrible",
+    "said": "Change the track then, or put your own jams on. Ready for your first set?",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 658,
+    "first_token_ms": 658,
+    "total_ms": 717,
+    "wall_ms": 717,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-08",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "how long is the rest",
+    "said": "No rest timer is running right now, Golu. Load the bar and let us hit set one.",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 828,
+    "first_token_ms": 818,
+    "total_ms": 844,
+    "wall_ms": 844,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-09",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "bhai aaj bahut thaka hua hoon",
+    "said": "Koi baat nahi bhai, halka chalenge par wazan uthayenge. Kitna daale pehle set ke liye?",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1193,
+    "first_token_ms": 1193,
+    "total_ms": 1262,
+    "wall_ms": 1262,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-10",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "kya main weight badhaun",
+    "said": "Agar pehla set aasaan laga, toh halka sa badha le. Kitna chal raha hai?",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 623,
+    "first_token_ms": 623,
+    "total_ms": 737,
+    "wall_ms": 737,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-11",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "what's the plan after squats",
+    "said": "After squats, you've got Romanian deadlifts on deck.",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 781,
+    "first_token_ms": 781,
+    "total_ms": 796,
+    "wall_ms": 796,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "chat-12",
+  "tags": [
+   "chat"
+  ],
+  "turns": [
+   {
+    "say": "give me a tip for squats",
+    "said": "Drive your knees out on the way up and keep your chest proud.",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 941,
+    "first_token_ms": 941,
+    "total_ms": 967,
+    "wall_ms": 967,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ }
+]

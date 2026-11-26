@@ -33,14 +33,14 @@ _STARTERS = re.compile(r"^(?:i|i'?ve|i'?m|we|my|the|so|and|then|okay|ok|well|yea
 _HI_NUM = {"teen": 3, "char": 4, "chaar": 4, "paanch": 5, "panch": 5, "chhe": 6, "chhah": 6, "cheh": 6, "saat": 7, "aath": 8, "ath": 8, "nau": 9, "das": 10,
            "gyarah": 11, "barah": 12, "terah": 13, "chaudah": 14, "pandrah": 15, "solah": 16, "satrah": 17, "atharah": 18, "unnis": 19, "bees": 20, "pachees": 25,
            "tees": 30, "chalis": 40, "pachaas": 50, "pachas": 50, "sattar": 70, "assi": 80, "nabbe": 90, "sau": 100}
-_HI_NUM_AMBIG = {"ek": 1, "do": 2}                          # 'do' is also English ("do it"): only when a unit follows
+_HI_NUM_AMBIG = {"ek": 1, "do": 2, "saath": 60, "sath": 60, "saadh": 60}   # 'do' is English ("do it"), 'saath' is "with": only when a unit follows
 _UNIT = r"(?:set|sets|bar|baar|bari|dafa|times|rep|reps|kilo|kilos|kg|kgs)"
 _HI_NUM_RE = re.compile(r"(?<![A-Za-z])(" + "|".join(sorted(_HI_NUM, key=len, reverse=True)) + r")(?![A-Za-z])", re.I)
-_HI_AMBIG_RE = re.compile(r"(?<![A-Za-z])(ek|do)(?=\s+" + _UNIT + r"(?![A-Za-z]))", re.I)
+_HI_AMBIG_RE = re.compile(r"(?<![A-Za-z])(ek|do|saath|sath|saadh)(?=\s+" + _UNIT + r"(?![A-Za-z]))", re.I)
 _HI_REPS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*(?:bar|baar|bari|dafa|times|rep)\b", re.I)
 _DUP_REPS_RE = re.compile(r"(\b\d+(?:\.\d+)? reps\b)(.*?)\s*\b\1\b", re.I)               # "8 reps ... 8 reps": said twice, counted once
 _HI_PHRASES = [                                                # (pattern, English the parsers know) - kept small and safe
-    (r"\b(?:maar|kar|ho)\s+(?:diya|liya|di|li|gaya|gayi|gaye)\b|\bkhatam\b|\bpura\s+(?:kar|ho)\b", "done"),
+    (r"\b(?:maar|kar|ho)\s*(?:diya|liya|di|li|gaya|gayi|gaye)\b|\bkhatam\b|\bpura\s+(?:kar|ho)\b", "done"),
     (r"\bshuru\s+(?:kar|karo|kariye|karte|karein|kardo)\b(?:\s+hain)?|\bstart\s+karo\b|\bchalu\s+kar(?:o)?\b", "start"),
     (r"\b(?:wajan|vajan|wazan|bhajan|wajn|vajn)\b", "weight"),
     (r"\bagla\b|\bagli\s+(?:wali|wala)\b", "next"),

@@ -8,6 +8,7 @@ import re
 import threading
 import time
 from collections import Counter
+from datetime import datetime
 
 from backend.agents import orchestrator as orch
 from backend.agents import specialists as sp
@@ -21,8 +22,20 @@ from backend.tools.calculators import rpe_adjusted_e1rm
 from backend.tools.voice_parser import _clean_rule_parse, parse_voice_log
 
 END_RE = re.compile(r"\b(wrap (it )?up|finish(ed)? (the |my )?(workout|session)|that'?s (it|all)|done for (today|the day)|end (the |my )?(session|workout)|i'?m done)\b")
-SKIP_RE = re.compile(r"\b(skip|skipping|next exercise|move on|can'?t do (this|that)|machine'?s (taken|busy))\b")
+# Skipping is read by set_slots.skip_intent(): a skip verb that is not negated, not a question and clearly an order. Anything unclear is asked about.
 STATUS_RE = re.compile(r"\b(what'?s next|how many (sets )?(left|more|to go)|where (am i|are we)|what do i do next|what now)\b")
+YES_RE = re.compile(r"^\W*(?:yes|yeah|yep|yup|sure|ok(?:ay)?|do it|go ahead|please do|haan|han|ha|ji|haan ji|kar do|kardo|skip it|skip)\W*$")
+NO_RE = re.compile(r"^\W*(?:no|nope|nah|don'?t|do not|never ?mind|cancel|stay|not now|nahi|nahin|nhi|mat|rehne do|rahne do|wait)\W*$")
+# What the mic hears around a workout that is not a command: a greeting gets a short nudge, filler and "copy" get nothing, and a line of
+# stage directions ("wipes hands, adjusts straps") is not speech to the coach at all.
+GREET_RE = re.compile(r"^\W*(?:(?:hello|hi|hey|yo|namaste|hii+|helo)(?:\s+(?:coach|there|buddy))?)\W*$")
+SILENT_RE = re.compile(r"^\W*(?:hm+|um+|uh+|ah+|oh+|right|copy|got it|thanks|thank you|thanks coach|bye|goodbye|cool|nice|alright|haan|han|ji|acha|accha|theek hai|thik hai|ok thanks|okay thanks)\W*$")
+STAGE_RE = re.compile(r"\b(?:wipes?|wiping|adjust(?:s|ing)|chalks?|chalking|takes? a (?:deep )?breath|exhales?|inhales?|grunts?|sighs?|laughs?|nods?|claps?|"
+                      r"steps? (?:up|back|away)|walks? (?:to|over|away)|picks? up|puts? down|grabs? (?:the|a|his|water)|unracks?|boxing)\b|\*[^*]+\*")
+STAGE_COMMAND_RE = re.compile(r"\d|\?|\b(?:skip|next|wrap|start|done|ready|set|sets|rep|reps|plan|weight|kilo|kilos|kg|what|how|help|stop|pain|hurt|back|put)\b")
+WARMUP_RE = re.compile(r"\bwarm(?:ing)?[ -]?up\b")
+JUNK_NAMES = {"", "unknown", "none", "null", "n/a", "na", "stretch", "stretching", "exercise", "exercises", "workout", "set", "cable exercise",
+              "machine exercise", "movement", "lift", "something", "thing"}
 READY_RE = re.compile(r"^\W*(ready|i'?m ready|let'?s go|go|okay|ok)\W*$")
 # "let's start today's workout", "start the session", "can we begin training", "okay let's begin". Anchored to the whole utterance so
 # "I started late, bench 80 for 8" stays a set and "start the workout, I only have 30 minutes" still reaches the time-fit branch.
@@ -49,8 +62,13 @@ def fmt(x) -> str:
 
 
 # ---------------------------------------------------------------- session state
+def _skip_rows(today: str) -> list[dict]:
+    """Today's skip records, newest first."""
+    return [m for m in db.get_memory(400) if m["kind"] == "skip" and m["text"].startswith(today + "|")]
+
+
 def _skipped(today: str) -> set[str]:
-    return {m["text"].split("|", 1)[1] for m in db.get_memory(80) if m["kind"] == "skip" and m["text"].startswith(today + "|")}
+    return {m["text"].split("|", 1)[1] for m in _skip_rows(today)}
 
 
 def session_state() -> dict | None:
@@ -172,6 +190,7 @@ RESTART_SECS = 20 * 60
 def start() -> dict:
     compose.begin()
     _pending_clear()
+    _pending_skip.clear()
     pid, name = _ctx()
     key = (db.DB_PATH, session_flow.current_label())      # per database, so another user / test never inherits "you just started"
     again = _last_start["label"] == key and time.time() - _last_start["ts"] < RESTART_SECS
@@ -204,6 +223,7 @@ def start() -> dict:
 def end() -> dict:
     compose.begin(getattr(compose._local, "said", ""))
     _pending_clear()
+    _pending_skip.clear()
     pid, name = _ctx()
     today = session_flow.current_label()
     todays = [s for s in db.get_sets(limit=500) if s["session"] == today and s["weight"] and s["reps"]]
@@ -249,6 +269,61 @@ def _numbers_in(text: str) -> set[float]:
     return {float(x) for x in re.findall(r"\d+(?:\.\d+)?", _words_to_digits((text or "").lower()))}
 
 
+# ---------------------------------------------------------------- what a spoken set is saved as (E-002 / E-003 in docs/ERROR_LEDGER.md)
+
+
+def _known_exercise(n: str, plan: list[str]) -> bool:
+    n = (n or "").lower().strip()
+    return bool(n) and n not in JUNK_NAMES and (n in {p.lower() for p in plan} or n in ex.EXERCISES or n in set(ex.ALIASES.values()))
+
+
+def _pin_to_plan(sets: list[dict], text: str, plan: list[str]) -> tuple[list[dict], list[dict]]:
+    """A spoken set belongs to an exercise the coach knows. A name it cannot place ('unknown', 'stretch', 'cable exercise', anything made up)
+    becomes the plan exercise named in the sentence, else the exercise you are on now. With neither: returned in `unplaced` so the coach asks."""
+    low = text.lower()
+    named = set_slots.find_exercise(hindi.normalize(text), plan) if plan else None
+    cur = (session_state() or {}).get("current")
+    placed, unplaced = [], []
+    for s in sets:
+        if _known_exercise(s["exercise"], plan) or (WARMUP_RE.search(low) and s["exercise"] not in JUNK_NAMES):
+            placed.append(s)
+        elif named:
+            placed.append({**s, "exercise": named})
+        elif cur:
+            placed.append({**s, "exercise": cur["name"]})
+        else:
+            unplaced.append(s)
+    return placed, unplaced
+
+
+def _ground_numbers(sets: list[dict], text: str) -> list[dict]:
+    """With one set in a long sentence, a model can pick the wrong number ('five reps' said, 8 saved). When the sentence itself says the reps
+    or the weight with a unit ('5 reps', '60 kilos'), those words win."""
+    if len(sets) != 1:
+        return sets
+    g = set_slots.extract(hindi.normalize(text))
+    if g["invalid"]:
+        return sets
+    s = dict(sets[0])
+    if g["r_explicit"] and g["r"] is not None:
+        s["reps"] = int(g["r"])
+    if g["w_explicit"] and g["w"] is not None:
+        s["weight"] = float(g["w"])
+    return [s]
+
+
+def _collapse_repeats(sets: list[dict], text: str) -> list[dict]:
+    """The same set repeated inside ONE parse result (same exercise, weight, reps) is one set unless the sentence asked for several."""
+    if len(sets) < 2 or re.search(r"(?:^|\W)(?:\d+|two|three|four|five|six)\s*(?:sets|times|x)(?:\W|$)|(?:^|\W)sets? of(?:\W|$)|(?:^|\W)(?:twice|thrice)(?:\W|$)|(?:^|\W)x\s*\d", text.lower()):
+        return sets
+    out: list[dict] = []
+    for s in sets:
+        sig = (s["exercise"], s.get("weight"), s.get("reps"), s.get("rpe"))
+        if not any((o["exercise"], o.get("weight"), o.get("reps"), o.get("rpe")) == sig for o in out):
+            out.append(s)
+    return out
+
+
 def _log_sets(text: str, pid: str, name: str, parsed: dict | None = None) -> dict | None:
     explicit = parsed is not None               # built by code from checked numbers (a slot answer, the dials), not read from speech
     if parsed is None and not _numbers_in(text):
@@ -265,6 +340,13 @@ def _log_sets(text: str, pid: str, name: str, parsed: dict | None = None) -> dic
         sets = [s for s in sets if s.get("reps") is not None and float(s["reps"]) in heard and (s.get("weight") in (None, 0, 0.0) or float(s["weight"]) in heard)]
         if not sets:
             return None                         # "tell me how much protein", "what should I eat": not a set at all, never answered as one
+        sets = _ground_numbers(sets, text)      # the saved numbers are the ones SAID, not a model's guess from a long sentence
+        sets = _collapse_repeats(sets, text)    # one spoken set that a parser returned twice is one set
+        sets, unplaced = _pin_to_plan(sets, text, names)
+        if unplaced:                            # a set with no exercise the coach can place: ask, never save it as "unknown"
+            b = unplaced[0]
+            return _ask(pid, name, {"ex": None, "w": b.get("weight"), "r": b.get("reps"), "sets": None, "rpe": b.get("rpe"), "tries": 0,
+                                    "label": session_flow.current_label()})
     # A model's reading of "first set done" can come back as {bench press, no weight, 1 rep}. That is a guess, not a set: never save it (it also
     # tags today as a day you did not train). Ask for the missing numbers instead.
     good = [s for s in sets if s.get("reps") and (s.get("weight") is not None or s["exercise"] in set_slots.BODYWEIGHT)]
@@ -441,6 +523,8 @@ def live_context() -> str:
     out += (f"currently {c['name']}, set {c['set_no']} of {c['sets']} ({c['reps']} reps, RPE {c['target_rpe']:g}"
             + (f", target {c['target']['weight']:g} kg" if c.get("target") else "") + "); ") if c else "all planned sets done; "
     out += f"{st['remaining_sets']} sets left"
+    total = sum(r["done"] for r in st["exercises"])
+    out += f"; sets logged today (exact, from the log): {total}" + ("" if total else " (none yet, so never say an exercise is done)")
     if done:
         out += "; done: " + ", ".join(done)
     if left:
@@ -493,6 +577,189 @@ def handle(transcript: str, ambient: bool = False, allow_chat: bool = True, fast
     return _handle(transcript, ambient, allow_chat)
 
 
+# ---------------------------------------------------------------- skipping (E-001) and putting an exercise back
+SKIP_CONFIRM_TTL = 90.0
+_pending_skip: dict = {}
+UNSKIP_RECENT_SECS = 600.0     # "put it back" with no name means the exercise skipped in the last ten minutes
+
+
+def _pending_skip_get() -> dict | None:
+    p = _pending_skip
+    if p and time.time() - p["ts"] < SKIP_CONFIRM_TTL and p.get("label") == session_flow.current_label() and p.get("db") == db.DB_PATH:
+        return p
+    _pending_skip.clear()
+    return None
+
+
+def _skip_target(st: dict, named: str | None) -> dict | None:
+    """The exercise a skip is about: the one named in the sentence if it can still be skipped, else the one you are on."""
+    row = next((r for r in st["exercises"] if r["name"] == named and not r["skipped"] and r["done"] < r["sets"]), None) if named else None
+    return row or (next((r for r in st["exercises"] if r["name"] == st["current"]["name"]), None) if st["current"] else None)
+
+
+def _do_skip(pid: str, name: str, skipped: str, text: str = "", reason: str = "") -> dict:
+    today = session_flow.current_label()
+    if skipped not in _skipped(today):                 # a second "skip" of the same exercise must not write a second record
+        db.add_memory("skip", f"{today}|{skipped}")
+        try:                                           # repeated skips of one exercise become a low-confidence "you may dislike this" belief
+            from fitness_os.mem import ingest
+            ingest.from_event("exercise.skipped", {"exercise": skipped, "date": today, "reason": reason})
+        except Exception:
+            pass
+    if text and has_safety_flag(text.lower()):         # "skip this, my shoulder hurts": skipping is right, and the pain is still written down
+        db.add_memory("injury", text)
+        db.add_checkin(note=text)
+    after = session_state()
+    if after["current"]:
+        reply = _pick(pid, name, "skip", ex=skipped, nxt=after["current"]["name"])
+    else:
+        reply = _pick(pid, name, "skip_last", ex=skipped)
+    return _result("skip", _reply(reply, pid, name))
+
+
+def _skip_from_speech(pid: str, name: str, intent: dict, text: str, low: str) -> dict | None:
+    st = session_state()
+    if not st or not st["current"]:
+        return None
+    row = _skip_target(st, intent["named"])
+    if not row:
+        return None
+    _pending_skip.clear()
+    reason = text if has_safety_flag(low) else ""
+    return _do_skip(pid, name, row["name"], text, reason)
+
+
+def _ask_to_skip(pid: str, name: str, intent: dict) -> dict | None:
+    """Something that might mean 'skip' ("next exercise", "machine's busy", "move on"): ask, do not skip."""
+    st = session_state()
+    if not st or not st["current"]:
+        return None
+    row = _skip_target(st, intent["named"])
+    if not row:
+        return None
+    _pending_skip.clear()
+    _pending_skip.update(ex=row["name"], ts=time.time(), label=session_flow.current_label(), db=db.DB_PATH)
+    return _result("skip_ask", _pick(pid, name, "skip_confirm", ex=row["name"]), expects="yes_no")
+
+
+def _next_is(pid: str, name: str) -> dict | None:
+    """'What is the next exercise?' is a question: answer it, skip nothing."""
+    st = session_state()
+    if not st:
+        return None
+    c = st["current"]
+    if not c:
+        return _result("status", _pick(pid, name, "all_done"))
+    names = [r["name"] for r in st["exercises"]]
+    later = [r for r in st["exercises"][names.index(c["name"]) + 1:] if not r["skipped"] and r["done"] < r["sets"]]
+    if later:
+        return _result("status", _pick(pid, name, "next_is", ex=c["name"], nxt=later[0]["name"]))
+    return _result("status", _pick(pid, name, "status", ex=c["name"], n=c["set_no"], tot=c["sets"], rem=st["remaining_sets"]))
+
+
+def _meta(f: dict) -> dict:
+    m = f.get("meta") or {}
+    if isinstance(m, str):
+        import json
+        try:
+            m = json.loads(m or "{}")
+        except ValueError:
+            m = {}
+    return m if isinstance(m, dict) else {}
+
+
+def _retract_skip_memory(exercise: str, day: str) -> None:
+    """The memory layer was told 'skipped <exercise> on <day>'. Put the athlete's record straight: that belief is retracted (not 'denied':
+    skipping it for real later the same day is still allowed to be written), and an inferred dislike that rested on it is withdrawn."""
+    try:
+        from fitness_os import learn
+        from fitness_os.mem import store
+        canon = learn._exercise_in(exercise) or exercise
+        for f in store.facts(predicate="happened", status=("active",), limit=500):
+            m = _meta(f)
+            if m.get("event") == "skip" and m.get("date") == day and m.get("exercise") in (exercise, canon):
+                store.update_fact(f["id"], status="retracted", valid_to=store.now())
+                store.audit("fact.unskip", f["id"], f"{exercise} on {day}")
+        days = {_meta(f).get("date") for f in store.facts(predicate="happened", status=("active",), limit=500)
+                if _meta(f).get("event") == "skip" and _meta(f).get("exercise") in (exercise, canon)}
+        if len(days) < 3:                              # the "often skips it" inference needs 3 days of skips; it no longer has them
+            for f in store.facts(predicate="dislikes_exercise", status=("active",), source="inferred", limit=100):
+                if store.norm(f["object_text"]) == store.norm(canon):
+                    store.update_fact(f["id"], status="retracted", valid_to=store.now())
+                    store.audit("fact.unskip", f["id"], "inferred dislike withdrawn")
+    except Exception:
+        pass
+
+
+def unskip_now(exercise: str | None = None, everything: bool = False) -> dict:
+    """The app's 'put it back' button: same as unskip(), answered at once with the template line (no model call)."""
+    _mode.fast = True
+    try:
+        return unskip(exercise, everything=everything, vague=False)
+    finally:
+        _mode.fast = False
+
+
+def unskip(exercise: str | None = None, everything: bool = False, vague: bool = True) -> dict:
+    """Put skipped exercises back into today's session. exercise = one by name; everything = all of today's skips; neither = the latest skip
+    (when `vague`, only if it was made in the last ten minutes, so 'put it back' about a barbell never undoes this morning's skip).
+    Deletes today's skip record(s) and retracts the matching 'skipped X' belief in the memory layer."""
+    compose.begin()
+    _pending_skip.clear()
+    pid, name = _ctx()
+    today = session_flow.current_label()
+    rows = _skip_rows(today)
+    if exercise:
+        want = ex.resolve_exercise(exercise, [r["text"].split("|", 1)[1] for r in rows])
+        rows = [r for r in rows if r["text"].split("|", 1)[1] == want]
+    elif rows and not everything:
+        latest = rows[0]
+        try:
+            age = (datetime.fromisoformat(db.now()) - datetime.fromisoformat(latest["ts"])).total_seconds()
+        except Exception:
+            age = 0.0
+        rows = [r for r in rows if r["text"] == latest["text"]] if (not vague or age <= UNSKIP_RECENT_SECS) else []
+    if not rows:
+        st = session_state()
+        out = [_pick(pid, name, "unskip_none")]
+        c = st["current"] if st else None
+        if c:
+            out.append(_pick(pid, name, "ready_go", ex=c["name"], n=c["set_no"], tot=c["sets"]))
+        return _result("unskip", _reply(" ".join(out), pid, name), restored=[])
+    names = list(dict.fromkeys(r["text"].split("|", 1)[1] for r in rows))
+    with db.conn() as c:
+        for r in rows:
+            c.execute("DELETE FROM memory WHERE id = ?", (r["id"],))
+    for n in names:
+        _retract_skip_memory(n, today)
+    st = session_state()
+    cur = st["current"]["name"] if st and st["current"] else names[0]
+    return _result("unskip", _reply(_pick(pid, name, "unskip", ex=" and ".join(names), nxt=cur), pid, name), restored=names)
+
+
+def _unskip_from_speech(intent: dict) -> dict | None:
+    if not _skip_rows(session_flow.current_label()):
+        return None                                    # "I will do it" with nothing skipped is not about skipping at all
+    return unskip(intent["named"], vague=intent["vague"])
+
+
+def _negated_skip(pid: str, name: str, intent: dict) -> dict:
+    """'I am NOT skipping the goblet squat', 'we are not skipping anything', "don't skip it": nothing gets skipped. If something was skipped
+    earlier the athlete is saying they want it back, so it is restored (the named one, all of them for 'anything', else the latest)."""
+    _pending_skip.clear()
+    skipped = _skipped(session_flow.current_label())
+    if intent["named"]:
+        if intent["named"] in skipped:
+            return unskip(intent["named"])
+    elif skipped:
+        return unskip(everything=intent["everything"], vague=False)
+    st = session_state()
+    c = st["current"] if st else None
+    if not c:
+        return _result("status", _pick(pid, name, "all_done"))
+    return _result("ready", _pick(pid, name, "ready_go", ex=c["name"], n=c["set_no"], tot=c["sets"]))
+
+
 def _handle(transcript: str, ambient: bool = False, allow_chat: bool = True) -> dict:
     """allow_chat=False (the universal voice layer): never call the model; unrecognised talk returns intent 'fallback' with an empty reply.
     ambient=True: the mic is always on. Sets, commands and pain are always handled;
@@ -520,6 +787,26 @@ def _handle(transcript: str, ambient: bool = False, allow_chat: bool = True) -> 
     if not session_state():
         return _result("noop", _pick(pid, name, "no_plan"))
 
+    ps = _pending_skip_get()
+    if ps:                                 # the coach asked "skip X?": only a clear yes skips; a no or anything else drops the question
+        ps = dict(ps)
+        _pending_skip.clear()
+        if YES_RE.match(low):
+            return _do_skip(pid, name, ps["ex"])
+        if NO_RE.match(low):
+            c = (session_state() or {}).get("current")
+            if c:
+                return _result("ready", _pick(pid, name, "ready_go", ex=c["name"], n=c["set_no"], tot=c["sets"]))
+
+    if STAGE_RE.search(low) and not STAGE_COMMAND_RE.search(low):
+        return _result("ignored", "")      # "wipes hands, adjusts straps": stage directions heard as speech, not a message to the coach
+    if SILENT_RE.match(low):
+        return _result("ignored", "")
+    if GREET_RE.match(low):                # "Hello." gets one short line (where you are), not a paragraph from the model
+        c = (session_state() or {}).get("current")
+        if c:
+            return _result("ready", _pick(pid, name, "ready_go", ex=c["name"], n=c["set_no"], tot=c["sets"]))
+
     if END_RE.search(low):
         return end()
 
@@ -536,24 +823,27 @@ def _handle(transcript: str, ambient: bool = False, allow_chat: bool = True) -> 
         reply = _pick(pid, name, "fit", min=m.group(1), cnt=len(day["exercises"]), sets=sets)
         return _result("fit", _reply(reply, pid, name), moment=True)
 
-    if SKIP_RE.search(low) and not MINUTES_RE.search(low):
-        st = session_state()
-        named = set_slots.find_exercise(norm, _plan_names())     # "skip bench press" skips that one; plain "skip this" skips the current one
-        target = next((r for r in st["exercises"] if r["name"] == named and not r["skipped"] and r["done"] < r["sets"]), None) if named else None
-        if st["current"]:
-            skipped = target["name"] if target else st["current"]["name"]
-            db.add_memory("skip", f"{session_flow.current_label()}|{skipped}")
-            try:                           # repeated skips of one exercise become a low-confidence "you may dislike this" belief
-                from fitness_os.mem import ingest
-                ingest.from_event("exercise.skipped", {"exercise": skipped, "date": session_flow.current_label()})
-            except Exception:
-                pass
-            after = session_state()
-            if after["current"]:
-                reply = _pick(pid, name, "skip", ex=skipped, nxt=after["current"]["name"])
-            else:
-                reply = _pick(pid, name, "skip_last", ex=skipped)
-            return _result("skip", _reply(reply, pid, name))
+    if not MINUTES_RE.search(low):
+        intent = set_slots.skip_intent(norm, _plan_names())
+        kind = intent["kind"]
+        if kind == "unskip":
+            res = _unskip_from_speech(intent)
+            if res:
+                return res
+        elif kind == "negated":
+            return _negated_skip(pid, name, intent)
+        elif kind == "skip":
+            res = _skip_from_speech(pid, name, intent, text, low)
+            if res:
+                return res
+        elif kind == "ask":
+            res = _ask_to_skip(pid, name, intent)
+            if res:
+                return res
+        elif kind == "question" and not STATUS_RE.search(low):
+            res = _next_is(pid, name)
+            if res:
+                return res
 
     if STATUS_RE.search(low):
         st = session_state()

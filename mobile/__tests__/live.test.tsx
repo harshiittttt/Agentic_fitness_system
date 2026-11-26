@@ -12,6 +12,7 @@ import Live from '../src/screens/Live';
 import WakeCoach from '../src/WakeCoach';
 import { tuning } from '../src/voiceEndpoint';
 import { setTalkState } from '../src/voiceTalk';
+import { handleLiveBack } from '../src/liveBack';
 import { setVoiceOverlay } from '../src/voiceScreen';
 
 let backend: ReturnType<typeof makeBackend>;
@@ -92,4 +93,56 @@ test('the voice session does not start by itself: nothing listens until you tap 
   await wait(2000);
   expect(SR.__state.starts.length).toBe(0);
   expect(api.queryAllByText('Voice on · tap the mic to stop')).toHaveLength(0);
+});
+
+
+// ---- E-008: the workout screen is not closed by an accidental Back (button or edge-swipe gesture), and a skipped exercise can be put back
+test('Android Back with the voice on asks "Leave your workout?" instead of closing; Keep going stays, Leave closes', async () => {
+  const onClose = jest.fn();
+  const api = render(<Live onClose={onClose} />);
+  await api.findByLabelText('Log set 1 of 3');
+  act(() => { setTalkState({ session: true, phase: 'listening' }); });
+  let handled = false;
+  act(() => { handled = handleLiveBack(); });
+  expect(handled).toBe(true);
+  expect(onClose).not.toHaveBeenCalled();
+  expect(await api.findByText('Leave your workout?')).toBeTruthy();
+  act(() => { handleLiveBack(); });                                                    // Back again = keep going
+  await waitFor(() => expect(api.queryByText('Leave your workout?')).toBeNull());
+  act(() => { handleLiveBack(); });
+  fireEvent.press(await api.findByLabelText('Leave the workout'));
+  expect(onClose).toHaveBeenCalledTimes(1);
+  act(() => { setTalkState({ session: false, phase: 'idle' }); });
+});
+
+test('with nothing to lose (no voice, no sets yet) Back and X just leave', async () => {
+  const onClose = jest.fn();
+  const api = render(<Live onClose={onClose} />);
+  await api.findByLabelText('Log set 1 of 3');
+  act(() => { handleLiveBack(); });
+  expect(onClose).toHaveBeenCalledTimes(1);
+});
+
+test('a skipped exercise shows "Put back"; one tap calls /live/unskip and the exercise is back in the lineup', async () => {
+  const api = render(<Live onClose={jest.fn()} />);
+  await api.findByLabelText('Log set 1 of 3');
+  fireEvent.press(await api.findByLabelText('Skip'));
+  const putBack = await api.findByLabelText('Put Bench Press back');
+  fireEvent.press(putBack);
+  await waitFor(() => expect(backend.count('/live/unskip')).toBe(1));
+  expect(backend.calls.find((c) => c.path === '/live/unskip')!.body).toEqual({ exercise: 'bench press' });
+  await waitFor(() => expect(api.queryByLabelText('Put Bench Press back')).toBeNull());
+  expect(await api.findByLabelText('Log set 1 of 3')).toBeTruthy();
+});
+
+test('a session that ended shows WHY and a one-tap Resume voice (never silent)', async () => {
+  const api = render(<><WakeCoach /><Live onClose={jest.fn()} /></>);
+  await api.findByLabelText('Log set 1 of 3');
+  await waitFor(() => expect(SR.__listenerCount('result')).toBe(1));
+  act(() => { setTalkState({ session: false, phase: 'idle', endReason: 'Voice paused because you left the app. It comes back when you return.' }); });
+  expect(await api.findByText(/Voice paused because you left the app/)).toBeTruthy();
+  fireEvent.press(await api.findByLabelText('Resume voice'));
+  await waitFor(() => expect(SR.__state.starts.length).toBe(1), { timeout: 4000 });       // a new session started (the phone recogniser here)
+  await waitFor(() => expect(api.queryByLabelText('Resume voice')).toBeNull());
+  act(() => { setTalkState({ session: false, phase: 'idle', endReason: '' }); });
 });

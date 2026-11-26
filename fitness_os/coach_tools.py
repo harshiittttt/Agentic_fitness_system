@@ -263,6 +263,41 @@ def shape(res: dict) -> dict:
     return res
 
 
+def _spoken_numbers(words: str) -> set[float]:
+    """Every number in what the athlete said (digits or number words, in English or Hindi), plus their last few messages for answers like 'eight'."""
+    import re
+    from backend.tools.foods import _words_to_digits
+    texts = [words or ""]
+    try:
+        from . import conversation
+        texts += conversation.last_user_turns(3)
+    except Exception:
+        pass
+    out: set[float] = set()
+    for t in texts:
+        out |= {float(x) for x in re.findall(r"\d+(?:\.\d+)?", _words_to_digits((t or "").lower()))}
+    return out
+
+
+def _log_set_guard(kw: dict, words: str) -> dict | None:
+    """The model must never invent a set. Weight and reps have to be numbers the athlete actually said; otherwise nothing is saved and the model is told to ask."""
+    from backend.coach import set_slots
+    heard = _spoken_numbers(words)
+    miss = []
+    reps, w = kw.get("reps"), kw.get("weight")
+    if reps is None or float(reps) not in heard:
+        miss.append("reps")
+    bodyweight = str(kw.get("exercise", "")).lower() in set_slots.BODYWEIGHT
+    if w in (None, 0, 0.0):
+        if not bodyweight:
+            miss.append("weight")
+    elif float(w) not in heard:
+        miss.append("weight")
+    if not miss:
+        return None
+    return {"status": "invalid", "error": f"The athlete did not say the {' or '.join(miss)}, so nothing was logged. Do NOT guess numbers: ask them for it in one short question."}
+
+
 def build(words: str = "", channel: str = "chat"):
     """(tools, handlers) for one conversation turn. `words` is the athlete's message: it becomes the rationale in the decision ledger."""
     h = {
@@ -277,6 +312,8 @@ def build(words: str = "", channel: str = "chat"):
     }
 
     def writer(op):
+        if op == "log_set":
+            return lambda **kw: _log_set_guard(kw, words) or shape(control.submit_user_change(op, kw, words=words, agent="coach"))
         return lambda **kw: shape(control.submit_user_change(op, kw, words=words, agent="coach"))
 
     for name in WRITE_NAMES - {"undo_last_change", "undo_decision"}:

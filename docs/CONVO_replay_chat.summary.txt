@@ -1,0 +1,16 @@
+{
+ "scenarios": 12,
+ "passed": 12,
+ "turns": 12,
+ "fallback_turns": 0,
+ "first_token_ms": {
+  "p50": 941,
+  "p95": 1270,
+  "n": 12
+ },
+ "first_say_ms": {
+  "p50": 941,
+  "p95": 1319,
+  "n": 12
+ }
+}

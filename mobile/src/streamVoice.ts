@@ -51,7 +51,7 @@ export class VoiceStream {
 
   /** Start the microphone AND connect at the same time: what you say while the socket is still opening is kept and sent first, so the first words are never lost.
    *  Rejects (and reports 'unavailable') when the voice agent is not reachable, so the app can fall back. */
-  async open(screen: string, bargeIn = true): Promise<void> {
+  async open(screen: string, bargeIn = true, lang?: string): Promise<void> {
     this.pre = [];
     this.preBytes = 0;
     const micReady = Promise.resolve(this.dev.start((pcm) => this.onMic(pcm)));
@@ -75,7 +75,7 @@ export class VoiceStream {
       await Promise.all([micReady, sockReady]);
     } catch (e) { this.pre = null; this.teardown(); this.ev.onClose?.('unavailable'); throw e; }
     this.send(JSON.stringify({ type: 'screen', screen }));
-    this.send(JSON.stringify({ type: 'config', barge_in: bargeIn }));
+    this.send(JSON.stringify({ type: 'config', barge_in: bargeIn, ...(lang ? { lang } : {}) }));   // lang: 'en' (English / Hinglish, the default) or 'hi' (Hindi)
     const held = this.pre ?? [];
     this.pre = null;
     for (const c of held) this.send(c);

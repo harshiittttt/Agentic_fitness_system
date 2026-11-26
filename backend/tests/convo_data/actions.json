@@ -1,0 +1,554 @@
+[
+ {
+  "id": "cor-1",
+  "tags": [
+   "action",
+   "correction"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos five reps done",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1
+    }
+   },
+   {
+    "say": "no, sixty-five",
+    "expect": {
+     "tools": [
+      "correct_last_set"
+     ],
+     "last_set": {
+      "weight": 65,
+      "reps": 5
+     },
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "cor-2",
+  "tags": [
+   "action",
+   "correction"
+  ],
+  "turns": [
+   {
+    "say": "80 for 8",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 8
+     },
+     "sets_logged_delta": 1
+    }
+   },
+   {
+    "say": "it was six reps",
+    "expect": {
+     "tools": [
+      "correct_last_set"
+     ],
+     "last_set": {
+      "weight": 80,
+      "reps": 6
+     },
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "cor-3",
+  "tags": [
+   "action",
+   "correction",
+   "single"
+  ],
+  "turns": [
+   {
+    "say": "sixty, no, sixty-five, five reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 65,
+      "reps": 5
+     },
+     "sets_logged_delta": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "cor-4",
+  "tags": [
+   "action",
+   "correction",
+   "single"
+  ],
+  "turns": [
+   {
+    "say": "seventy kilos for eight... sorry, ten reps",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 70,
+      "reps": 10
+     },
+     "sets_logged_delta": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "cor-5",
+  "tags": [
+   "action",
+   "correction",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "saath kilo paanch reps",
+    "lang": "hinglish",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1
+    }
+   },
+   {
+    "say": "nahi nahi, 65 kilo",
+    "lang": "hinglish",
+    "expect": {
+     "tools": [
+      "correct_last_set"
+     ],
+     "last_set": {
+      "weight": 65,
+      "reps": 5
+     },
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "cor-6",
+  "tags": [
+   "action",
+   "correction"
+  ],
+  "turns": [
+   {
+    "say": "fifty for ten",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 50,
+      "reps": 10
+     },
+     "sets_logged_delta": 1
+    }
+   },
+   {
+    "say": "make that fifty five",
+    "expect": {
+     "tools": [
+      "correct_last_set"
+     ],
+     "last_set": {
+      "weight": 55,
+      "reps": 10
+     },
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "slot-1",
+  "tags": [
+   "action",
+   "slots"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos",
+    "expect": {
+     "no_write_tools": true,
+     "sets_logged_delta": 0
+    }
+   },
+   {
+    "say": "five",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "slot-2",
+  "tags": [
+   "action",
+   "slots"
+  ],
+  "turns": [
+   {
+    "say": "five reps",
+    "expect": {
+     "no_write_tools": true,
+     "sets_logged_delta": 0
+    }
+   },
+   {
+    "say": "sixty",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "jump-1",
+  "tags": [
+   "action",
+   "plausible"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos five reps",
+    "expect": {
+     "no_write_tools": true,
+     "sets_logged_delta": 0
+    }
+   },
+   {
+    "say": "yes, sixty",
+    "expect": {
+     "tools": [
+      "log_set"
+     ],
+     "last_set": {
+      "weight": 60,
+      "reps": 5
+     },
+     "sets_logged_delta": 1
+    }
+   }
+  ],
+  "setup": {
+   "sets_done": {
+    "squat": 1
+   },
+   "weights": {
+    "squat": 20
+   }
+  }
+ },
+ {
+  "id": "skip-1",
+  "tags": [
+   "action",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "Skip this exercise, my shoulder hurts.",
+    "expect": {
+     "tools": [
+      "skip_exercise"
+     ],
+     "skipped": [
+      "squat"
+     ],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "skip-2",
+  "tags": [
+   "action",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "skip squats",
+    "expect": {
+     "tools": [
+      "skip_exercise"
+     ],
+     "skipped": [
+      "squat"
+     ],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "skip-3",
+  "tags": [
+   "action",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "the machine is taken, skip this one",
+    "expect": {
+     "tools": [
+      "skip_exercise"
+     ],
+     "skipped": [
+      "squat"
+     ],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "skip-4",
+  "tags": [
+   "action",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "skip romanian deadlift",
+    "expect": {
+     "tools": [
+      "skip_exercise"
+     ],
+     "skipped": [
+      "romanian deadlift"
+     ],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "skip-5",
+  "tags": [
+   "action",
+   "skip",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "ye wala skip kar do",
+    "lang": "hinglish",
+    "expect": {
+     "skipped": [
+      "squat"
+     ],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "skip-6",
+  "tags": [
+   "action",
+   "skip",
+   "confirm"
+  ],
+  "turns": [
+   {
+    "say": "let's skip the squat, the machine is busy... or should I?",
+    "expect": {
+     "no_write_tools": true,
+     "skipped": []
+    }
+   },
+   {
+    "say": "yes skip it",
+    "expect": {
+     "skipped": [
+      "squat"
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "unskip-1",
+  "tags": [
+   "action",
+   "unskip"
+  ],
+  "turns": [
+   {
+    "say": "put it back, I'll do it",
+    "expect": {
+     "tools": [
+      "unskip_exercise"
+     ],
+     "skipped": []
+    }
+   }
+  ],
+  "setup": {
+   "skipped": [
+    "squat"
+   ]
+  }
+ },
+ {
+  "id": "unskip-2",
+  "tags": [
+   "action",
+   "unskip"
+  ],
+  "turns": [
+   {
+    "say": "we are not skipping anything",
+    "expect": {
+     "no_write_tools": false,
+     "skipped": []
+    }
+   }
+  ],
+  "setup": {
+   "skipped": [
+    "squat"
+   ]
+  }
+ },
+ {
+  "id": "rest-1",
+  "tags": [
+   "action",
+   "rest"
+  ],
+  "turns": [
+   {
+    "say": "start a two minute rest",
+    "expect": {
+     "tools": [
+      "control_rest"
+     ],
+     "sets_logged_delta": 0
+    }
+   }
+  ]
+ },
+ {
+  "id": "rest-2",
+  "tags": [
+   "action",
+   "rest"
+  ],
+  "turns": [
+   {
+    "say": "skip the rest, I'm ready",
+    "expect": {
+     "tools": [
+      "control_rest"
+     ],
+     "sets_logged_delta": 0,
+     "skipped": []
+    }
+   }
+  ]
+ },
+ {
+  "id": "next-w",
+  "tags": [
+   "action",
+   "nextweight"
+  ],
+  "turns": [
+   {
+    "say": "sixty-five next set",
+    "expect": {
+     "sets_logged_delta": 0,
+     "skipped": [],
+     "no_write_tools": false
+    }
+   }
+  ]
+ },
+ {
+  "id": "pain-1",
+  "tags": [
+   "action",
+   "pain"
+  ],
+  "turns": [
+   {
+    "say": "my knee feels off",
+    "expect": {
+     "sets_logged_delta": 0,
+     "skipped": [],
+     "say_matches": [
+      "stop|rok|ruk"
+     ]
+    }
+   }
+  ]
+ },
+ {
+  "id": "end-1",
+  "tags": [
+   "action",
+   "end"
+  ],
+  "turns": [
+   {
+    "say": "okay coach, let's wrap up",
+    "expect": {
+     "tools": [
+      "end_workout"
+     ]
+    }
+   }
+  ],
+  "setup": {
+   "sets_done": {
+    "squat": 1
+   }
+  }
+ }
+]

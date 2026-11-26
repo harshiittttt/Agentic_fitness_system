@@ -28,6 +28,13 @@ export function makeBackend(opts: { delayMs?: number; fragments?: string[]; fail
     'GET /agents/decisions': () => [],
     'GET /agents/nudges': () => [],
     'GET /agents/status': () => ({ pending: [] }),
+    // assumed shape of the server's un-skip (workstream A): POST /live/unskip {exercise?} -> a live reply with the new state
+    'POST /live/unskip': (b) => {
+      const sk = ex.filter((x) => x.skipped);
+      const e = b.exercise ? sk.find((x) => x.name === b.exercise) : sk[sk.length - 1];
+      if (!e) return live('unskip', 'Nothing was skipped.');
+      e.skipped = false; return live('unskip', `Put ${e.name} back.`);
+    },
     'POST /live/cue': () => live('cue', 'Rest is over. Next set.'),
     'POST /voice/command': (b) => {
       if (opts.fragments?.includes(b.transcript)) return { intent: 'fragment', reply: '', actions: [], expects: 'answer', moment: false, pr: false, safety_flag: null, state: null, saved: [] };

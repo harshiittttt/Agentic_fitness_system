@@ -144,6 +144,27 @@ def _is_empty_reply(data: dict) -> bool:
     return not (msg.get("content") or "").strip() and not msg.get("tool_calls")
 
 
+_client: httpx.Client | None = None
+
+
+def _http() -> httpx.Client:
+    """One shared client (thread-safe, keeps connections alive): every model call used to open a fresh TCP+TLS connection, ~0.2-0.5 s each, on a path
+    where the athlete is waiting for a spoken answer."""
+    global _client
+    if _client is None or _client.is_closed:
+        _client = httpx.Client(limits=httpx.Limits(max_connections=32, max_keepalive_connections=8, keepalive_expiry=60.0))
+    return _client
+
+
+_REAL_POST = httpx.post
+
+
+def _do_post(url: str, **kw):
+    if httpx.post is not _REAL_POST:      # replaced (tests): honour it
+        return httpx.post(url, **kw)
+    return _http().post(url, **kw)
+
+
 def _post_raw(role: str, body: dict, timeout: float = 60.0, retries: int = 1, models: list[str] | None = None) -> dict:
     c = _cfg(role)
     c2 = _cfg2(role)
@@ -164,8 +185,8 @@ def _post_raw(role: str, body: dict, timeout: float = 60.0, retries: int = 1, mo
             req["reasoning_effort"] = c["reasoning"]
         for attempt in range(retries + 1):
             try:
-                r = httpx.post(f"{ep['base_url']}/chat/completions", json=req, timeout=httpx.Timeout(timeout, connect=min(timeout, 3.0)),
-                               headers={"Authorization": f"Bearer {ep['api_key']}"})
+                r = _do_post(f"{ep['base_url']}/chat/completions", json=req, timeout=httpx.Timeout(timeout, connect=min(timeout, 3.0)),
+                             headers={"Authorization": f"Bearer {ep['api_key']}"})
             except httpx.HTTPError as e:
                 last = f"{model}: {type(e).__name__}: {e}"
             else:

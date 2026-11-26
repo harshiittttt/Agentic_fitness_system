@@ -1,0 +1,111 @@
+# Every sentence from docs/ERROR_LEDGER.md (E-001..E-008) and the real phone test of 2026-11-25, promoted to a replayable scenario.
+# Assumes the throwaway backend's demo plan: Lower A = squat, romanian deadlift, leg press, leg curl, calf raise; squat is current.
+# `expect:` keys are documented at the top of voice_agent/eval/scorers.py. No `sets:`/`skipped:` key = the turn must change nothing.
+scenarios:
+  - name: e001-golu-session-not-skipping
+    tags: [ledger, e001, negative, session]
+    lang: en
+    turns:
+      - {say: "Hey coach, let's start today's workout.", expect: {}}
+      - {say: "What is the plan for today?", expect: {}}
+      - {say: "We are not skipping anything, we are doing every exercise.", expect: {}}
+      - {say: "I am not skipping the goblet squat.", expect: {}}
+      - {say: "Okay, next set.", expect: {}}
+      - {say: "What is the next exercise?", expect: {}}
+      - {say: "How many sets are left?", expect: {}}
+
+  - name: e001-real-skip-then-put-back
+    tags: [ledger, e001, skip_real, unskip, session]
+    lang: en
+    turns:
+      - {say: "Skip this exercise, my shoulder hurts.", expect: {skipped: [squat]}}
+      - {say: "No wait, put it back, I will do it.", expect: {unskipped: [squat]}}
+      - {say: "Sixty kilos, five reps, done.", expect: {sets: [{exercise: squat, weight: 60, reps: 5}]}}
+
+  - name: e001-wrong-skip-then-denial-restores
+    tags: [ledger, e001, unskip, session]
+    lang: en
+    turns:
+      - {say: "Skip the leg curl.", expect: {skipped: ["leg curl"]}}
+      - {say: "Actually I am not skipping anything today.", expect: {unskipped: ["leg curl"]}}
+
+  - name: e001-pain-skip-keeps-pain
+    tags: [ledger, e001, skip_real, safety]
+    lang: en
+    turns:
+      - {say: "Skip this exercise, my shoulder hurts.", expect: {skipped: [squat], reply_contains_any: [shoulder, pain, hurt, careful, rest]}}
+
+  - name: e002-sets-follow-the-current-exercise
+    tags: [ledger, e002, set, session]
+    lang: en
+    turns:
+      - {say: "Sixty kilos, five reps, done.", expect: {sets: [{exercise: squat, weight: 60, reps: 5}]}}
+      - {say: "Sixty kilos, five reps again.", expect: {sets: [{exercise: squat, weight: 60, reps: 5}]}}
+      - {say: "Sixty kilos, five reps, last one.", expect: {sets: [{exercise: squat, weight: 60, reps: 5}]}}
+      - {say: "Eighty for eight.", expect: {sets: [{exercise: romanian deadlift, weight: 80, reps: 8}]}}
+
+  - name: e002-never-unknown-exercise
+    tags: [ledger, e002, set]
+    lang: en
+    turns:
+      - {say: "Gentle thirty kilos, twelve reps, slow negative all the way.", expect: {sets: [{exercise: squat, weight: 30, reps: 12}]}}
+
+  - name: e003-reps-said-are-reps-logged
+    tags: [ledger, e003, set, grounding]
+    lang: en
+    turns:
+      - {say: "Sixty kilos, five reps done.", expect: {sets: [{weight: 60, reps: 5}], reply_not_contains_any: ["8 reps", "eight reps"]}}
+
+  - name: e003-never-says-done-with-no-sets
+    tags: [ledger, e003, grounding]
+    lang: en
+    turns:
+      - {say: "Heavy top.", expect: {reply_not_contains_any: ["done with", "finished", "completed"]}}
+      - {say: "Haan, next set krte hain.", expect: {reply_not_contains_any: ["done with deadlift", "done with squat"]}}
+
+  - name: e004-hinglish-garble-does-nothing
+    tags: [ledger, e004, negative, hinglish]
+    lang: hinglish
+    turns:
+      - {say: "Kike mech kya?", expect: {grounded: false}}
+      - {say: "Samadhi bhiya, phir kabhi continue karhainge.", expect: {grounded: false}}
+      - {say: "बस तो ना लेस चाही.", expect: {grounded: false}}
+
+  - name: e004-hinglish-saath-kilo
+    tags: [ledger, e004, set, hinglish]
+    lang: hinglish
+    turns:
+      - {say: "saath kilo paanch reps ho gaye", expect: {sets: [{weight: 60, reps: 5}]}}
+      - {say: "saath kilo paanch reps hogaya", expect: {sets: [{weight: 60, reps: 5}]}}
+
+  - name: e005-stage-directions-are-ignored
+    tags: [ledger, e005, negative]
+    lang: en
+    turns:
+      - {say: "Boxing, wipes hands, adjust straps.", expect: {reply_max_words: 20}}
+      - {say: "Copy.", expect: {reply_max_words: 20}}
+      - {say: "Hello.", expect: {reply_max_words: 20}}
+      - {say: "Umm, haan, woh, kya, hmm.", expect: {reply_max_words: 20, grounded: false}}
+
+  - name: pause-inside-a-set-report
+    tags: [ledger, turn_taking, set]
+    lang: en
+    turns:
+      - say_parts: ["Sixty kilos", "five reps, done."]
+        gap_s: 1.2
+        expect: {sets: [{weight: 60, reps: 5}]}
+
+  - name: pause-inside-a-skip-negation
+    tags: [ledger, e001, turn_taking, negative]
+    lang: en
+    turns:
+      - say_parts: ["We are not skipping anything.", "We are doing every exercise."]
+        gap_s: 0.9
+        expect: {}
+
+  - name: barge-in-stops-the-coach
+    tags: [ledger, barge_in, audio_only]
+    lang: en
+    turns:
+      - {say: "What is the plan for today?", expect: {}}
+      - {say: "Wait, stop.", interrupt_at_ms: 1200, expect: {barge_stop_ms_max: 450, grounded: false}}

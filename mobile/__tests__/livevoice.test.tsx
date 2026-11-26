@@ -27,7 +27,7 @@ jest.mock('../src/pcmNative', () => ({
 
 const SR = require('expo-speech-recognition');
 import WakeCoach from '../src/WakeCoach';
-import { getTalkState, onVoiceReply, setTalkState, toggleTalk } from '../src/voiceTalk';
+import { getTalkState, onVoiceReply, setTalkState, stopTalk, toggleTalk } from '../src/voiceTalk';
 import { setVoiceOverlay } from '../src/voiceScreen';
 import { setApiConfig } from '../src/api';
 import { setLiveVoice } from '../src/voiceSettings';
@@ -140,11 +140,19 @@ test('switching Live voice off in Profile uses the phone recogniser straight awa
   await waitFor(() => expect(getTalkState().session).toBe(false));
 });
 
-test('the server dropping the connection mid-session ends it with a clear message', async () => {
+test('a dropped connection is retried by itself (twice); after that the session ends with a clear reason', async () => {
   await mounted();
   await openLive();
+  const n0 = FakeSocket.all.length;
   act(() => { sock().onclose({ code: 1006 }); });
+  await waitFor(() => expect(FakeSocket.all.length).toBe(n0 + 1), { timeout: 3000 });         // reconnected on its own
+  await waitFor(() => expect((global as any).__dlog.filter((e: any[]) => e[0] === 's_open').length).toBe(2), { timeout: 3000 });
+  act(() => { sock().onclose({ code: 1006 }); });
+  await waitFor(() => expect(FakeSocket.all.length).toBe(n0 + 2), { timeout: 5000 });         // and a second time
+  await waitFor(() => expect((global as any).__dlog.filter((e: any[]) => e[0] === 's_open').length).toBe(3), { timeout: 3000 });
+  act(() => { sock().onclose({ code: 1006 }); });                                              // a third drop within a minute: stop trying and say so
   await waitFor(() => expect(getTalkState()).toMatchObject({ session: false, error: true }));
+  expect(getTalkState().endReason).toMatch(/dropped/i);
 });
 
 test('connected but the phone delivers NO microphone audio: it is noticed within seconds and the phone recogniser takes over by itself', async () => {
@@ -220,5 +228,51 @@ test('REGRESSION: the app flickering to "inactive" (a system screen over it) doe
     expect(mockAudio.recording).toBe(true);
     act(() => { listeners.forEach((f) => f('background')); });
     await waitFor(() => expect(getTalkState().session).toBe(false));
+    expect(getTalkState().endReason).toMatch(/left the app/i);                                  // never silent: the reason is in the state (the workout screen shows it)
+    const n0 = FakeSocket.all.length;
+    act(() => { listeners.forEach((f) => f('active')); });                                       // back within a few minutes: the voice carries on by itself
+    await waitFor(() => expect(FakeSocket.all.length).toBe(n0 + 1), { timeout: 3000 });
+    await waitFor(() => expect(getTalkState()).toMatchObject({ session: true, endReason: '' }));
+  } finally { spy.mockRestore(); }
+});
+
+test('away for longer than a few minutes: no surprise microphone, a one-tap resume is offered instead', async () => {
+  const listeners: ((s: string) => void)[] = [];
+  const spy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((_t: string, cb: any) => { listeners.push(cb); return { remove: () => {} }; }) as any);
+  const realNow = Date.now;
+  try {
+    await mounted();
+    await openLive();
+    act(() => { listeners.forEach((f) => f('background')); });
+    await waitFor(() => expect(getTalkState().session).toBe(false));
+    const n0 = FakeSocket.all.length;
+    Date.now = () => realNow() + 10 * 60 * 1000;
+    act(() => { listeners.forEach((f) => f('active')); });
+    await wait(900);
+    expect(FakeSocket.all.length).toBe(n0);
+    expect(getTalkState()).toMatchObject({ session: false });
+    expect(getTalkState().endReason).toMatch(/Tap the mic to resume/i);
+  } finally { Date.now = realNow; spy.mockRestore(); }
+});
+
+test('a stop by the user (tap) leaves no reason and never resumes by itself; closing the workout screen says why', async () => {
+  const listeners: ((s: string) => void)[] = [];
+  const spy = jest.spyOn(AppState, 'addEventListener').mockImplementation(((_t: string, cb: any) => { listeners.push(cb); return { remove: () => {} }; }) as any);
+  try {
+    await mounted();
+    await openLive();
+    await wait(70);
+    await tap();
+    await waitFor(() => expect(getTalkState().session).toBe(false));
+    expect(getTalkState().endReason).toBe('');
+    const n0 = FakeSocket.all.length;
+    act(() => { listeners.forEach((f) => f('background')); listeners.forEach((f) => f('active')); });
+    await wait(900);
+    expect(FakeSocket.all.length).toBe(n0);                                                      // stopped on purpose: stays stopped
+    await openLive();
+    await wait(70);
+    act(() => { stopTalk('screen'); });
+    await waitFor(() => expect(getTalkState().session).toBe(false));
+    expect(getTalkState().endReason).toMatch(/workout screen closed/i);
   } finally { spy.mockRestore(); }
 });

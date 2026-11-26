@@ -208,6 +208,8 @@ export const getCoach = () => fetch(`${API}/coach`).then((r) => r.json());
 export const setCoachSettings = (body: { persona?: string; name?: string }) => post('/coach', body);
 export const getLiveState = () => fetch(`${API}/live/state`).then((r) => (r.ok ? r.json() : null));
 export const liveStart = () => post('/live/start', {});
+/** Put a skipped exercise back into today's session (no name = the most recently skipped one). Server: POST /live/unskip {exercise?} -> {state, reply?}. */
+export const liveUnskip = (exercise?: string) => post('/live/unskip', exercise ? { exercise } : {});
 export const liveSay = (transcript: string, ambient: boolean, fast = false) => post('/live/say', { transcript, ambient, fast });
 /** One set from the workout screen's dials. Answers at once (instant coach line); the exercise defaults to the one the session is on. */
 export const liveLog = (weight: number, reps: number, opts: { exercise?: string; rpe?: number | null } = {}) =>

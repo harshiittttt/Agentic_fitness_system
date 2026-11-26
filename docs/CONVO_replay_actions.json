@@ -1,0 +1,852 @@
+[
+ {
+  "id": "cor-1",
+  "tags": [
+   "action",
+   "correction"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos five reps done",
+    "said": "Squat: 60 for 5. Set 1 of 3.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1462,
+    "first_token_ms": 1314,
+    "total_ms": 1462,
+    "wall_ms": 1477,
+    "dropped": 1,
+    "failed": [],
+    "passed": true
+   },
+   {
+    "say": "no, sixty-five",
+    "said": "Sixty-five, fixed.",
+    "tools": [
+     [
+      "correct_last_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 691,
+    "first_token_ms": 635,
+    "total_ms": 691,
+    "wall_ms": 691,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "cor-2",
+  "tags": [
+   "action",
+   "correction"
+  ],
+  "turns": [
+   {
+    "say": "80 for 8",
+    "said": "Crushed it, Golu. Let's keep that momentum going.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1400,
+    "first_token_ms": 1223,
+    "total_ms": 1400,
+    "wall_ms": 1400,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   },
+   {
+    "say": "it was six reps",
+    "said": "Six reps, got it.",
+    "tools": [
+     [
+      "correct_last_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1123,
+    "first_token_ms": 1067,
+    "total_ms": 1123,
+    "wall_ms": 1123,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "cor-3",
+  "tags": [
+   "action",
+   "correction",
+   "single"
+  ],
+  "turns": [
+   {
+    "say": "sixty, no, sixty-five, five reps",
+    "said": "Nice recovery. Sixty-five on the board.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 941,
+    "first_token_ms": 780,
+    "total_ms": 941,
+    "wall_ms": 941,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "cor-4",
+  "tags": [
+   "action",
+   "correction",
+   "single"
+  ],
+  "turns": [
+   {
+    "say": "seventy kilos for eight... sorry, ten reps",
+    "said": "Double digits on set one, love to see it.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 967,
+    "first_token_ms": 803,
+    "total_ms": 967,
+    "wall_ms": 967,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "cor-5",
+  "tags": [
+   "action",
+   "correction",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "saath kilo paanch reps",
+    "said": "Bahut badhiya Golu! Pehla set lock ho gaya.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1308,
+    "first_token_ms": 1129,
+    "total_ms": 1308,
+    "wall_ms": 1309,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   },
+   {
+    "say": "nahi nahi, 65 kilo",
+    "said": "Sixty-five, fixed. Let us go.",
+    "tools": [
+     [
+      "correct_last_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 682,
+    "first_token_ms": 633,
+    "total_ms": 697,
+    "wall_ms": 698,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "cor-6",
+  "tags": [
+   "action",
+   "correction"
+  ],
+  "turns": [
+   {
+    "say": "fifty for ten",
+    "said": "Fifty for ten. Solid start, Golu.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1194,
+    "first_token_ms": 1036,
+    "total_ms": 1194,
+    "wall_ms": 1194,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   },
+   {
+    "say": "make that fifty five",
+    "said": "Fifty-five, fixed.",
+    "tools": [
+     [
+      "correct_last_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1296,
+    "first_token_ms": 1235,
+    "total_ms": 1296,
+    "wall_ms": 1296,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "slot-1",
+  "tags": [
+   "action",
+   "slots"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos",
+    "said": "How many reps did you get at sixty?",
+    "tools": [
+     [
+      "set_next_weight",
+      "refused"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1794,
+    "first_token_ms": 1072,
+    "total_ms": 1837,
+    "wall_ms": 1837,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   },
+   {
+    "say": "five",
+    "said": "First one in the books, Golu.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1330,
+    "first_token_ms": 1178,
+    "total_ms": 1330,
+    "wall_ms": 1330,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "slot-2",
+  "tags": [
+   "action",
+   "slots"
+  ],
+  "turns": [
+   {
+    "say": "five reps",
+    "said": "What weight was that?",
+    "tools": [
+     [
+      "set_next_weight",
+      "needs_clarification"
+     ]
+    ],
+    "intent": "clarify",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1276,
+    "first_token_ms": 1235,
+    "total_ms": 1292,
+    "wall_ms": 1308,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   },
+   {
+    "say": "sixty",
+    "said": "Got it, sixty for five. Good start.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1309,
+    "first_token_ms": 1159,
+    "total_ms": 1309,
+    "wall_ms": 1309,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "jump-1",
+  "tags": [
+   "action",
+   "plausible"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos five reps",
+    "said": "60 kilos? Last time on this it was 20. Say yes and I'll log it.",
+    "tools": [
+     [
+      "log_set",
+      "needs_clarification"
+     ]
+    ],
+    "intent": "clarify",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1475,
+    "first_token_ms": 1421,
+    "total_ms": 1501,
+    "wall_ms": 1501,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   },
+   {
+    "say": "yes, sixty",
+    "said": "Solid jump up. Two more sets of these.",
+    "tools": [
+     [
+      "log_set",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 917,
+    "first_token_ms": 717,
+    "total_ms": 917,
+    "wall_ms": 917,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "skip-1",
+  "tags": [
+   "action",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "Skip this exercise, my shoulder hurts.",
+    "said": "Stop right there. Let that shoulder rest.",
+    "tools": [
+     [
+      "skip_exercise",
+      "ok"
+     ]
+    ],
+    "intent": "skip",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1373,
+    "first_token_ms": 1199,
+    "total_ms": 1373,
+    "wall_ms": 1373,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "skip-2",
+  "tags": [
+   "action",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "skip squats",
+    "said": "Squats skipped. Moving on to Romanian deadlifts.",
+    "tools": [
+     [
+      "skip_exercise",
+      "ok"
+     ]
+    ],
+    "intent": "skip",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 926,
+    "first_token_ms": 832,
+    "total_ms": 926,
+    "wall_ms": 926,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "skip-3",
+  "tags": [
+   "action",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "the machine is taken, skip this one",
+    "said": "No worries, let's skip it. Moving to Romanian deadlift.",
+    "tools": [
+     [
+      "skip_exercise",
+      "ok"
+     ]
+    ],
+    "intent": "skip",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 916,
+    "first_token_ms": 808,
+    "total_ms": 916,
+    "wall_ms": 932,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "skip-4",
+  "tags": [
+   "action",
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "skip romanian deadlift",
+    "said": "Done, Romanian deadlift is skipped.",
+    "tools": [
+     [
+      "skip_exercise",
+      "ok"
+     ]
+    ],
+    "intent": "skip",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1279,
+    "first_token_ms": 1153,
+    "total_ms": 1279,
+    "wall_ms": 1279,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "skip-5",
+  "tags": [
+   "action",
+   "skip",
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "ye wala skip kar do",
+    "said": "Theek hai, squat skip. Romanian deadlift shuru karein?",
+    "tools": [
+     [
+      "skip_exercise",
+      "ok"
+     ]
+    ],
+    "intent": "skip",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1249,
+    "first_token_ms": 1152,
+    "total_ms": 1265,
+    "wall_ms": 1280,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "skip-6",
+  "tags": [
+   "action",
+   "skip",
+   "confirm"
+  ],
+  "turns": [
+   {
+    "say": "let's skip the squat, the machine is busy... or should I?",
+    "said": "You answered your own question at the end there, let's keep it.",
+    "tools": [],
+    "intent": "chat",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 986,
+    "first_token_ms": 986,
+    "total_ms": 999,
+    "wall_ms": 999,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   },
+   {
+    "say": "yes skip it",
+    "said": "Squat is gone. Romanian deadlift up next.",
+    "tools": [
+     [
+      "skip_exercise",
+      "ok"
+     ]
+    ],
+    "intent": "skip",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 1343,
+    "first_token_ms": 1236,
+    "total_ms": 1343,
+    "wall_ms": 1343,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "unskip-1",
+  "tags": [
+   "action",
+   "unskip"
+  ],
+  "turns": [
+   {
+    "say": "put it back, I'll do it",
+    "said": "Squat is back on the menu. Let's get it.",
+    "tools": [
+     [
+      "unskip_exercise",
+      "ok"
+     ]
+    ],
+    "intent": "unskip",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 909,
+    "first_token_ms": 768,
+    "total_ms": 909,
+    "wall_ms": 909,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "unskip-2",
+  "tags": [
+   "action",
+   "unskip"
+  ],
+  "turns": [
+   {
+    "say": "we are not skipping anything",
+    "said": "Squat is back on the menu, Golu.",
+    "tools": [
+     [
+      "unskip_exercise",
+      "ok"
+     ]
+    ],
+    "intent": "unskip",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 973,
+    "first_token_ms": 900,
+    "total_ms": 973,
+    "wall_ms": 973,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "rest-1",
+  "tags": [
+   "action",
+   "rest"
+  ],
+  "turns": [
+   {
+    "say": "start a two minute rest",
+    "said": "Two minutes on the clock, Golu. Shake it out.",
+    "tools": [
+     [
+      "control_rest",
+      "ok"
+     ]
+    ],
+    "intent": "rest",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 823,
+    "first_token_ms": 803,
+    "total_ms": 839,
+    "wall_ms": 839,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "rest-2",
+  "tags": [
+   "action",
+   "rest"
+  ],
+  "turns": [
+   {
+    "say": "skip the rest, I'm ready",
+    "said": "Let's go. Load it up.",
+    "tools": [
+     [
+      "control_rest",
+      "ok"
+     ]
+    ],
+    "intent": "rest",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 801,
+    "first_token_ms": 801,
+    "total_ms": 817,
+    "wall_ms": 817,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "next-w",
+  "tags": [
+   "action",
+   "nextweight"
+  ],
+  "turns": [
+   {
+    "say": "sixty-five next set",
+    "said": "Sixty-five locked in. Go get set.",
+    "tools": [
+     [
+      "set_next_weight",
+      "ok"
+     ]
+    ],
+    "intent": "set",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 870,
+    "first_token_ms": 839,
+    "total_ms": 886,
+    "wall_ms": 886,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "pain-1",
+  "tags": [
+   "action",
+   "pain"
+  ],
+  "turns": [
+   {
+    "say": "my knee feels off",
+    "said": "Stop that movement. If it still hurts when you rest, get it looked at.",
+    "tools": [
+     [
+      "log_note",
+      "ok"
+     ]
+    ],
+    "intent": "note",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 950,
+    "first_token_ms": 934,
+    "total_ms": 983,
+    "wall_ms": 984,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "end-1",
+  "tags": [
+   "action",
+   "end"
+  ],
+  "turns": [
+   {
+    "say": "okay coach, let's wrap up",
+    "said": "Calling it a day? Good session, Golu.",
+    "tools": [
+     [
+      "end_workout",
+      "ok"
+     ]
+    ],
+    "intent": "end",
+    "brain": "converse",
+    "fallback": false,
+    "model": "gemini-3.5-flash-lite",
+    "first_say_ms": 977,
+    "first_token_ms": 765,
+    "total_ms": 977,
+    "wall_ms": 977,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ }
+]

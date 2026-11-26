@@ -1,0 +1,258 @@
+[
+ {
+  "id": "s-neg1",
+  "tags": [
+   "negative"
+  ],
+  "turns": [
+   {
+    "say": "We are not skipping anything, we are doing every exercise.",
+    "said": "Love that attitude Golu. Time for squat set 1 of 3, let us get it.",
+    "tools": [],
+    "intent": "ready",
+    "brain": "legacy",
+    "fallback": true,
+    "model": null,
+    "first_say_ms": 1224,
+    "first_token_ms": null,
+    "total_ms": 1224,
+    "wall_ms": 1224,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "s-neg2",
+  "tags": [
+   "negative"
+  ],
+  "turns": [
+   {
+    "say": "What is the next exercise?",
+    "said": "Crush this squat set first, Golu, because Romanian deadlifts are coming up right after.",
+    "tools": [],
+    "intent": "status",
+    "brain": "legacy",
+    "fallback": true,
+    "model": null,
+    "first_say_ms": 2052,
+    "first_token_ms": null,
+    "total_ms": 2052,
+    "wall_ms": 2052,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "s-neg3",
+  "tags": [
+   "negative"
+  ],
+  "turns": [
+   {
+    "say": "Should I skip this one?",
+    "said": "No skipping today Golu, you are on squats right now with Romanian deadlifts up next.",
+    "tools": [],
+    "intent": "status",
+    "brain": "legacy",
+    "fallback": true,
+    "model": null,
+    "first_say_ms": 788,
+    "first_token_ms": null,
+    "total_ms": 788,
+    "wall_ms": 788,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "s-vague",
+  "tags": [
+   "negative"
+  ],
+  "turns": [
+   {
+    "say": "Let's move on.",
+    "said": "Hold on Golu, are we skipping squats or keeping them, just say yes or no.",
+    "tools": [],
+    "intent": "skip_ask",
+    "brain": "legacy",
+    "fallback": true,
+    "model": null,
+    "first_say_ms": 794,
+    "first_token_ms": null,
+    "total_ms": 794,
+    "wall_ms": 794,
+    "dropped": 0,
+    "failed": [],
+    "passed": true
+   }
+  ],
+  "passed": true
+ },
+ {
+  "id": "s-pos1",
+  "tags": [
+   "positive"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos five reps done",
+    "said": "Spot on at 60 for 5, Golu. Hit 60 for 6 next, and take two minutes to catch your breath.",
+    "tools": [],
+    "intent": "set",
+    "brain": "legacy",
+    "fallback": true,
+    "model": null,
+    "first_say_ms": 946,
+    "first_token_ms": null,
+    "total_ms": 946,
+    "wall_ms": 946,
+    "dropped": 0,
+    "failed": [
+     [
+      "tools",
+      false,
+      "ok-called []"
+     ]
+    ],
+    "passed": false
+   }
+  ],
+  "passed": false
+ },
+ {
+  "id": "s-corr",
+  "tags": [
+   "correction"
+  ],
+  "turns": [
+   {
+    "say": "sixty kilos five reps done",
+    "said": "Nailed that 60 for 5, Golu. Let us bump it to 6 for the next round, take two minutes.",
+    "tools": [],
+    "intent": "set",
+    "brain": "legacy",
+    "fallback": true,
+    "model": null,
+    "first_say_ms": 903,
+    "first_token_ms": null,
+    "total_ms": 903,
+    "wall_ms": 903,
+    "dropped": 0,
+    "failed": [
+     [
+      "tools",
+      false,
+      "ok-called []"
+     ]
+    ],
+    "passed": false
+   },
+   {
+    "say": "no, sixty-five",
+    "said": "Yes! That's the stuff. Keep it at 60 for 6, you're dialed in.",
+    "tools": [],
+    "intent": "set",
+    "brain": "legacy",
+    "fallback": true,
+    "model": null,
+    "first_say_ms": 3314,
+    "first_token_ms": null,
+    "total_ms": 3314,
+    "wall_ms": 3329,
+    "dropped": 0,
+    "failed": [
+     [
+      "tools",
+      false,
+      "ok-called []"
+     ],
+     [
+      "sets_logged_delta",
+      false,
+      "delta 1"
+     ],
+     [
+      "last_set",
+      false,
+      "last ('squat', 60.0, 5)"
+     ]
+    ],
+    "passed": false
+   }
+  ],
+  "passed": false
+ },
+ {
+  "id": "s-skip",
+  "tags": [
+   "skip"
+  ],
+  "turns": [
+   {
+    "say": "Skip this exercise, my shoulder hurts.",
+    "said": "Okay, stop right there. Pain is not something we push through. Which movement was it?",
+    "tools": [],
+    "intent": "pain",
+    "brain": "legacy",
+    "fallback": true,
+    "model": null,
+    "first_say_ms": 2243,
+    "first_token_ms": null,
+    "total_ms": 2258,
+    "wall_ms": 2258,
+    "dropped": 0,
+    "failed": [
+     [
+      "tools",
+      false,
+      "ok-called []"
+     ]
+    ],
+    "passed": false
+   }
+  ],
+  "passed": false
+ },
+ {
+  "id": "s-hi",
+  "tags": [
+   "hinglish"
+  ],
+  "turns": [
+   {
+    "say": "saath kilo paanch reps ho gaye",
+    "said": "Nailed those 5 reps at 60. Let us hit 6 for the next round and take two minutes to recover.",
+    "tools": [],
+    "intent": "set",
+    "brain": "legacy",
+    "fallback": true,
+    "model": null,
+    "first_say_ms": 974,
+    "first_token_ms": null,
+    "total_ms": 974,
+    "wall_ms": 974,
+    "dropped": 0,
+    "failed": [
+     [
+      "tools",
+      false,
+      "ok-called []"
+     ]
+    ],
+    "passed": false
+   }
+  ],
+  "passed": false
+ }
+]

@@ -28,6 +28,20 @@ def session_sets(session: str | None = None, exercise: str | None = None):
     return [_set_row(r) for r in reversed(rows)]
 
 
+class Unskip(BaseModel):
+    exercise: str | None = None      # one exercise by name; omitted = the latest skip of today
+    everything: bool = False         # true = put every exercise skipped today back
+
+
+@router.post("/live/unskip")
+def live_unskip(b: Unskip | None = None):
+    """Put a skipped exercise back into today's session (the app has a skip button; this is its undo). Same result shape as /live/say:
+    {intent: 'unskip', reply, restored: [names], state}. Nothing skipped -> restored is [] and the reply says so."""
+    from backend.coach import live
+    b = b or Unskip()
+    return live.unskip_now(b.exercise, b.everything)
+
+
 @router.delete("/session/set/{set_id}")
 def delete_set(set_id: int):
     """Undo one logged set. Returns the deleted values so the app can put them back in the logger to correct them."""

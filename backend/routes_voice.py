@@ -15,6 +15,7 @@ class VoiceCommand(BaseModel):
     day: str | None = None       # YYYY-MM-DD: the day selected in Fuel
     ambient: bool = False
     followup: bool = False       # the user is answering a question we just asked
+    lang: str | None = None      # "en" | "hinglish": the language the athlete spoke, so the model answers in it (voice agent sets it)
 
 
 _pool = ThreadPoolExecutor(max_workers=8)
@@ -24,7 +25,7 @@ DEADLINE_S = 15.0       # the app waits at most this long for a spoken answer; a
 @router.post("/voice/command")
 def voice_command(c: VoiceCommand):
     from backend.coach import voice_control
-    fut = _pool.submit(voice_control.handle, c.transcript, c.screen, c.day, c.ambient, c.followup)
+    fut = _pool.submit(voice_control.handle, c.transcript, c.screen, c.day, c.ambient, c.followup, c.lang)
     try:
         return fut.result(timeout=DEADLINE_S)
     except FutureTimeout:

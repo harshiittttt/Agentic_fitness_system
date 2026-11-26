@@ -898,7 +898,66 @@ def tools_for(text: str, tools: list[dict]) -> list[dict]:
     return out or tools
 
 
-def _router(text: str, screen: str, ambient: bool, addressed: bool) -> dict:
+# ------------------------------------------------------------------ plain questions about the session: answered from the session state, no model (0.05 s, not 2-6 s)
+PLAN_Q_RE = re.compile(r"^(?:so |and )?(?:what|which|tell me|read|show|list|give me|remind me)\b.{0,30}\b(?:plan|workout|session|exercises|lineup|line up|routine)\b|"
+                       r"\bwhat (?:are we|do we|am i|are we going to) (?:doing|hitting|training|have|be doing)\b|^(?:today'?s )?(?:plan|workout)\??$|\baaj (?:ka|ki|ke) (?:plan|workout|session)\b.{0,12}\bkya\b")
+LEFT_Q_RE = re.compile(r"\bhow many (?:sets?|exercises?|more)\b.{0,25}\b(?:left|remain\w*|more|to go|do i have|are there)\b|\b(?:sets?|exercises?) (?:left|remaining|to go)\b|\bhow much (?:is )?(?:left|remaining|more)\b|\b(?:kitne|how much) (?:set|sets|exercise|exercises)\b.{0,15}\b(?:baki|baaki|bache|bacha|bachi|hain)\b")
+NEXT_WEIGHT_Q_RE = re.compile(r"\b(?:how much|what|which) (?:weight|load)\b.{0,40}\b(?:next|use|go|take|put|load|set)\b|\bweight (?:for|on) (?:the |this )?next set\b|\b(?:next|this) set weight\b|"
+                              r"\bshould i (?:go up|add (?:some )?weight|increase|go heavier|raise|go lighter|drop)\b")
+
+
+def _w(x) -> str:
+    return str(int(x)) if float(x) == int(x) else f"{float(x):g}"
+
+
+def _session_q(low: str) -> dict | None:
+    """"what's the plan", "how many sets are left", "how much weight for the next set": the session state has the answer. Only when a session exists;
+    otherwise None and the normal path (model) answers."""
+    if not (PLAN_Q_RE.search(low) or LEFT_Q_RE.search(low) or NEXT_WEIGHT_Q_RE.search(low)):
+        return None
+    if live.START_RE.match(low) or live.START_BARE_RE.match(low) or live.END_RE.search(low):      # "start today's workout" is a command, not a question about the plan
+        return None
+    if PLAN_Q_RE.search(low) and re.search(r"\b(?:tomorrow|yesterday|week|month|next (?:session|workout)|last|monday|tuesday|wednesday|thursday|friday|saturday|sunday|diet|meal|food|eat)\b", low):
+        return None                                  # a different day or a food plan: not what the session state answers
+    try:
+        st = live.session_state()
+    except Exception:
+        return None
+    if not st:
+        return None
+    rows, cur = st["exercises"], st["current"]
+    if LEFT_Q_RE.search(low):
+        if not cur:
+            return _out("status", "That's everything for today. Say wrap up when you're ready.")
+        n = st["remaining_sets"]
+        return _out("status", f"{n} set{'s' if n != 1 else ''} left. You're on {cur['name']}, set {cur['set_no']} of {cur['sets']}.")
+    if NEXT_WEIGHT_Q_RE.search(low):
+        if not cur:
+            return _out("status", "That's everything for today. Say wrap up when you're ready.")
+        tg = cur.get("target")
+        if isinstance(tg, dict) and tg.get("weight"):
+            return _out("status", f"{cur['name']}, set {cur['set_no']}: go for {_w(tg['weight'])} for {tg.get('reps') or cur['reps']}.")
+        return _out("status", f"{cur['name']}, set {cur['set_no']} of {cur['sets']}: {cur['reps']} reps at about RPE {_w(cur['target_rpe'])}. Tell me the weight you pick.")
+    todo = [r["name"] for r in rows if not r["skipped"] and r["done"] < r["sets"]]
+    if not todo:
+        return _out("status", "That's everything for today. Say wrap up when you're ready.")
+    if len(todo) == 1:
+        lst = todo[0]
+    else:
+        lst = ", ".join(todo[:-1]) + " and " + todo[-1]
+    part = " Left to do:" if len(todo) < len(rows) else ""
+    return _out("status", f"{st['day']} today:{part} {lst}.".replace(":  ", ": "))
+
+
+def _lang_hint(lang: str | None) -> str:
+    if lang == "hinglish":
+        return " The athlete spoke Hinglish (Hindi in Roman letters): answer in the same simple Hinglish, short, Roman letters only."
+    if lang == "en":
+        return " The athlete spoke English: answer in plain English only, never Hindi."
+    return ""
+
+
+def _router(text: str, screen: str, ambient: bool, addressed: bool, lang: str | None = None) -> dict:
     pid, name = _ctx()
     if not have_key():
         return _out("fallback", OFFLINE_HINT)
@@ -910,7 +969,7 @@ def _router(text: str, screen: str, ambient: bool, addressed: bool) -> dict:
         trace: list[dict] = []
         user = f"[Screen: {screen}. {live.live_context()}]\n{text}" if live.live_context() else f"[Screen: {screen}]\n{text}"
         pool = ThreadPoolExecutor(max_workers=1)
-        fut = pool.submit(run_agent, _system(pid, name), user, tools, handlers, 3, 400, _history(), trace, True)
+        fut = pool.submit(run_agent, _system(pid, name) + _lang_hint(lang), user, tools, handlers, 3, 400, _history(), trace, True)
         try:
             reply = fut.result(timeout=ROUTER_DEADLINE_S)
         except FutureTimeout:
@@ -971,7 +1030,7 @@ def _diet(text: str, low: str) -> dict | None:
 
 
 # ------------------------------------------------------------------ entry point
-def handle(transcript: str, screen: str = "unknown", day: str | None = None, ambient: bool = False, followup: bool = False) -> dict:
+def handle(transcript: str, screen: str = "unknown", day: str | None = None, ambient: bool = False, followup: bool = False, lang: str | None = None) -> dict:
     screen = screen if screen in ("today", "coach", "nutrition", "insights", "setup", "live") else "unknown"
     try:
         shown = date.fromisoformat(day).isoformat() if day else None
@@ -1041,7 +1100,8 @@ def handle(transcript: str, screen: str = "unknown", day: str | None = None, amb
         if res.get("intent") in ("fallback", "ignored", "noop"):
             return _out("ignored", "")
         return _from_live(res)
-    for fn in (lambda: _rest(low), lambda: _settings(low), lambda: _nav(low, shown), lambda: _meal_queries(low, text, screen, shown), lambda: _food(low, screen, shown)):
+    for fn in (lambda: _rest(low), lambda: _settings(low), lambda: _nav(low, shown), lambda: _meal_queries(low, text, screen, shown), lambda: _food(low, screen, shown),
+               lambda: _session_q(low) if screen in ("live", "today", "unknown") else None):
         r = fn()
         if r:
             return r
@@ -1059,4 +1119,4 @@ def handle(transcript: str, screen: str = "unknown", day: str | None = None, amb
         if d:
             return d
     # 4. the LLM router, or an honest offline answer
-    return _router(body, screen, ambient, addressed)
+    return _router(body, screen, ambient, addressed, lang)

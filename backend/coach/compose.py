@@ -66,6 +66,10 @@ MEANING: dict[str, str] = {
     "ask_which": "You have the weight and reps they said but not which exercise it was. Ask which exercise.",
     "ask_unclear": "You could not make out the numbers. Ask them to say weight then reps, for example '60 for 10'.",
     "ask_cancel": "You dropped the set they were describing; tell them it is not logged and to carry on.",
+    "skip_confirm": "They sounded like they might want to skip an exercise, but you are not sure. Ask them to say yes or no; do NOT skip it yet.",
+    "unskip": "The exercise they had skipped is back in the session. Say so, and say which exercise they are on now.",
+    "unskip_none": "Nothing is skipped today; the whole planned session is still on. Say so briefly.",
+    "next_is": "They asked what comes next. Say which exercise they are on now and which one comes after it.",
 }
 
 # Numbers that must be spoken when present; names that must appear. Every other number in the reply must come from the facts.

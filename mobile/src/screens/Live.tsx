@@ -3,11 +3,14 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from '../haptics';
-import { deleteSet, getCoach, getLiveState, getPrefill, getSessionSets, liveCue, liveLog, liveSay, liveStart, Prefill } from '../api';
+import { ApiError, deleteSet, getCoach, getLiveState, getPrefill, getSessionSets, liveCue, liveLog, liveSay, liveStart, liveUnskip, Prefill } from '../api';
 import { personaById, Tts } from '../personas';
 import { speak, stopSpeaking } from '../tts';
 import { setRecognitionLang, shouldUsePremium } from '../voiceSettings';
-import { getTalkState, muteVoice, onTalkState, onVoiceReply, setVoiceHints, stopTalk, talkAvailable, TalkState, toggleTalk } from '../voiceTalk';
+import { getTalkState, muteVoice, onTalkState, onVoiceReply, resumeTalk, setVoiceHints, stopTalk, talkAvailable, TalkState, toggleTalk } from '../voiceTalk';
+import { leaveNeedsConfirm, voiceBanner } from '../liveSession';
+import { setLiveBackHandler } from '../liveBack';
+import { keepScreenOn } from '../keepAwake';
 import { Dial } from '../SetLogger';
 import SwapSheet from '../SwapSheet';
 import { dlog } from '../diag';
@@ -65,6 +68,8 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const [pre, setPre] = useState<Prefill | null>(null);
   const [logging, setLogging] = useState(false);
   const [note, setNote] = useState('');
+  const [confirmLeave, setConfirmLeave] = useState(false);   // "Leave the workout?": asked when leaving would stop the voice or lose the flow
+  const [unskipping, setUnskipping] = useState<string | null>(null);
 
   const alive = useRef(true);
   const token = useRef(0);                 // invalidates stale "finished speaking" callbacks
@@ -75,6 +80,8 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const restRunning = useRef(false);
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
   const dialFor = useRef('');              // which exercise the dials were last filled for
+  const leaveRef = useRef<() => void>(() => {});
+  const confirmRef = useRef(false);
 
   const talk = useCallback((text: string, premium = false) => {
     if (!text) { setPhase('idle'); return; }
@@ -158,7 +165,7 @@ export default function Live({ onClose }: { onClose: () => void }) {
     setHeard(text); setPhase('thinking'); setProblem('');
     dlog('live_say', { fast, ambient, text: text.slice(0, 60) });
     try { apply(await liveSay(text, ambient, fast)); if (fast) setSelected(null); return true; }
-    catch { setPhase('idle'); setProblem("Couldn't reach your coach. Nothing was lost. Check your connection and try again."); return false; }
+    catch (e: any) { dlog('live_say_fail', String(e?.message ?? e).slice(0, 100)); setPhase('idle'); setProblem("Couldn't reach your coach. Nothing was lost. Check your connection and try again."); return false; }
   }, [apply]);
 
   const hintWords = () => [...GYM_WORDS, ...((state?.exercises ?? []).map((e: any) => e.name))];
@@ -176,10 +183,16 @@ export default function Live({ onClose }: { onClose: () => void }) {
   }, [apply]);
   useEffect(() => {
     alive.current = true;
-    dlog('live_mount');
+    dlog('live_mount', { keepAwake: keepScreenOn(true) });          // the screen stays on during the workout: a sleeping screen takes the app to the background and ends the voice
     open();
-    return () => { dlog('live_unmount'); alive.current = false; token.current++; stopSpeaking(); stopTalk(); if (tick.current) clearInterval(tick.current); };
+    return () => { dlog('live_unmount'); keepScreenOn(false); alive.current = false; token.current++; stopSpeaking(); stopTalk('screen'); if (tick.current) clearInterval(tick.current); };
   }, []);
+  // Android Back / the back gesture used to close the whole workout at once (and stop the voice). Today's Modal asks us first.
+  useEffect(() => setLiveBackHandler(() => {
+    if (confirmRef.current) { confirmRef.current = false; setConfirmLeave(false); return true; }     // Back again = keep going
+    leaveRef.current();
+    return true;
+  }), []);
 
   // Rest finished: the coach calls you back in.
   useEffect(() => {
@@ -227,6 +240,34 @@ export default function Live({ onClose }: { onClose: () => void }) {
   };
 
   const voiceOn = talkS.session;
+  const setsDone = (state?.exercises ?? []).reduce((a: number, e: any) => a + (e.done || 0), 0);
+  const askLeave = (v: boolean) => { confirmRef.current = v; setConfirmLeave(v); };
+  const leave = () => {
+    if (leaveNeedsConfirm({ voiceOn, ended, setsDone, finished: !!state?.finished })) { dlog('live_leave_ask', { voiceOn, setsDone }); askLeave(true); }
+    else { dlog('live_leave'); onClose(); }
+  };
+  leaveRef.current = leave;
+  const banner = voiceBanner({ session: talkS.session, phase: talkS.phase, endReason: talkS.endReason, connecting: talkS.connecting });
+  const skippedNames: string[] = (state?.exercises ?? []).filter((e: any) => e.skipped).map((e: any) => e.name);
+  const resume = () => { Haptics.selectionAsync(); dlog('voice_resume_tap'); if (!resumeTalk()) setProblem('Voice needs the installed app, not Expo Go. You can still type below.'); };
+  /** Put a skipped exercise back (server: POST /live/unskip). A phone newer than the server gets a clear message instead of a silent nothing. */
+  const putBack = async (name?: string) => {
+    const which = name ?? skippedNames[skippedNames.length - 1];
+    if (!which || unskipping) return;
+    setUnskipping(which); setProblem(''); dlog('live_unskip', which);
+    try {
+      const r = await liveUnskip(which);
+      const st = r?.state ?? (await getLiveState().catch(() => null));
+      if (st) setState(st);
+      dialFor.current = ''; setSelected(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setNote(`Put ${cap(which)} back in today's session.`);
+    } catch (e: any) {
+      dlog('live_unskip_fail', String(e?.message ?? e).slice(0, 100));
+      setProblem(e instanceof ApiError && (e.status === 404 || e.status === 405) ? "Your coach server doesn't have Undo skip yet. Update the server, then try again." : "Couldn't put that back. Check your connection and try again.");
+    }
+    setUnskipping(null);
+  };
   const display: 'idle' | 'listening' | 'thinking' | 'speaking' = voiceOn && talkS.phase !== 'idle' ? (talkS.phase === 'followup' ? 'listening' : talkS.phase) : phase;
   const accent = personaById(persona).color;
   const total = row?.sets ?? 0;
@@ -234,12 +275,12 @@ export default function Live({ onClose }: { onClose: () => void }) {
   const allDone = !!state?.finished && !ended;
   const hint = pre?.last ? `Last time: ${bw && !+pre.last.weight ? 'bodyweight' : `${fmt(+pre.last.weight)} kg`} × ${pre.last.reps}${pre.last.rpe ? ` @ RPE ${pre.last.rpe}` : ''}`
     : pre ? (bw ? 'Add weight only if you want to. 0 is just your bodyweight.' : 'First time on this lift: pick a weight you could do for a few more reps.') : '';
-  const status = voiceOn && display !== 'thinking' && display !== 'speaking' ? 'Voice on · tap the mic to stop' : display === 'listening' ? 'Listening… tap to stop' : display === 'thinking' ? 'Thinking…' : display === 'speaking' ? `${coachName} is talking` : '';
+  const status = voiceOn && talkS.connecting ? 'Connecting voice…' : voiceOn && display !== 'thinking' && display !== 'speaking' ? 'Voice on · tap the mic to stop' : display === 'listening' ? 'Listening… tap to stop' : display === 'thinking' ? 'Thinking…' : display === 'speaking' ? `${coachName} is talking` : '';
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.bg }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingTop: 6 }}>
-        <Pressable accessibilityRole="button" accessibilityLabel={ended ? 'Close' : 'Leave session'} onPress={onClose} style={{ width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={ended ? 'Close' : 'Leave session'} onPress={ended ? onClose : leave} style={{ width: 52, height: 52, alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name="close" size={30} color={colors.text} />
         </Pressable>
         <View style={{ alignItems: 'center', flex: 1 }}>
@@ -279,6 +320,38 @@ export default function Live({ onClose }: { onClose: () => void }) {
                 {!state && !opening && (
                   <Pressable accessibilityRole="button" onPress={open} style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.07)' }}>
                     <Txt style={{ fontFamily: font.bold }}>Try again</Txt>
+                  </Pressable>
+                )}
+              </Card>
+            )}
+
+            {confirmLeave && (
+              <Card style={{ gap: 12, borderColor: colors.amber + '88' }}>
+                <Txt style={{ fontFamily: font.bold, fontSize: 17 }}>Leave your workout?</Txt>
+                <Txt style={{ color: colors.dim, fontSize: 14.5, lineHeight: 21 }}>{voiceOn ? 'The voice conversation will stop. ' : ''}Your logged sets are saved, and you can come back with Continue.</Txt>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Keep going" onPress={() => { Haptics.selectionAsync(); askLeave(false); }}
+                    style={{ flex: 1, minHeight: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: accent }}>
+                    <Txt style={{ color: '#07080B', fontFamily: font.black, fontSize: 16 }}>Keep going</Txt>
+                  </Pressable>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Leave the workout" onPress={() => { dlog('live_leave_confirmed'); askLeave(false); onClose(); }}
+                    style={{ flex: 1, minHeight: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)' }}>
+                    <Txt style={{ fontFamily: font.bold, fontSize: 16 }}>Leave</Txt>
+                  </Pressable>
+                </View>
+              </Card>
+            )}
+
+            {banner.kind === 'ended' && !voiceOn && (
+              <Card style={{ gap: 10, borderColor: colors.cyan + '77' }}>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <Ionicons name="mic-off" size={22} color={colors.cyan} />
+                  <Txt accessibilityLiveRegion="polite" style={{ flex: 1, fontSize: 15, lineHeight: 22 }}>{banner.text}</Txt>
+                </View>
+                {talkAvailable() && (
+                  <Pressable accessibilityRole="button" accessibilityLabel="Resume voice" onPress={resume}
+                    style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.07)' }}>
+                    <Txt style={{ fontFamily: font.bold }}>Resume voice</Txt>
                   </Pressable>
                 )}
               </Card>
@@ -369,13 +442,21 @@ export default function Live({ onClose }: { onClose: () => void }) {
                 {state.exercises.map((e: any) => {
                   const done = e.done >= e.sets, on = e.name === active;
                   return (
-                    <Pressable key={e.name} accessibilityRole="button" accessibilityLabel={`${cap(e.name)}, ${e.skipped ? 'skipped' : `${e.done} of ${e.sets} sets`}`} disabled={done || e.skipped}
-                      onPress={() => { Haptics.selectionAsync(); if (e.name !== active) { setSelected(e.name); } }}
-                      style={{ minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8, borderRadius: 14, backgroundColor: on ? accent + '1F' : 'transparent' }}>
-                      <Ionicons name={e.skipped ? 'remove-circle-outline' : done ? 'checkmark-circle' : on ? 'radio-button-on' : 'ellipse-outline'} size={22} color={done ? colors.mint : on ? accent : colors.faint} />
-                      <Txt numberOfLines={1} style={{ flex: 1, fontFamily: on ? font.bold : font.medium, fontSize: 15.5, color: done || e.skipped ? colors.faint : colors.text, textDecorationLine: e.skipped ? 'line-through' : 'none' }}>{cap(e.name)}</Txt>
-                      <Txt style={{ color: colors.dim, fontSize: 13.5 }}>{e.skipped ? 'skipped' : `${e.done}/${e.sets}`}</Txt>
-                    </Pressable>
+                    <View key={e.name} style={{ minHeight: 50, flexDirection: 'row', alignItems: 'center', borderRadius: 14, backgroundColor: on ? accent + '1F' : 'transparent' }}>
+                      <Pressable accessibilityRole="button" accessibilityLabel={`${cap(e.name)}, ${e.skipped ? 'skipped' : `${e.done} of ${e.sets} sets`}`} disabled={done || e.skipped}
+                        onPress={() => { Haptics.selectionAsync(); if (e.name !== active) { setSelected(e.name); } }}
+                        style={{ flex: 1, minHeight: 50, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8 }}>
+                        <Ionicons name={e.skipped ? 'remove-circle-outline' : done ? 'checkmark-circle' : on ? 'radio-button-on' : 'ellipse-outline'} size={22} color={done ? colors.mint : on ? accent : colors.faint} />
+                        <Txt numberOfLines={1} style={{ flex: 1, fontFamily: on ? font.bold : font.medium, fontSize: 15.5, color: done || e.skipped ? colors.faint : colors.text, textDecorationLine: e.skipped ? 'line-through' : 'none' }}>{cap(e.name)}</Txt>
+                        <Txt style={{ color: colors.dim, fontSize: 13.5 }}>{e.skipped ? 'skipped' : `${e.done}/${e.sets}`}</Txt>
+                      </Pressable>
+                      {e.skipped && (
+                        <Pressable accessibilityRole="button" accessibilityLabel={`Put ${cap(e.name)} back`} disabled={!!unskipping} onPress={() => { Haptics.selectionAsync(); putBack(e.name); }}
+                          style={{ minHeight: 44, paddingHorizontal: 14, marginRight: 4, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: accent + '26', opacity: unskipping ? 0.5 : 1 }}>
+                          {unskipping === e.name ? <ActivityIndicator size="small" color={accent} /> : <Txt style={{ fontFamily: font.bold, fontSize: 13.5, color: accent }}>Put back</Txt>}
+                        </Pressable>
+                      )}
+                    </View>
                   );
                 })}
               </Card>
@@ -394,7 +475,9 @@ export default function Live({ onClose }: { onClose: () => void }) {
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <Mini icon="time" label="30 min left" color={colors.cyan} onPress={() => send('I only have 30 minutes', false, true)} />
                 <Mini icon="help-circle" label="What's next?" onPress={() => send("what's next", false, true)} />
-                <Mini icon="flag" label="Finish up" color={colors.amber} onPress={() => send('wrap it up', false, true)} />
+                {skippedNames.length > 0
+                  ? <Mini icon="arrow-undo-circle" label="Undo skip" color={colors.mint} disabled={!!unskipping} onPress={() => putBack()} />
+                  : <Mini icon="flag" label="Finish up" color={colors.amber} onPress={() => send('wrap it up', false, true)} />}
               </View>
             )}
           </>
