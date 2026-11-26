@@ -13,3 +13,8 @@ Static, no build step. The page leads with the coaching-agent system; claims wer
 - Cloudflare Pages: connect the repo, leave the build command empty, set the output directory to `site`.
 
 The only external request is the Inter font from Google Fonts. Remove the three font `<link>` lines for zero external requests.
+
+## Architecture diagrams (2026-11-27)
+`index.html` now explains the whole project: what it does, the three architecture diagrams, one spoken turn with measured timings, the safety and memory design, the test results and what the first gym sessions found.
+The diagrams are Mermaid, drawn in the browser from `<pre class="mermaid">` blocks (loaded from jsDelivr, pinned to mermaid 10.9.1). The same sources are in the repo `README.md`; if you change one, change the other. The text inside the `<pre>` blocks must stay HTML-escaped (`&lt;br/&gt;`), and each diagram is rendered one at a time with its own id (rendering them together makes them overwrite each other).
+Without JavaScript or an internet connection the page shows the diagram source and a pointer to the README. Numbers on the page are the ones in the README results table (scripted and synthetic speech); update both together.

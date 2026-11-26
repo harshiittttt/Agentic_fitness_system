@@ -20,7 +20,7 @@ and TypeScript: no agent framework, and no trained ML models. Numbers come from 
 Where everything runs, and which way the data flows.
 
 ```mermaid
-flowchart LR
+flowchart TB
   classDef phone fill:#e8f1ff,stroke:#2f6fed,color:#0b2a66,stroke-width:1.5px
   classDef edge fill:#fff4e0,stroke:#e08a00,color:#5a3600,stroke-width:1.5px
   classDef pc fill:#e9f7ee,stroke:#1f9d55,color:#0c3d22,stroke-width:1.5px
@@ -29,36 +29,36 @@ flowchart LR
   classDef store fill:#f4f4f5,stroke:#71717a,color:#27272a,stroke-width:1.5px
 
   subgraph PHONE["PHONE"]
-    direction TB
-    APP["<b>React Native app</b> (Expo)<br/>Today · Live workout · Diet · Progress<br/>Insights · Coach chat · Roundtable<br/>Decisions · Trace · Knows-you"]:::phone
-    NATIVE["<b>pcm-audio</b> native module (Kotlin)<br/>AudioRecord + echo cancel + noise suppress<br/>AudioTrack playback · 16 kHz PCM"]:::phone
+    direction LR
+    APP["<b>React Native app</b> (Expo)<br/>Today · Live workout · Diet · Progress<br/>Insights · Coach chat · Roundtable"]:::phone
+    NATIVE["<b>pcm-audio</b> native module (Kotlin)<br/>AudioRecord + echo cancel<br/>AudioTrack · 16 kHz PCM"]:::phone
     WEB["<b>Browser voice page</b><br/>/voice/web · Web Audio<br/>plays through earphones"]:::phone
     APP --- NATIVE
   end
 
   CF{{"<b>Cloudflare quick tunnel</b><br/>public https address<br/>(free, changes on restart)"}}:::edge
 
-  subgraph PC["YOUR PC (Windows, Docker, RTX 3050 4 GB)"]
+  subgraph PC["YOUR PC: Windows · Docker · RTX 3050 4 GB"]
     direction TB
     GW["<b>Gateway</b> :8100 (FastAPI)<br/>Bearer key picks the person<br/>HTTP proxy · /voice/ws relay · /voice/web"]:::pc
 
     subgraph DOCKER["Docker: one isolated container per person"]
-      direction TB
+      direction LR
       BE["<b>Backend</b> :8001 (FastAPI)<br/>REST API · Conversation Core /convo/*<br/>live coach · diet · plan · insights"]:::pc
       AOS["<b>Fitness Agent OS</b><br/>specialists · critic · policy gate<br/>scheduler · memory layer"]:::pc
-      DB[("<b>SQLite volume</b><br/>plan · sets · check-ins · meals<br/>memory · beliefs · ledger")]:::store
+      DB[("<b>SQLite volume</b><br/>plan · sets · check-ins<br/>memory · beliefs · ledger")]:::store
       BE --- AOS
       BE --- DB
       AOS --- DB
     end
 
-    VA["<b>Voice agent</b> :8765 (Pipecat, GPU)<br/>Silero VAD · Smart Turn v3<br/>faster-whisper small · Kokoro TTS<br/>127.0.0.1 only"]:::gpu
+    VA["<b>Voice agent</b> :8765 (Pipecat, GPU)<br/>Silero VAD · Smart Turn v3<br/>faster-whisper small · Kokoro TTS<br/>listens on 127.0.0.1 only"]:::gpu
   end
 
   GEM[/"<b>Gemini API</b><br/>3.5-flash-lite + fallback chain<br/>function calling · streaming"/]:::cloud
 
   subgraph SHIP["BUILD AND PUBLISH"]
-    direction TB
+    direction LR
     EAS["EAS Build<br/>Android APK"]:::store
     GH["GitHub repo + Actions<br/>Pages landing site"]:::store
   end
@@ -67,8 +67,8 @@ flowchart LR
   NATIVE == "WSS · mic PCM16 up, voice PCM16 down" ==> CF
   WEB == "WSS · same protocol" ==> CF
   CF ==> GW
-  GW == "HTTP by access key" ==> BE
-  GW == "ws relay" ==> VA
+  GW == "HTTP, routed by access key" ==> BE
+  GW == "websocket relay" ==> VA
   VA == "POST /convo/turn (NDJSON stream)<br/>POST /convo/interrupt" ==> BE
   BE == "HTTPS" ==> GEM
   AOS -. "wording only" .-> GEM
@@ -95,48 +95,43 @@ sequenceDiagram
   participant A as Voice agent (GPU)
   participant C as Conversation Core
   participant L as Gemini
-  participant D as SQLite
 
   rect rgb(232,241,255)
-  Note over U,A: Listening
-  U->>P: speaks ("sixty kilos, five reps, done")
-  P->>A: PCM16 16 kHz frames over WSS (via tunnel + gateway)
-  Note over A: Silero VAD (start 0.2 s, 0.15 s while the coach talks, stop 0.25 s)<br/>Smart Turn v3 decides the sentence is finished<br/>faster-whisper small ~0.2 s with a Hinglish prompt<br/>STT repairs + confidence guard ("say that again?")<br/>classify: ignore "copy", stage directions, "wait stop"
+  Note over U,A: LISTENING
+  U->>P: "sixty kilos, five reps, done"
+  P->>A: mic audio, PCM16 16 kHz (WSS)
+  Note over A: Silero VAD finds the speech<br/>Smart Turn v3: are you done?<br/>faster-whisper (~0.2 s)<br/>repairs + confidence guard
   end
 
   rect rgb(243,232,255)
-  Note over A,C: Thinking (starts early, before the turn model confirms)
-  A->>C: POST /convo/turn {text, lang, asr, set_active} (speculative)
-  A-->>P: "Got it." ack clip plays at once (numbers + unit heard)
-  Note over C: gates with no model:<br/>pain words go to the care path · pause cues ·<br/>status questions ("how many sets left", "what's next")<br/>answered from session state in ~25 ms
-  C->>L: one streamed call: persona + state block + last turns + 11 tools
-  L-->>C: tool call log_set(weight 60, reps 5)
-  Note over C: guards: numbers must be ones you said,<br/>plausibility vs last set, duplicate turn id
-  C->>D: write the set
-  D-->>C: saved, set 1 of 4
+  Note over A,C: THINKING (starts before the turn is confirmed)
+  A->>C: POST /convo/turn
+  A-->>P: "Got it." clip at once
+  Note over C: gates with no model:<br/>pain words, pause cues,<br/>"sets left?" answered in ~25 ms
+  C->>L: one streamed call<br/>(persona, state, last turns, 11 tools)
+  L-->>C: tool call log_set(60 kg, 5 reps)
+  Note over C: guards: numbers must be ones you said,<br/>plausibility check, no duplicates
+  C->>C: write the set to SQLite
   end
 
   rect rgb(233,247,238)
-  Note over C,P: Speaking (sentence by sentence)
-  C-->>A: NDJSON events: tool, action (rest 120 s), state, say
-  Note over C: each sentence is number-checked first:<br/>an untraceable number means the sentence is dropped
-  A->>A: Kokoro TTS ~0.2-0.3 s per sentence on the GPU
-  A-->>P: voice PCM16 chunks, plus {user, bot, state} messages for the screen
-  P-->>U: coach speaks, and the app screen updates from the same result
+  Note over C,P: SPEAKING (sentence by sentence)
+  C-->>A: events: tool, action, state, say
+  Note over C: each sentence is number-checked,<br/>untraceable numbers are dropped
+  A->>A: Kokoro TTS (~0.2 to 0.3 s per sentence)
+  A-->>P: voice audio + screen updates
+  P-->>U: the coach speaks, the app updates
   end
 
   alt the athlete talks over the coach
     U->>P: "wait, stop"
-    P->>A: audio continues to stream
-    A-->>P: clear (stop playback ~0.3 s)
-    A->>C: POST /convo/interrupt {spoken prefix only}
-    Note over C: history keeps only what was heard
+    A-->>P: clear (stops in ~0.3 s)
+    A->>C: POST /convo/interrupt (what was heard)
     opt it was only "yeah" or a cough
-      A-->>P: carries on from the start of the cut sentence
+      A-->>P: carries on from the cut sentence
     end
-  else Core slow (over 6 s) or unreachable
-    C->>C: legacy rule-based brain answers instead
-    Note over C: the athlete is never left in silence
+  else Core slow (over 6 s) or down
+    C->>C: rule-based brain answers instead
   end
 ```
 
@@ -166,68 +161,58 @@ flowchart TB
   classDef store fill:#f4f4f5,stroke:#71717a,color:#27272a,stroke-width:1.5px
   classDef bad fill:#ffe8ec,stroke:#d6334d,color:#5c0f1d,stroke-width:1.5px
 
-  IN(["spoken turn<br/>text + ASR confidence + screen state"]):::core
-
-  subgraph CORE["CONVERSATION CORE (backend/convo)"]
+  subgraph CORE["CONVERSATION CORE (backend/convo): decides what the coach says and does"]
     direction TB
-    GATES["<b>Gates, no model</b><br/>low-confidence or foreign script: ask again<br/>pain / crisis words: fixed safe reply<br/>pause cues · greetings · gym chatter<br/>half-finished sentence: hold"]:::core
-    FAST["<b>Answered from state</b><br/>plan · sets left · what's next<br/>where am I · next-set cue"]:::core
-    PROMPT["<b>Prompt assembler</b><br/>persona + language policy<br/>exact state block + last turns<br/>(only what was actually heard)<br/>memory facts"]:::core
-    STREAM["<b>Streaming model call</b><br/>fallback chain, dead names skipped<br/>one call per turn, tools in the loop"]:::core
-    EXEC["<b>Tool executor</b><br/>log set · correct set · rest · next weight<br/>skip / un-skip / swap · status<br/>recall about me · note · end workout"]:::core
-    GROUND["<b>Grounding check</b><br/>every number in a sentence must come from<br/>the state, a tool result or the athlete's words"]:::guard
-    SAY(["sentences, actions, state<br/>to the voice agent / app"]):::core
-    LEG["<b>Legacy brain</b><br/>rules, slot filling, templates<br/>works with no model"]:::bad
-    GATES --> FAST
-    GATES --> PROMPT --> STREAM --> EXEC --> GROUND --> SAY
-    FAST --> SAY
+    IN(["spoken turn<br/>text · ASR confidence · screen state"]):::core
+    GATES["<b>Gates, no model</b><br/>unclear or foreign script: ask again<br/>pain or crisis words: fixed safe reply<br/>pause cues · greetings · chatter<br/>half-finished sentence: hold"]:::core
+    FAST["<b>Answered from state</b><br/>plan · sets left · what is next<br/>where am I · next-set cue"]:::core
+    PROMPT["<b>Prompt assembler</b><br/>persona + language policy<br/>exact state block + last turns<br/>(only what was heard) + memory facts"]:::core
+    STREAM["<b>Streaming model call</b><br/>one call per turn, fallback chain<br/>dead model names skipped"]:::core
+    GUARD["<b>Guards in code</b>, every write passes<br/>class 0 read only: status, recall<br/>class 1 reversible log: numbers must be heard,<br/>plausibility check, duplicate turn id<br/>class 2 skip / swap / end: needs a clear order,<br/>otherwise asks yes or no<br/>class 3 plan changes: spoken confirm or text coach"]:::guard
+    EXEC["<b>Tool executor</b><br/>log · correct · rest · next weight<br/>skip · un-skip · swap · status<br/>recall about me · note · end workout"]:::core
+    GROUND["<b>Grounding check</b><br/>each number in a sentence must come from<br/>state, a tool result or the athlete's words"]:::guard
+    SAY(["sentences · actions · state<br/>to the voice agent and the app"]):::core
+    LEG["<b>Rule-based brain</b><br/>slot filling and templates<br/>works with no model"]:::bad
+    IN --> GATES
+    GATES --> FAST --> SAY
+    GATES --> PROMPT --> STREAM --> GUARD --> EXEC --> GROUND --> SAY
     STREAM -. "over 6 s or error" .-> LEG --> SAY
   end
 
-  subgraph GUARDS["GUARDS: code, not prompts (they can veto or ask, never invent)"]
-    direction LR
-    G0["<b>class 0</b> read only<br/>status · recall"]:::guard
-    G1["<b>class 1</b> reversible log<br/>numbers must be heard<br/>plausibility check<br/>duplicate turn id"]:::guard
-    G2["<b>class 2</b> surprising<br/>skip needs a clear, non-negated order<br/>otherwise it asks yes or no"]:::guard
-    G3["<b>class 3</b> plan-changing<br/>spoken confirm, or handed<br/>to the text coach"]:::guard
-  end
-
-  subgraph AOS["FITNESS AGENT OS (fitness_os, the control plane)"]
+  subgraph AOS["FITNESS AGENT OS (fitness_os): changes the plan, with a safety layer"]
     direction TB
     EV(["event<br/>session logged · check-in · pain<br/>meal · daily · weekly"]):::agent
     WD["watchdogs<br/>(deterministic flags)"]:::agent
-    SP["<b>9 specialists propose in parallel</b><br/>training · nutrition · recovery · periodization<br/>progress analyst · logistics · form · research · intake"]:::agent
-    RC["reconcile<br/>(scope rules: nutrition cannot move a workout)"]:::agent
-    CR["<b>safety critic</b><br/>approve / revise / block, has veto"]:::agent
+    SP["<b>9 specialists propose in parallel</b><br/>training · nutrition · recovery · periodization<br/>progress · logistics · form · research · intake"]:::agent
+    RC["reconcile<br/>(scope: nutrition cannot move a workout)"]:::agent
+    CR["<b>safety critic</b>, has veto<br/>approve · revise · block<br/>fails closed if it cannot run"]:::agent
     PG["<b>policy gate</b><br/>calorie floor · weekly load cap 10%<br/>volume 50 to 125% of base<br/>no volume increase under pain"]:::guard
-    OUT{{"apply · veto window · ask the athlete · escalate"}}:::agent
+    OUT{{"apply · veto window<br/>ask the athlete · escalate"}}:::agent
     LG[("ledger<br/>why every change was made")]:::store
     EV --> WD --> SP --> RC --> CR --> PG --> OUT --> LG
   end
 
-  subgraph MEM["ATHLETE MEMORY (fitness_os/mem + memory.py)"]
+  subgraph MEM["ATHLETE MEMORY (fitness_os/mem + memory.py): gets to know the person"]
     direction TB
-    BEL["<b>Beliefs</b><br/>Beta posterior, valid time,<br/>provenance, superseded not erased"]:::mem
-    MINE["<b>Miner</b><br/>patterns from your own series:<br/>sleep to next-day lifts, dose-response, adherence<br/>permutation tests, FDR, split-half replication"]:::mem
-    FC["<b>Forecasts</b><br/>predicts what you will do,<br/>scores itself on misses"]:::mem
-    DOS["<b>Dossier + retrieval</b><br/>keyword + vector + salience + decay<br/>injuries pinned, never fade"]:::mem
+    BEL["<b>Beliefs</b><br/>Beta posterior, valid time, provenance<br/>superseded, never erased"]:::mem
+    MINE["<b>Miner</b><br/>patterns in your own series: sleep to next-day lifts,<br/>dose-response, adherence<br/>permutation tests · FDR · split-half replication"]:::mem
+    FC["<b>Forecasts</b><br/>predicts what you will do<br/>and scores itself on misses"]:::mem
+    DOS["<b>Dossier + retrieval</b><br/>keyword + vector + salience + decay<br/>injuries are pinned, never fade"]:::mem
     CUR["curator · reflection · plateau experiments<br/>scheduler with catch-up"]:::mem
-    BEL --- DOS
     MINE --> BEL
     FC --> BEL
     CUR --> BEL
+    BEL --> DOS
   end
 
   DB[("SQLite<br/>plan · sets · beliefs · ledger")]:::store
 
-  IN --> GATES
-  EXEC -. "every write passes" .-> GUARDS
   EXEC --> DB
-  DOS -. "recall_about_me · memory facts" .-> PROMPT
-  DOS -. "context pack, top 6 memories" .-> SP
-  DB -. "logs the miner learns from" .-> MINE
-  SAY -. "session / check-in events" .-> EV
+  SAY -. "session and check-in events" .-> EV
   OUT --> DB
+  DB -. "logs the miner learns from" .-> MINE
+  PROMPT -. "reads memory facts, recall_about_me" .-> DOS
+  SP -. "reads the context pack, top 6 memories" .-> DOS
 ```
 
 ### What is enforced in code, not in prompts

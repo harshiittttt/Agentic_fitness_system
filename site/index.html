@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AI Coach - a coaching team in your pocket</title>
-<meta name="description" content="AI Coach for Android: a team of specialist coaches that works together, checks for safety, and asks you before big changes. Not medical advice.">
+<title>AI Coach: a voice-first, multi-agent gym coach built from scratch</title>
+<meta name="description" content="A voice-first gym coach you talk to between sets. Streaming speech on a GPU, a guarded tool-calling brain, nine specialist agents with a safety critic, and an athlete memory. How it is built, how it was tested, and what broke in the gym. Not medical advice.">
 <meta name="theme-color" content="#07080B">
 <meta name="color-scheme" content="dark">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,7 +44,7 @@
 <div class="wrap">
 <header class="top">
   <a class="brand" href="#top"><span class="dot" aria-hidden="true"></span>AI Coach</a>
-  <nav aria-label="Main"><a class="opt" href="#how">How it works</a><a class="opt" href="#charge">Your control</a><a href="#install">Install</a></nav>
+  <nav aria-label="Main"><a class="opt" href="#system">System</a><a class="opt" href="#voice">Voice</a><a class="opt" href="#brain">Brain</a><a class="opt" href="#results">Results</a><a href="https://github.com/harshiittttt/Agentic_fitness_system">GitHub</a></nav>
 </header>
 </div>
 
@@ -52,11 +52,14 @@
 <div class="wrap" id="top">
 <div class="hero">
   <div>
-    <span class="pill">Android &middot; v<span data-version>0.1.0</span> &middot; Early version</span>
-    <h1>A coaching team in your pocket, <span class="grad">not a chatbot</span>.</h1>
-    <p class="lead">Specialists that work together. You stay in charge.</p>
-    <p class="cta"><a class="btn" data-download href="#install"><span>Download for Android</span></a></p>
-    <p class="note" data-download-note></p>
+    <span class="pill">Open-source project &middot; Android &middot; v<span data-version>0.1.0</span></span>
+    <h1>A voice-first AI gym coach, <span class="grad">built from scratch</span>.</h1>
+    <p class="lead">Talk to it between sets. It logs what you say, adapts your plan from your own data, remembers you, and is stopped by a safety layer when it should be.</p>
+    <p class="cta">
+      <a class="btn" href="#system"><span>See how it works</span></a>
+      <a class="btn ghost" href="https://github.com/harshiittttt/Agentic_fitness_system"><span>View the code</span></a>
+    </p>
+    <p class="note">Plain Python and TypeScript. No agent framework and no trained models: numbers come from deterministic tools, and the language model only picks tools and words the reply.</p>
   </div>
   <figure class="fig">
     <svg viewBox="0 0 360 410" role="img" aria-labelledby="team-t team-d" class="ic">
@@ -80,49 +83,302 @@
     </svg>
   </figure>
 </div>
+
+<ul class="stats" aria-label="Headline results">
+  <li><b>1.0 s</b><span>median time to the first spoken word</span></li>
+  <li><b>0.3 s</b><span>for the coach to stop when you talk over it</span></li>
+  <li><b>100%</b><span>set-logging accuracy on 259 scripted scenarios (the old brain: 89%)</span></li>
+  <li><b>0</b><span>wrong actions on 71 "must change nothing" cases</span></li>
+</ul>
+<p class="foot">Measured on this project's replay harness with scripted and synthetic speech, not on a crowd of real users. The first real gym sessions found real bugs; they are listed below, honestly.</p>
 </div>
 
-<section class="alt" id="how"><div class="wrap">
-  <h2>How it works</h2>
-  <ol class="flow" aria-label="How it works, in five steps">
-    <li style="--c:var(--lime)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-you"/></svg><b>You check in</b><span>Train, eat, rest</span></li>
-    <li style="--c:var(--cyan)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chat"/></svg><b>Coaches suggest</b></li>
-    <li style="--c:var(--red)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-shield"/></svg><b>Safety check</b></li>
-    <li style="--c:var(--amber)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><b>You approve</b><span>When it matters</span></li>
-    <li style="--c:var(--mint)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plan"/></svg><b>Plan updates</b></li>
-  </ol>
+<section class="alt" id="what"><div class="wrap">
+  <h2>What it does</h2>
+  <ul class="cards">
+    <li style="--c:var(--lime)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mic"/></svg><h3>Talks between sets</h3><p>Say "sixty kilos, five reps, done" or the Hinglish version. It answers in under two seconds, short, and you can cut it off.</p></li>
+    <li style="--c:var(--cyan)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg><h3>Logs from speech</h3><p>Understands corrections ("sixty, no, sixty-five"), asks for a missing number instead of guessing, and never logs a number you did not say.</p></li>
+    <li style="--c:var(--mint)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chart"/></svg><h3>Adapts your plan</h3><p>Small signals make small nudges, strong persistent ones make bigger changes, and pain acts immediately. Every change is written to a ledger with its reason.</p></li>
+    <li style="--c:var(--violet)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-book"/></svg><h3>Remembers you</h3><p>Beliefs with uncertainty, patterns found in your own data and tested statistically, and forecasts that score themselves.</p></li>
+    <li style="--c:var(--red)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-shield"/></svg><h3>Has a safety layer</h3><p>A critic with veto power and a policy gate in code: calorie floor, load cap, no volume increase under pain.</p></li>
+    <li style="--c:var(--amber)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"/></svg><h3>Keeps you in charge</h3><p>Autonomy dial, veto windows, approvals, a kill switch, and a "why did you change this?" answer for every decision.</p></li>
+  </ul>
 </div></section>
 
-<section id="charge"><div class="wrap">
-  <h2>You stay in charge</h2>
-  <figure class="fig wide">
-    <svg viewBox="0 0 360 120" role="img" aria-labelledby="dial-t dial-d" class="ic">
-      <title id="dial-t">Autonomy setting</title>
-      <desc id="dial-d">Choose how much the coaches may do on their own: Hands-on, Balanced or Autopilot.</desc>
-      <rect x="10" y="46" width="340" height="8" rx="4" fill="var(--cardhi)"/>
-      <rect x="10" y="46" width="170" height="8" rx="4" fill="var(--lime)"/>
-      <g class="stop"><circle cx="20" cy="50" r="10" fill="var(--lime)"/><circle cx="180" cy="50" r="15" fill="var(--bg)" stroke="var(--lime)" stroke-width="4"/><circle cx="340" cy="50" r="10" fill="var(--cardhi)" stroke="var(--dim)" stroke-width="2"/></g>
-      <text x="20" y="96" text-anchor="start" class="t-n">Hands-on</text>
-      <text x="180" y="96" text-anchor="middle" class="t-n">Balanced</text>
-      <text x="340" y="96" text-anchor="end" class="t-n">Autopilot</text>
-    </svg>
+<section id="system"><div class="wrap">
+  <h2>The whole system</h2>
+  <p class="sub">Where everything runs and which way the data flows. The phone talks to your own PC through a free tunnel. The PC runs one isolated container per person, a gateway, and a GPU voice agent.</p>
+  <figure class="diagram" aria-label="System architecture diagram">
+<pre class="mermaid">
+flowchart TB
+  classDef phone fill:#e8f1ff,stroke:#2f6fed,color:#0b2a66,stroke-width:1.5px
+  classDef edge fill:#fff4e0,stroke:#e08a00,color:#5a3600,stroke-width:1.5px
+  classDef pc fill:#e9f7ee,stroke:#1f9d55,color:#0c3d22,stroke-width:1.5px
+  classDef gpu fill:#f3e8ff,stroke:#8b3fe0,color:#3a1066,stroke-width:1.5px
+  classDef cloud fill:#ffe8ec,stroke:#d6334d,color:#5c0f1d,stroke-width:1.5px
+  classDef store fill:#f4f4f5,stroke:#71717a,color:#27272a,stroke-width:1.5px
+
+  subgraph PHONE["PHONE"]
+    direction LR
+    APP["&lt;b&gt;React Native app&lt;/b&gt; (Expo)&lt;br/&gt;Today · Live workout · Diet · Progress&lt;br/&gt;Insights · Coach chat · Roundtable"]:::phone
+    NATIVE["&lt;b&gt;pcm-audio&lt;/b&gt; native module (Kotlin)&lt;br/&gt;AudioRecord + echo cancel&lt;br/&gt;AudioTrack · 16 kHz PCM"]:::phone
+    WEB["&lt;b&gt;Browser voice page&lt;/b&gt;&lt;br/&gt;/voice/web · Web Audio&lt;br/&gt;plays through earphones"]:::phone
+    APP --- NATIVE
+  end
+
+  CF{{"&lt;b&gt;Cloudflare quick tunnel&lt;/b&gt;&lt;br/&gt;public https address&lt;br/&gt;(free, changes on restart)"}}:::edge
+
+  subgraph PC["YOUR PC: Windows · Docker · RTX 3050 4 GB"]
+    direction TB
+    GW["&lt;b&gt;Gateway&lt;/b&gt; :8100 (FastAPI)&lt;br/&gt;Bearer key picks the person&lt;br/&gt;HTTP proxy · /voice/ws relay · /voice/web"]:::pc
+
+    subgraph DOCKER["Docker: one isolated container per person"]
+      direction LR
+      BE["&lt;b&gt;Backend&lt;/b&gt; :8001 (FastAPI)&lt;br/&gt;REST API · Conversation Core /convo/*&lt;br/&gt;live coach · diet · plan · insights"]:::pc
+      AOS["&lt;b&gt;Fitness Agent OS&lt;/b&gt;&lt;br/&gt;specialists · critic · policy gate&lt;br/&gt;scheduler · memory layer"]:::pc
+      DB[("&lt;b&gt;SQLite volume&lt;/b&gt;&lt;br/&gt;plan · sets · check-ins&lt;br/&gt;memory · beliefs · ledger")]:::store
+      BE --- AOS
+      BE --- DB
+      AOS --- DB
+    end
+
+    VA["&lt;b&gt;Voice agent&lt;/b&gt; :8765 (Pipecat, GPU)&lt;br/&gt;Silero VAD · Smart Turn v3&lt;br/&gt;faster-whisper small · Kokoro TTS&lt;br/&gt;listens on 127.0.0.1 only"]:::gpu
+  end
+
+  GEM[/"&lt;b&gt;Gemini API&lt;/b&gt;&lt;br/&gt;3.5-flash-lite + fallback chain&lt;br/&gt;function calling · streaming"/]:::cloud
+
+  subgraph SHIP["BUILD AND PUBLISH"]
+    direction LR
+    EAS["EAS Build&lt;br/&gt;Android APK"]:::store
+    GH["GitHub repo + Actions&lt;br/&gt;Pages landing site"]:::store
+  end
+
+  APP == "HTTPS · REST + NDJSON stream" ==&gt; CF
+  NATIVE == "WSS · mic PCM16 up, voice PCM16 down" ==&gt; CF
+  WEB == "WSS · same protocol" ==&gt; CF
+  CF ==&gt; GW
+  GW == "HTTP, routed by access key" ==&gt; BE
+  GW == "websocket relay" ==&gt; VA
+  VA == "POST /convo/turn (NDJSON stream)&lt;br/&gt;POST /convo/interrupt" ==&gt; BE
+  BE == "HTTPS" ==&gt; GEM
+  AOS -. "wording only" .-&gt; GEM
+  EAS -. "installs" .-&gt; APP
+</pre>
   </figure>
-  <ul class="chips">
-    <li style="--c:var(--cyan)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-eye"/></svg>See what the coaches did</li>
-    <li style="--c:var(--amber)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-edit"/></svg>Correct what it knows</li>
-    <li style="--c:var(--lime)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"/></svg>Your data stays on your own private server</li>
+  <ul class="cards three">
+    <li style="--c:var(--lime)"><h3>Isolated per person</h3><p>Each person has their own container, volume and token. The gateway only routes, and every container still checks its own token, so a gateway bug cannot cross users.</p></li>
+    <li style="--c:var(--violet)"><h3>The voice agent holds no key and no data</h3><p>It does audio only and calls the person's backend over HTTP. The only thing that leaves the PC is text prompts to the model API.</p></li>
+    <li style="--c:var(--amber)"><h3>Degrades instead of failing</h3><p>No voice agent: the app uses the phone's recogniser. No model: a rule-based brain answers. A dead model name: the fallback chain skips it.</p></li>
   </ul>
 </div></section>
 
-<section class="alt" id="everyday"><div class="wrap">
-  <h2>Every day</h2>
-  <ul class="tiles">
-    <li style="--c:var(--lime)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mic"/></svg><b>Talk to your coach</b></li>
-    <li style="--c:var(--amber)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg><b>Log food</b><span>It asks how much</span></li>
-    <li style="--c:var(--violet)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-edit"/></svg><b>Edit your plan</b></li>
-    <li style="--c:var(--pink)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-chart"/></svg><b>Track progress</b></li>
-    <li style="--c:var(--cyan)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-book"/></svg><b>Ask for evidence</b></li>
+<section class="alt" id="voice"><div class="wrap">
+  <h2>One spoken turn, end to end</h2>
+  <p class="sub">What happens between you finishing a sentence and the coach speaking, including interruptions. The audio is streamed continuously, so the coach starts working before the turn model has even confirmed you are done.</p>
+  <figure class="diagram" aria-label="Sequence diagram of one spoken turn">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Athlete
+  participant P as Phone / browser
+  participant A as Voice agent (GPU)
+  participant C as Conversation Core
+  participant L as Gemini
+
+  rect rgb(232,241,255)
+  Note over U,A: LISTENING
+  U-&gt;&gt;P: "sixty kilos, five reps, done"
+  P-&gt;&gt;A: mic audio, PCM16 16 kHz (WSS)
+  Note over A: Silero VAD finds the speech&lt;br/&gt;Smart Turn v3: are you done?&lt;br/&gt;faster-whisper (~0.2 s)&lt;br/&gt;repairs + confidence guard
+  end
+
+  rect rgb(243,232,255)
+  Note over A,C: THINKING (starts before the turn is confirmed)
+  A-&gt;&gt;C: POST /convo/turn
+  A--&gt;&gt;P: "Got it." clip at once
+  Note over C: gates with no model:&lt;br/&gt;pain words, pause cues,&lt;br/&gt;"sets left?" answered in ~25 ms
+  C-&gt;&gt;L: one streamed call&lt;br/&gt;(persona, state, last turns, 11 tools)
+  L--&gt;&gt;C: tool call log_set(60 kg, 5 reps)
+  Note over C: guards: numbers must be ones you said,&lt;br/&gt;plausibility check, no duplicates
+  C-&gt;&gt;C: write the set to SQLite
+  end
+
+  rect rgb(233,247,238)
+  Note over C,P: SPEAKING (sentence by sentence)
+  C--&gt;&gt;A: events: tool, action, state, say
+  Note over C: each sentence is number-checked,&lt;br/&gt;untraceable numbers are dropped
+  A-&gt;&gt;A: Kokoro TTS (~0.2 to 0.3 s per sentence)
+  A--&gt;&gt;P: voice audio + screen updates
+  P--&gt;&gt;U: the coach speaks, the app updates
+  end
+
+  alt the athlete talks over the coach
+    U-&gt;&gt;P: "wait, stop"
+    A--&gt;&gt;P: clear (stops in ~0.3 s)
+    A-&gt;&gt;C: POST /convo/interrupt (what was heard)
+    opt it was only "yeah" or a cough
+      A--&gt;&gt;P: carries on from the cut sentence
+    end
+  else Core slow (over 6 s) or down
+    C-&gt;&gt;C: rule-based brain answers instead
+  end
+</pre>
+  </figure>
+  <div class="tablewrap"><table>
+    <caption>Measured on this PC (RTX 3050, 4 GB), scripted and synthetic speech</caption>
+    <thead><tr><th>Stage</th><th>Time</th></tr></thead>
+    <tbody>
+      <tr><td>End of speech to words (VAD, turn model, Whisper)</td><td>0.25 to 0.35 s</td></tr>
+      <tr><td>Acknowledgement clip ("Got it.")</td><td>about 0.5 s after you stop</td></tr>
+      <tr><td>Session question, no model ("what's next?")</td><td>about 0.9 s to first sound</td></tr>
+      <tr><td>Set logged, one model call, composed reply</td><td>about 1.0 s to first word</td></tr>
+      <tr><td>Model-decided turn (skip, chat)</td><td>1.5 to 2.5 s</td></tr>
+      <tr><td>Barge-in: audio stops after you start talking</td><td>about 0.3 s</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="cards four">
+    <li style="--c:var(--cyan)"><h3>Streams everything</h3><p>Audio in, model output and speech out are all streamed. The first sentence is spoken while the rest is still being written.</p></li>
+    <li style="--c:var(--lime)"><h3>Starts early</h3><p>The model call begins at the end of speech, not after the turn model confirms it, and is cancelled if you keep talking.</p></li>
+    <li style="--c:var(--pink)"><h3>Can be interrupted</h3><p>It stops in about 0.3 s, and its memory keeps only the part you actually heard.</p></li>
+    <li style="--c:var(--mint)"><h3>Tells "yeah" from "wait"</h3><p>If the interruption was only a backchannel or a cough, it carries on from the start of the sentence it was cut in.</p></li>
   </ul>
+</div></section>
+
+<section id="brain"><div class="wrap">
+  <h2>The brain, the safety layer and the memory</h2>
+  <p class="sub">How a reply is decided and kept safe, how background agents change the plan, and how the system gets to know a person.</p>
+  <figure class="diagram" aria-label="Architecture of the conversation core, agent control plane and memory layer">
+<pre class="mermaid">
+flowchart TB
+  classDef core fill:#e8f1ff,stroke:#2f6fed,color:#0b2a66,stroke-width:1.5px
+  classDef guard fill:#fff4e0,stroke:#e08a00,color:#5a3600,stroke-width:1.5px
+  classDef agent fill:#e9f7ee,stroke:#1f9d55,color:#0c3d22,stroke-width:1.5px
+  classDef mem fill:#f3e8ff,stroke:#8b3fe0,color:#3a1066,stroke-width:1.5px
+  classDef store fill:#f4f4f5,stroke:#71717a,color:#27272a,stroke-width:1.5px
+  classDef bad fill:#ffe8ec,stroke:#d6334d,color:#5c0f1d,stroke-width:1.5px
+
+  subgraph CORE["CONVERSATION CORE (backend/convo): decides what the coach says and does"]
+    direction TB
+    IN(["spoken turn&lt;br/&gt;text · ASR confidence · screen state"]):::core
+    GATES["&lt;b&gt;Gates, no model&lt;/b&gt;&lt;br/&gt;unclear or foreign script: ask again&lt;br/&gt;pain or crisis words: fixed safe reply&lt;br/&gt;pause cues · greetings · chatter&lt;br/&gt;half-finished sentence: hold"]:::core
+    FAST["&lt;b&gt;Answered from state&lt;/b&gt;&lt;br/&gt;plan · sets left · what is next&lt;br/&gt;where am I · next-set cue"]:::core
+    PROMPT["&lt;b&gt;Prompt assembler&lt;/b&gt;&lt;br/&gt;persona + language policy&lt;br/&gt;exact state block + last turns&lt;br/&gt;(only what was heard) + memory facts"]:::core
+    STREAM["&lt;b&gt;Streaming model call&lt;/b&gt;&lt;br/&gt;one call per turn, fallback chain&lt;br/&gt;dead model names skipped"]:::core
+    GUARD["&lt;b&gt;Guards in code&lt;/b&gt;, every write passes&lt;br/&gt;class 0 read only: status, recall&lt;br/&gt;class 1 reversible log: numbers must be heard,&lt;br/&gt;plausibility check, duplicate turn id&lt;br/&gt;class 2 skip / swap / end: needs a clear order,&lt;br/&gt;otherwise asks yes or no&lt;br/&gt;class 3 plan changes: spoken confirm or text coach"]:::guard
+    EXEC["&lt;b&gt;Tool executor&lt;/b&gt;&lt;br/&gt;log · correct · rest · next weight&lt;br/&gt;skip · un-skip · swap · status&lt;br/&gt;recall about me · note · end workout"]:::core
+    GROUND["&lt;b&gt;Grounding check&lt;/b&gt;&lt;br/&gt;each number in a sentence must come from&lt;br/&gt;state, a tool result or the athlete's words"]:::guard
+    SAY(["sentences · actions · state&lt;br/&gt;to the voice agent and the app"]):::core
+    LEG["&lt;b&gt;Rule-based brain&lt;/b&gt;&lt;br/&gt;slot filling and templates&lt;br/&gt;works with no model"]:::bad
+    IN --&gt; GATES
+    GATES --&gt; FAST --&gt; SAY
+    GATES --&gt; PROMPT --&gt; STREAM --&gt; GUARD --&gt; EXEC --&gt; GROUND --&gt; SAY
+    STREAM -. "over 6 s or error" .-&gt; LEG --&gt; SAY
+  end
+
+  subgraph AOS["FITNESS AGENT OS (fitness_os): changes the plan, with a safety layer"]
+    direction TB
+    EV(["event&lt;br/&gt;session logged · check-in · pain&lt;br/&gt;meal · daily · weekly"]):::agent
+    WD["watchdogs&lt;br/&gt;(deterministic flags)"]:::agent
+    SP["&lt;b&gt;9 specialists propose in parallel&lt;/b&gt;&lt;br/&gt;training · nutrition · recovery · periodization&lt;br/&gt;progress · logistics · form · research · intake"]:::agent
+    RC["reconcile&lt;br/&gt;(scope: nutrition cannot move a workout)"]:::agent
+    CR["&lt;b&gt;safety critic&lt;/b&gt;, has veto&lt;br/&gt;approve · revise · block&lt;br/&gt;fails closed if it cannot run"]:::agent
+    PG["&lt;b&gt;policy gate&lt;/b&gt;&lt;br/&gt;calorie floor · weekly load cap 10%&lt;br/&gt;volume 50 to 125% of base&lt;br/&gt;no volume increase under pain"]:::guard
+    OUT{{"apply · veto window&lt;br/&gt;ask the athlete · escalate"}}:::agent
+    LG[("ledger&lt;br/&gt;why every change was made")]:::store
+    EV --&gt; WD --&gt; SP --&gt; RC --&gt; CR --&gt; PG --&gt; OUT --&gt; LG
+  end
+
+  subgraph MEM["ATHLETE MEMORY (fitness_os/mem + memory.py): gets to know the person"]
+    direction TB
+    BEL["&lt;b&gt;Beliefs&lt;/b&gt;&lt;br/&gt;Beta posterior, valid time, provenance&lt;br/&gt;superseded, never erased"]:::mem
+    MINE["&lt;b&gt;Miner&lt;/b&gt;&lt;br/&gt;patterns in your own series: sleep to next-day lifts,&lt;br/&gt;dose-response, adherence&lt;br/&gt;permutation tests · FDR · split-half replication"]:::mem
+    FC["&lt;b&gt;Forecasts&lt;/b&gt;&lt;br/&gt;predicts what you will do&lt;br/&gt;and scores itself on misses"]:::mem
+    DOS["&lt;b&gt;Dossier + retrieval&lt;/b&gt;&lt;br/&gt;keyword + vector + salience + decay&lt;br/&gt;injuries are pinned, never fade"]:::mem
+    CUR["curator · reflection · plateau experiments&lt;br/&gt;scheduler with catch-up"]:::mem
+    MINE --&gt; BEL
+    FC --&gt; BEL
+    CUR --&gt; BEL
+    BEL --&gt; DOS
+  end
+
+  DB[("SQLite&lt;br/&gt;plan · sets · beliefs · ledger")]:::store
+
+  EXEC --&gt; DB
+  SAY -. "session and check-in events" .-&gt; EV
+  OUT --&gt; DB
+  DB -. "logs the miner learns from" .-&gt; MINE
+  PROMPT -. "reads memory facts, recall_about_me" .-&gt; DOS
+  SP -. "reads the context pack, top 6 memories" .-&gt; DOS
+</pre>
+  </figure>
+  <h3 class="h3">What is enforced in code, not in prompts</h3>
+  <ul class="cards four">
+    <li style="--c:var(--lime)"><h3>Agent scope</h3><p>Nutrition cannot move a workout. Specialists only return typed proposals and cannot write state.</p></li>
+    <li style="--c:var(--red)"><h3>Safety limits</h3><p>Calorie floor, a 10% weekly load cap, volume within 50 to 125% of baseline, and no volume increase under pain.</p></li>
+    <li style="--c:var(--cyan)"><h3>Numbers</h3><p>A spoken sentence may only contain numbers from the state, a tool result or your own words. The check runs on every sentence.</p></li>
+    <li style="--c:var(--amber)"><h3>Skips</h3><p>"We are not skipping anything" never skips. A vague "let's move on" asks first. Naming an exercise that is not in today's plan skips nothing.</p></li>
+  </ul>
+  <h3 class="h3">The agent team</h3>
+  <ul class="team">
+    <li><b>Training</b><span>Volume changes, swaps, restrictions and new blocks from your lift trends and readiness.</span></li>
+    <li><b>Nutrition</b><span>Calorie and macro changes from the weight trend and your goal.</span></li>
+    <li><b>Recovery</b><span>Scores readiness from sleep, soreness and energy, then trims volume or escalates.</span></li>
+    <li><b>Periodization</b><span>Deloads, tapers and where you are in the block.</span></li>
+    <li><b>Progress analyst</b><span>Finds plateaus and forecasts; writes findings back to memory.</span></li>
+    <li><b>Logistics</b><span>Reads your calendar: travel and busy days move or shorten sessions.</span></li>
+    <li><b>Form</b><span>Reads pose-keypoint data for hedged technique cues. Never diagnoses.</span></li>
+    <li><b>Research</b><span>Answers evidence questions from a local library and says "no sources" rather than guess.</span></li>
+    <li><b>Intake</b><span>Runs the onboarding interview and turns answers into validated values.</span></li>
+    <li class="crit"><b>Safety critic</b><span>Approves, revises or blocks proposals. Has veto power. If it cannot run, it fails closed: only safer or smaller changes go through.</span></li>
+  </ul>
+</div></section>
+
+<section class="alt" id="results"><div class="wrap">
+  <h2>How it was tested</h2>
+  <p class="sub">A replay harness runs scripted conversations (and, in audio mode, real speech recognition and synthesis) against a throwaway copy of the backend and prints a scorecard. Every sentence from the first real-phone failures was added to it as a regression test.</p>
+  <div class="tablewrap"><table>
+    <caption>259-scenario text replay: old rule-based brain against the new Conversation Core</caption>
+    <thead><tr><th>Measure</th><th>Old brain</th><th>Conversation Core</th></tr></thead>
+    <tbody>
+      <tr><td>Set-logging accuracy (positive cases)</td><td>89%</td><td><b>100%</b></td></tr>
+      <tr><td>Self-corrections ("sixty, no, sixty-five")</td><td>50%</td><td><b>100%</b></td></tr>
+      <tr><td>Asks instead of acting on ambiguous input</td><td>50%</td><td><b>100%</b></td></tr>
+      <tr><td>Replies claiming "logged" when nothing was</td><td>6</td><td><b>0</b></td></tr>
+      <tr><td>Replies containing an untraceable number</td><td>2</td><td><b>0</b></td></tr>
+      <tr><td>Wrong actions on the negative cases</td><td>0</td><td><b>0</b></td></tr>
+      <tr><td>First composed word, median (p95)</td><td>1.0 s (2.8 s)</td><td><b>0.8 s (1.2 s)</b></td></tr>
+    </tbody>
+  </table></div>
+  <ul class="cards three">
+    <li style="--c:var(--lime)"><h3>Audio mode</h3><p>English word error rate 2.0% on the lines it transcribed, first spoken word about 1.0 s, barge-in stop about 0.3 s. Hindi and Hinglish lines are scored apart because Roman spelling varies.</p></li>
+    <li style="--c:var(--cyan)"><h3>Safety red-team</h3><p>The Agent OS has golden scenarios and a red-team set that run through the real loop and are judged on invariants of the final state, not on wording.</p></li>
+    <li style="--c:var(--amber)"><h3>About 1,600 tests</h3><p>Backend, Agent OS, voice agent and app, plus a 12-week simulated lifter that checks the adaptation logic against a control that never adapts.</p></li>
+  </ul>
+  <p class="foot">The scenarios and the lifter are hand-written. They check that the logic behaves as designed, not that it works for every real person.</p>
+
+  <h3 class="h3">What the gym taught us</h3>
+  <p class="sub">The replay did not find these. Real sessions on a real phone did, and they are tracked in the error ledger in the repo.</p>
+  <ul class="ledger">
+    <li><span class="tag fixed">Fixed</span><b>Nothing was heard at the gym.</b> The browser voice page trusted the sample rate the browser reported, and with a headset route the microphone delivered twice as many samples per second. Whisper heard sped-up noise and returned nothing. The page now measures the real rate in the first second. The next session was heard clearly.</li>
+    <li><span class="tag fixed">Fixed</span><b>Whole sentences silently lost.</b> A library rule dropped any speech segment followed by silence. A pause inside "We are not skipping anything... we are doing every exercise" lost the first half.</li>
+    <li><span class="tag fixed">Fixed</span><b>"We are not skipping anything" skipped an exercise.</b> Skips are now clause-aware and checked in code before they run.</li>
+    <li><span class="tag open">Workaround</span><b>Earphones were ignored.</b> The app's audio module forces the loudspeaker. The browser voice page plays through earphones; the native fix is waiting for the next app build.</li>
+    <li><span class="tag open">Open</span><b>Several sets in one sentence</b> ("50, 60 and 70 for 15") log only the last one.</li>
+    <li><span class="tag open">Open</span><b>No "undo last set" by voice</b>, and no way to log an exercise that is not in today's plan.</li>
+    <li><span class="tag open">Open</span><b>English mistaken for Hinglish</b> when a sentence repeats a short word such as "do", so the coach answers in Hindi.</li>
+    <li><span class="tag open">Open</span><b>A set can be logged twice</b> when a long sentence is split across two turns.</li>
+  </ul>
+</div></section>
+
+<section id="stack"><div class="wrap">
+  <h2>Built with</h2>
+  <div class="stack">
+    <div><h3>Voice and AI</h3><ul><li>Pipecat</li><li>Silero VAD</li><li>Smart Turn v3</li><li>faster-whisper (CUDA)</li><li>Kokoro TTS</li><li>Gemini API with function calling</li><li>Claude Code subagents</li></ul></div>
+    <div><h3>Backend</h3><ul><li>Python</li><li>FastAPI</li><li>Pydantic</li><li>httpx</li><li>SQLite with FTS5</li><li>WebSockets and NDJSON streaming</li><li>pytest</li></ul></div>
+    <div><h3>Mobile</h3><ul><li>React Native (Expo)</li><li>TypeScript</li><li>Kotlin audio module</li><li>Web Audio (voice page)</li><li>EAS Build</li></ul></div>
+    <div><h3>Ops</h3><ul><li>Docker Compose</li><li>Per-person containers</li><li>FastAPI gateway</li><li>Cloudflare tunnel</li><li>GitHub Actions and Pages</li></ul></div>
+    <div><h3>Method</h3><ul><li>Replay and eval harness</li><li>Permutation tests and FDR</li><li>Beta-posterior beliefs</li><li>Guarded tool calling</li><li>Fail-closed safety</li></ul></div>
+  </div>
 </div></section>
 
 <section id="install"><div class="wrap">
@@ -134,6 +390,7 @@
   </ol>
   <p class="cta"><a class="btn" data-download href="#install"><span>Download for Android</span></a></p>
   <p class="note" data-download-note></p>
+  <p class="note">This is an earlier build. A newer build with the live voice shown above is not published yet.</p>
 </div></section>
 
 <section class="alt" id="connect"><div class="wrap">
@@ -150,11 +407,33 @@
     <li>Not medical advice</li>
     <li>Android only for now</li>
     <li>Your data stays on your own private server</li>
+    <li>Free-tier model terms apply: do not send sensitive data</li>
   </ul>
-  <p>AI Coach v<span data-version>0.1.0</span> &middot; Early version</p>
+  <p>AI Coach v<span data-version>0.1.0</span> &middot; an early, evolving project &middot; <a href="https://github.com/harshiittttt/Agentic_fitness_system">Source and architecture notes on GitHub</a></p>
   <p data-support></p>
 </div></footer>
 <script src="config.js"></script>
 <script src="main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js" onerror="document.body.classList.add('no-mermaid')"></script>
+<script>
+  (function () {
+    if (!window.mermaid) { document.body.classList.add('no-mermaid'); return; }
+    // One font stack for measuring AND drawing (a web font that loads late makes labels clip), and draw only after fonts are ready.
+    var stack = 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+    mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose', fontFamily: stack,
+      flowchart: { htmlLabels: true, curve: 'basis', useMaxWidth: true, padding: 14, nodeSpacing: 46, rankSpacing: 52 },
+      sequence: { useMaxWidth: true, mirrorActors: false, actorMargin: 40, noteMargin: 8, boxMargin: 8 } });
+    // Render one diagram at a time with its own id (mermaid.run derives ids from the clock, so quick successive renders collide and overwrite each other).
+    var run = function () {
+      var els = [].slice.call(document.querySelectorAll('pre.mermaid'));
+      els.reduce(function (p, el, i) {
+        return p.then(function () {
+          return mermaid.render('mmd-diagram-' + i, el.textContent).then(function (r) { el.innerHTML = r.svg; el.setAttribute('data-processed', 'true'); });
+        });
+      }, Promise.resolve()).catch(function () { document.body.classList.add('no-mermaid'); });
+    };
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(run);
+  })();
+</script>
 </body>
 </html>
