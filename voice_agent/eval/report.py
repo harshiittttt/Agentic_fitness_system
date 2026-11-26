@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -23,7 +24,8 @@ TARGETS = {
     "first_sound_p95": ("First sound p95 (ms, audio mode)", "<= 1500", lambda v: v <= 1500),
     "over_6s": ("Turns over 6 s (%)", "< 1%", lambda v: v < 1),
     "barge_stop": ("Barge-in: audio stops after speech starts (ms)", "<= 300-450", lambda v: v <= 450),
-    "wer": ("Word error rate of what the agent heard (%, audio mode)", "<= 8%", lambda v: v <= 8),
+    "wer": ("Word error rate, English lines the agent passed on (%, audio mode)", "<= 8%", lambda v: v <= 8),
+    "wer_hinglish": ("Word error rate, Hinglish lines (informational: Roman spelling varies)", "-", lambda v: True),
 }
 
 
@@ -47,7 +49,13 @@ def summarise(recs: list[dict]) -> dict:
     fw = [r["first_word_ms"] for r in recs if r.get("first_word_ms")]
     fs = [r["first_sound_ms"] for r in recs if r.get("first_sound_ms")]
     barge = [r["barge_stop_ms"] for r in recs if r.get("barge_stop_ms") is not None]
-    wers = [r["wer"] for r in recs if r.get("wer") is not None]
+    # Only a line the agent actually transcribed AND passed on has a "heard" text: ignored lines (copy, stage directions, "wait, stop", mumbles) send none and are not ASR errors.
+    # Hinglish and Devanagari lines are scored apart: the same Hindi sentence has many correct Roman spellings, and a Devanagari reference can never equal a Roman transcript.
+    def _hindi(r):
+        return r.get("lang") == "hinglish" or bool(re.search(r"[ऀ-ॿ]", r.get("say") or ""))
+    scored = [r for r in recs if r.get("wer") is not None and (r.get("heard") or "").strip()]
+    wers = [r["wer"] for r in scored if not _hindi(r)]
+    wers_hi = [r["wer"] for r in scored if _hindi(r) and not re.search(r"[ऀ-ॿ]", r.get("say") or "")]
     scen = defaultdict(list)
     for r in recs:
         scen[r["scenario"]].append(r["ok"])
@@ -65,7 +73,8 @@ def summarise(recs: list[dict]) -> dict:
         "first_sound_p50": percentile(fs, 50), "first_sound_p95": percentile(fs, 95),
         "over_6s": _pct(sum(1 for x in fw if x > 6000), len(fw)),
         "barge_stop": percentile(barge, 50) if barge else None,
-        "wer": round(100 * sum(wers) / len(wers), 1) if wers else None,
+        "wer": round(100 * sum(wers) / len(wers), 1) if wers else None, "wer_n": len(wers),
+        "wer_hinglish": round(100 * sum(wers_hi) / len(wers_hi), 1) if wers_hi else None, "wer_hinglish_n": len(wers_hi),
         "errors": sum(1 for r in recs if r.get("error")),
     }
     return m
@@ -86,7 +95,7 @@ def scorecard(summaries: dict[str, dict]) -> str:
         cells = []
         for s in summaries.values():
             v = s.get(key)
-            cells.append("n/a" if v is None else f"{_fmt(v)} {'PASS' if test(v) else 'FAIL'}")
+            cells.append("n/a" if v is None else (_fmt(v) if target == "-" else f"{_fmt(v)} {'PASS' if test(v) else 'FAIL'}"))
         if all(c == "n/a" for c in cells):
             continue
         lines.append(f"| {label} | {target} | " + " | ".join(cells) + " |")

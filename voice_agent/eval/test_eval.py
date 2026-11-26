@@ -149,3 +149,18 @@ def test_false_log_claim_detected():
     assert not scorers.false_log_claim("Six reps at 60 logged, Golu.", [("squat", 60, 6)])
     assert not scorers.false_log_claim("Nothing was logged today, Golu.", [])
     assert not scorers.false_log_claim("What weight was that?", [])
+
+
+def test_wer_scoring_skips_ignored_lines_and_scores_hindi_apart():
+    from voice_agent.eval import report
+    base = {"scenario": "s", "ok": True, "checks": [], "tags": []}
+    recs = [
+        {**base, "lang": "en", "say": "Sixty kilos, five reps", "heard": "60 kilos, 5 reps", "wer": 0.0, "first_sound_ms": 500},
+        {**base, "lang": "en", "say": "No wait, put it back", "heard": "No weight, put it back", "wer": 0.2, "first_sound_ms": 500},
+        {**base, "lang": "en", "say": "Copy.", "heard": "", "wer": 1.0, "first_sound_ms": None},                     # ignored on purpose: the agent sends no transcript
+        {**base, "lang": "hinglish", "say": "saath kilo paanch reps hogaya", "heard": "Saath kilo paanch reps haageya.", "wer": 0.2, "first_sound_ms": 500},
+        {**base, "lang": "hinglish", "say": "\u092c\u0938 \u0924\u094b \u0928\u093e", "heard": "Bas to na", "wer": 1.0, "first_sound_ms": 500},  # Devanagari reference vs Roman transcript
+    ]
+    m = report.summarise(recs)
+    assert m["wer_n"] == 2 and m["wer"] == pytest.approx(10.0)
+    assert m["wer_hinglish_n"] == 1
