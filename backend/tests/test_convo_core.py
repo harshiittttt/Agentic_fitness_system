@@ -288,7 +288,7 @@ def test_read_tool_gets_a_second_round_with_the_facts(env, monkeypatch):
         seen.append(json.loads([x for x in m if x["role"] == "tool"][-1]["content"]))
         return [text("Squat set one of four, then Romanian deadlift.")]
     script(monkeypatch, fn)
-    ev = run("where am I")
+    ev = run("give me the exact numbers on where I stand")
     assert seen and seen[0]["current"] == cur and seen[0]["next_exercise"] and ev[-1]["ms"]["model_calls"] == 2
     assert "Squat set one" in ev[-1]["said"]
 
@@ -569,3 +569,19 @@ def test_pause_cues_get_no_reply_and_no_model_call(env, monkeypatch, sentence):
 def test_stop_inside_a_real_sentence_is_not_a_pause_cue():
     assert not live.PAUSE_RE.match("stop the workout and wrap up")
     assert not live.PAUSE_RE.match("wait, sixty five for five")
+
+
+@pytest.mark.parametrize("sentence,needle", [("What is the next exercise?", "next"), ("what's next", "next"), ("where am I?", "You're on"), ("What exercise am I on?", "You're on"),
+                                             ("okay, next set", "set 1 of"), ("I'm ready", "set 1 of")])
+def test_more_questions_and_cues_need_no_model(env, monkeypatch, sentence, needle):
+    monkeypatch.setattr(llm, "stream", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no model call")))
+    ev = run(sentence)
+    assert ev[-1]["ms"]["model_calls"] == 0 and len(names(ev, "say")) == 1 and needle in ev[-1]["said"], ev[-1]["said"]
+    assert not names(ev, "tool") and not today_sets() and skipped() == []
+
+
+def test_next_exercise_as_a_command_or_while_asked_still_goes_to_the_model(env, monkeypatch):
+    calls = script(monkeypatch, lambda u, m, t: [text("Do you want to skip it?")])
+    run("next exercise please")
+    run("let's see what's next", tid="t9")
+    assert len(calls) == 2

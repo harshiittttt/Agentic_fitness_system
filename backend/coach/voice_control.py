@@ -906,6 +906,10 @@ NEXT_WEIGHT_Q_RE = re.compile(r"\b(?:how much|what|which) (?:weight|load)\b.{0,4
                               r"\bshould i (?:go up|add (?:some )?weight|increase|go heavier|raise|go lighter|drop)\b")
 
 
+NEXT_EX_Q_RE = re.compile(r"^(?:so |and |ok(?:ay)? )?(?:what|which)(?:'s| is| exercise is| comes| do i do| are we doing)? (?:the )?next(?: exercise| one| up)?$|^(?:what|which)(?:'s| is| comes| exercise is)? (?:up )?after (?:this|that)(?: one| exercise)?$|^what comes next$")
+WHERE_Q_RE = re.compile(r"^(?:so |and |ok(?:ay)? )?(?:where (?:am i|are we)(?: at| now| right now)?|what (?:exercise|lift|movement) (?:is this|am i on|are we on|am i doing|are we doing)(?: now| right now)?|which (?:exercise|set) (?:is this|am i on|are we on)(?: now)?|what set (?:am i|are we) (?:on|at))$")
+
+
 def _w(x) -> str:
     return str(int(x)) if float(x) == int(x) else f"{float(x):g}"
 
@@ -913,7 +917,7 @@ def _w(x) -> str:
 def _session_q(low: str) -> dict | None:
     """"what's the plan", "how many sets are left", "how much weight for the next set": the session state has the answer. Only when a session exists;
     otherwise None and the normal path (model) answers."""
-    if not (PLAN_Q_RE.search(low) or LEFT_Q_RE.search(low) or NEXT_WEIGHT_Q_RE.search(low)):
+    if not (PLAN_Q_RE.search(low) or LEFT_Q_RE.search(low) or NEXT_WEIGHT_Q_RE.search(low) or NEXT_EX_Q_RE.match(low) or WHERE_Q_RE.match(low)):
         return None
     if live.START_RE.match(low) or live.START_BARE_RE.match(low) or live.END_RE.search(low):      # "start today's workout" is a command, not a question about the plan
         return None
@@ -926,6 +930,15 @@ def _session_q(low: str) -> dict | None:
     if not st:
         return None
     rows, cur = st["exercises"], st["current"]
+    if NEXT_EX_Q_RE.match(low) or WHERE_Q_RE.match(low):
+        if not cur:
+            return _out("status", "That's everything for today. Say wrap up when you're ready.")
+        later = [r for r in rows[[r["name"] for r in rows].index(cur["name"]) + 1:] if not r["skipped"] and r["done"] < r["sets"]]
+        if WHERE_Q_RE.match(low):
+            return _out("status", f"You're on {cur['name']}, set {cur['set_no']} of {cur['sets']}." + (f" {later[0]['name']} is next." if later else " That's the last exercise."))
+        if cur["set_no"] < cur["sets"] and not later:
+            return _out("status", f"Another set of {cur['name']}, set {cur['set_no']} of {cur['sets']}. That's the last exercise.")
+        return _out("status", f"{later[0]['name']} is next, after {cur['name']}." if later else f"{cur['name']} is the last one today.")
     if LEFT_Q_RE.search(low):
         if not cur:
             return _out("status", "That's everything for today. Say wrap up when you're ready.")

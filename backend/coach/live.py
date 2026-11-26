@@ -29,6 +29,7 @@ NO_RE = re.compile(r"^\W*(?:no|nope|nah|don'?t|do not|never ?mind|cancel|stay|no
 # What the mic hears around a workout that is not a command: a greeting gets a short nudge, filler and "copy" get nothing, and a line of
 # stage directions ("wipes hands, adjusts straps") is not speech to the coach at all.
 GREET_RE = re.compile(r"^\W*(?:(?:hello|hi|hey|yo|namaste|hii+|helo)(?:\s+(?:coach|there|buddy))?)\W*$")
+NEXTSET_RE = re.compile(r"^(?:ok(?:ay)?|haan|han|alright|right|so|yeah|yes)?[ ,]*(?:next set|next one|i(?:'m| am) ready|ready(?: now)?|ready for (?:the )?next(?: set)?|let's go|lets go|go|chalo|chalte hain|next set (?:krte|karte) hain)$")
 PAUSE_RE = re.compile(r"^\W*(?:(?:wait|weight(?=\W+stop)|(?:give me )?(?:a|one) (?:sec|second|minute|moment)|coach|hold on|hang on|stop|stop it|pause|ruko|rukna|ruk ja|ruk jao|thehro|one sec(?:ond)?|just a (?:sec|second|minute|moment)|ek (?:minute|second|sec|min))\W*)+(?:please|coach|bhai|yaar|ji)?\W*$")
 SILENT_RE = re.compile(r"^\W*(?:hm+|um+|uh+|ah+|oh+|right|copy|got it|thanks|thank you|thanks coach|bye|goodbye|cool|nice|alright|haan|han|ji|acha|accha|theek hai|thik hai|ok thanks|okay thanks)\W*$")
 STAGE_RE = re.compile(r"\b(?:wipes?|wiping|adjust(?:s|ing)|chalks?|chalking|takes? a (?:deep )?breath|exhales?|inhales?|grunts?|sighs?|laughs?|nods?|claps?|"

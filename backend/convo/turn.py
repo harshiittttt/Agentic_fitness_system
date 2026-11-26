@@ -321,6 +321,16 @@ def _run(req: dict, dlg, t: _T, override: str | None) -> Iterator[dict]:
         yield e
         yield _done(t, "converse")
         return
+    if not dlg.get_pending() and live.NEXTSET_RE.match(low) and not req.get("set_active"):          # "okay, next set", "ready": the cue line from the session state, no model
+        cur = (live.session_state() or {}).get("current")
+        if cur:
+            line = live._pick(pid, prompt.P.get(pid)["name"], "ready_go", ex=cur["name"], n=cur["set_no"], tot=cur["sets"])
+            t.intent = "ready"
+            dlg.add_user(body, t.turn_id)
+            dlg.add_coach(line, t.turn_id)
+            yield t.say(line)
+            yield _done(t, "converse", ctx)
+            return
     if not dlg.get_pending():
         qa = voice_control._session_q(low)                 # "how many sets are left", "what's the plan": the session state answers, no model (~25 ms)
         if qa and qa.get("reply"):
