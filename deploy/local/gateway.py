@@ -97,6 +97,13 @@ def create_app(users_dir=None, upstream_host: str = "127.0.0.1") -> FastAPI:
     async def health():
         return {"ok": True}
 
+    @app.get("/voice/web")
+    async def voice_web():
+        """A voice page for the phone's browser: audio goes through the normal media route, so earphones work (the app's own audio module forces the loudspeaker).
+        The page itself holds no secret; it asks for the access key once and remembers it on that phone."""
+        from fastapi.responses import FileResponse
+        return FileResponse(Path(__file__).with_name("voice_web.html"), media_type="text/html", headers={"Cache-Control": "no-store"})
+
     @app.websocket("/voice/ws")
     async def voice_ws(ws: WebSocket):
         """Live voice: the phone streams microphone audio, the PC's voice agent (GPU) answers with audio. The access key picks the person's

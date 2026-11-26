@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coach voice</title>
+<style>
+  :root { color-scheme: light dark; --bg:#fff; --fg:#111; --mut:#666; --card:#f1f1f4; --acc:#1a7f37; --bad:#b3261e; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111; --fg:#eee; --mut:#999; --card:#1d1d22; --acc:#3fb950; --bad:#f2554b; } }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.45 system-ui,sans-serif; display:flex; flex-direction:column; min-height:100vh; }
+  main { padding:16px; max-width:640px; width:100%; margin:0 auto; box-sizing:border-box; flex:1; display:flex; flex-direction:column; gap:12px; }
+  h1 { font-size:20px; margin:4px 0 0; }
+  #status { color:var(--mut); }
+  button { font:inherit; padding:16px; border:0; border-radius:14px; background:var(--acc); color:#fff; font-weight:600; }
+  button.stop { background:var(--bad); }
+  #log { flex:1; overflow:auto; display:flex; flex-direction:column; gap:8px; }
+  .u, .b { padding:10px 12px; border-radius:12px; background:var(--card); max-width:90%; }
+  .u { align-self:flex-end; }
+  small { color:var(--mut); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Coach voice</h1>
+  <div id="status">Not connected.</div>
+  <button id="go">Start voice</button>
+  <small>Plays through whatever audio output is connected (earphones included). Keep this page open and the screen on. Your sets are saved by the coach as usual.</small>
+  <div id="log"></div>
+</main>
+<script>
+(function () {
+  var RATE = 16000;
+  var ws = null, ctx = null, stream = null, proc = null, mute = null, nextT = 0, sources = [], wake = null, running = false;
+  var $ = function (id) { return document.getElementById(id); };
+  function status(t) { $('status').textContent = t; }
+  function line(cls, t) { var d = document.createElement('div'); d.className = cls; d.textContent = t; $('log').appendChild(d); $('log').scrollTop = 1e9; }
+
+  function getKey() {
+    var k = '';
+    try { k = (location.hash || '').replace(/^#/, ''); if (k) { localStorage.setItem('coachKey', k); history.replaceState(null, '', location.pathname); } } catch (e) {}
+    try { if (!k) k = localStorage.getItem('coachKey') || ''; } catch (e) {}
+    if (!k) { k = (prompt('Paste your access key (the same one the app uses):') || '').trim(); try { if (k) localStorage.setItem('coachKey', k); } catch (e) {} }
+    return k;
+  }
+
+  function stopAll() {
+    running = false;
+    try { if (ws) ws.close(); } catch (e) {}
+    try { if (proc) { proc.disconnect(); proc.onaudioprocess = null; } } catch (e) {}
+    try { if (mute) mute.disconnect(); } catch (e) {}
+    try { if (stream) stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    try { if (ctx) ctx.close(); } catch (e) {}
+    try { if (wake) wake.release(); } catch (e) {}
+    clearPlayback();
+    ws = ctx = stream = proc = mute = wake = null;
+    $('go').textContent = 'Start voice'; $('go').className = '';
+  }
+
+  function clearPlayback() {
+    sources.forEach(function (s) { try { s.onended = null; s.stop(); } catch (e) {} });
+    sources = []; nextT = 0;
+  }
+
+  function play(buf) {                                   // buf = ArrayBuffer: byte 0 = 1, then PCM16 mono 16 kHz
+    if (!ctx || buf.byteLength < 3) return;
+    var n = (buf.byteLength - 1) >> 1;
+    var i16 = new Int16Array(buf.slice(1, 1 + n * 2));
+    var ab = ctx.createBuffer(1, n, RATE);
+    var ch = ab.getChannelData(0);
+    for (var i = 0; i < n; i++) ch[i] = i16[i] / 32768;
+    var src = ctx.createBufferSource();
+    src.buffer = ab; src.connect(ctx.destination);
+    var t = Math.max(ctx.currentTime + 0.06, nextT);
+    src.start(t); nextT = t + ab.duration;
+    sources.push(src);
+    src.onended = function () { var k = sources.indexOf(src); if (k >= 0) sources.splice(k, 1); };
+  }
+
+  function capture(e) {                                  // mic -> 16 kHz PCM16 -> socket
+    if (!ws || ws.readyState !== 1) return;
+    var inp = e.inputBuffer.getChannelData(0), r = ctx.sampleRate / RATE, n = Math.floor(inp.length / r), out = new Int16Array(n);
+    for (var i = 0; i < n; i++) {
+      var s = r === 1 ? inp[i] : inp[Math.min(inp.length - 1, Math.floor(i * r + r / 2))];
+      s = Math.max(-1, Math.min(1, s)); out[i] = s < 0 ? s * 32768 : s * 32767;
+    }
+    ws.send(out.buffer);
+  }
+
+  async function start() {
+    var key = getKey();
+    if (!key) { status('No access key.'); return; }
+    status('Opening the microphone...');
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+    } catch (e) { status('Microphone refused: ' + e.name + '. Allow the microphone for this page and try again.'); return; }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    try { ctx = new AC({ sampleRate: RATE }); } catch (e) { ctx = new AC(); }
+    if (ctx.state === 'suspended') await ctx.resume();
+    var srcNode = ctx.createMediaStreamSource(stream);
+    proc = ctx.createScriptProcessor(2048, 1, 1);
+    proc.onaudioprocess = capture;
+    mute = ctx.createGain(); mute.gain.value = 0;
+    srcNode.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
+    try { if (navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); } catch (e) {}
+
+    status('Connecting...');
+    var url = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/voice/ws?token=' + encodeURIComponent(key);
+    ws = new WebSocket(url);
+    ws.binaryType = 'arraybuffer';
+    running = true;
+    ws.onopen = function () {
+      status('Listening. Talk to your coach.');
+      ws.send(JSON.stringify({ type: 'screen', screen: 'live' }));
+      ws.send(JSON.stringify({ type: 'config', barge_in: true }));
+    };
+    ws.onmessage = function (m) {
+      if (typeof m.data !== 'string') { play(m.data); return; }
+      var d; try { d = JSON.parse(m.data); } catch (e) { return; }
+      if (d.t === 'clear') clearPlayback();
+      else if (d.t === 'user' && d.text) line('u', d.text);
+      else if (d.t === 'bot' && d.text) line('b', d.text);
+      else if (d.t === 'state' && d.s) status(d.s === 'thinking' ? 'Thinking...' : 'Listening.');
+    };
+    ws.onclose = function (e) {
+      if (running) { status(e.code === 4401 ? 'Wrong access key.' : (e.code === 4503 ? 'The voice agent is not running on the PC.' : 'Disconnected.')); if (e.code === 4401) { try { localStorage.removeItem('coachKey'); } catch (x) {} } }
+      stopAll();
+    };
+    ws.onerror = function () { status('Connection problem.'); };
+    $('go').textContent = 'Stop'; $('go').className = 'stop';
+  }
+
+  $('go').onclick = function () { if (running) { status('Stopped.'); stopAll(); } else start(); };
+  document.addEventListener('visibilitychange', function () { if (document.hidden && running) status('Screen was left: keep this page in front or the phone may stop the microphone.'); });
+})();
+</script>
+</body>
+</html>
