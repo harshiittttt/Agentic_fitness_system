@@ -41,7 +41,7 @@ def cough():
 
 async def trial(clips, sound_name, sound, play_at_s):
     """-> dict(first_audio, stopped, stop_ms, said_len_s)"""
-    st = {"first": None, "clear": None, "sound_at": None, "audio_bytes": 0}
+    st = {"first": None, "clear": None, "sound_at": None, "audio_bytes": 0, "after_clear": 0}
     async with websockets.connect(URL, max_size=None) as ws:
         async def reader():
             async for m in ws:
@@ -50,6 +50,8 @@ async def trial(clips, sound_name, sound, play_at_s):
                     if st["first"] is None:
                         st["first"] = now
                     st["audio_bytes"] += len(m) - 1
+                    if st["clear"] is not None and now >= st["clear"] + 0.15:
+                        st["after_clear"] += len(m) - 1
                 else:
                     d = json.loads(m)
                     if d.get("t") == "clear" and st["sound_at"] and st["clear"] is None and now >= st["sound_at"]:
@@ -83,10 +85,16 @@ async def trial(clips, sound_name, sound, play_at_s):
         while time.time() - t_end < 1.5 and st["clear"] is None:
             await ws.send(b"\x00" * CHUNK)
             await asyncio.sleep(0.02)
+        if st["clear"] is not None:                                  # did the coach carry on by itself (a "yeah" or a cough is no reason to drop the answer)?
+            t_more = time.time()
+            while time.time() - t_more < 5.0:
+                await ws.send(b"\x00" * CHUNK)
+                await asyncio.sleep(0.02)
         spoke_for = (st["audio_bytes"] / (16000 * 2))
         rd.cancel()
         return {"first_audio": True, "stopped": st["clear"] is not None, "stop_ms": int((st["clear"] - st["sound_at"]) * 1000) if st["clear"] else None,
-                "len_ms": int(len(sound) / 2 / SR * 1000), "coach_audio_s": round(spoke_for, 1)}
+                "len_ms": int(len(sound) / 2 / SR * 1000), "coach_audio_s": round(spoke_for, 1),
+                "carried_on": st["after_clear"] > 16000 * 2 * 0.5}
 
 
 async def main():
@@ -109,8 +117,8 @@ async def main():
     co = [r for r in results["cough"] if r.get("first_audio")]
     re_ = [r for r in results["real"] if r.get("first_audio")]
     print("\nSUMMARY")
-    print(f"  backchannel left alone: {sum(1 for r in bc if not r['stopped'])}/{len(bc)}   (target >= 9/10)")
-    print(f"  cough left alone:       {sum(1 for r in co if not r['stopped'])}/{len(co)}")
+    print(f"  backchannel left alone: {sum(1 for r in bc if not r['stopped'])}/{len(bc)}   (target: left alone + carried on >= 9/10); stopped but carried on by itself: {sum(1 for r in bc if r['stopped'] and r.get('carried_on'))}")
+    print(f"  cough left alone:       {sum(1 for r in co if not r['stopped'])}/{len(co)}; stopped but carried on by itself: {sum(1 for r in co if r['stopped'] and r.get('carried_on'))}")
     stops = sorted(r["stop_ms"] for r in re_ if r["stopped"])
     print(f"  real interruption stopped it: {len(stops)}/{len(re_)}; stop time after the athlete starts talking (ms): {stops}  (target <= 300)")
 

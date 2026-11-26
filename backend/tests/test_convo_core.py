@@ -559,7 +559,7 @@ def test_skip_naming_an_exercise_outside_the_plan_skips_nothing(env, monkeypatch
     assert skipped() == [] and names(ev, "tool")[0]["status"] == "invalid"
 
 
-@pytest.mark.parametrize("sentence", ["Wait, stop.", "hold on", "Stop!", "Weight, stop.", "ruko ruko", "wait wait wait", "just a second please", "ek minute"])
+@pytest.mark.parametrize("sentence", ["Wait, stop.", "hold on", "Stop!", "Weight, stop.", "Hold on a second.", "Coach, one moment.", "ruko ruko", "wait wait wait", "just a second please", "ek minute"])
 def test_pause_cues_get_no_reply_and_no_model_call(env, monkeypatch, sentence):
     monkeypatch.setattr(llm, "stream", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no model call for a pause cue")))
     ev = run(sentence)

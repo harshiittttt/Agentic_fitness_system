@@ -77,7 +77,9 @@ SPECULATE = os.environ.get("VOICE_SPECULATE", "1") != "0"                    # s
 NUM_HOLD_S = float(os.environ.get("VOICE_NUM_HOLD", "1.2"))                  # a half-said set ("sixty kilos") waits this long for "five reps"
 NUM_HOLD_MAX_S = float(os.environ.get("VOICE_NUM_HOLD_MAX", "4.0"))
 # While the coach is talking, speech must last this long before it counts as talking over it: a "yeah" or "mm-hm" (0.2-0.4 s) is then not an interruption.
-BARGE_START_SECS = float(os.environ.get("VOICE_BARGE_START_SECS", "0.4"))
+BARGE_START_SECS = float(os.environ.get("VOICE_BARGE_START_SECS", "0.15"))      # short on purpose: a "yeah" that cuts the coach off is put right by RESUME (below)
+RESUME_AFTER_S = float(os.environ.get("VOICE_RESUME_AFTER", "2.2"))              # cut off by a sound that turns out to be no words (cough, noise): carry on after this long
+RESUME_MAX_AGE_S = 10.0
 KEEPWARM = os.environ.get("VOICE_KEEPWARM", "1") != "0"                      # hold the GPU at full clock while a phone is connected (see _PromptedWhisper)
 TURN_LOG_DIR = os.environ.get("VOICE_TURN_LOG_DIR", "D:/voice-proto/turns")  # one JSON line per turn with the timings (set to "" to turn off)
 
@@ -388,6 +390,30 @@ def spoken_prefix(items: list, played_s: float) -> str:
     return " ".join(out).strip()
 
 
+def unspoken_from(items: list, played_s: float) -> str:
+    """The coach was cut off after played_s seconds: the text from the START of the sentence that was cut, to the end of what it had queued (acks are skipped).
+    Used to carry on after a backchannel ("yeah") or a cough that interrupted it."""
+    out: list[str] = []
+    t = 0.0
+    for text, dur in items:
+        if t + dur > played_s and text:
+            out.append(text)
+        t += dur
+    return " ".join(out).strip()
+
+
+_BACK_WORDS = {"yeah", "yea", "ya", "yep", "yup", "yes", "ok", "okay", "right", "sure", "got", "it", "hmm", "hm", "mm", "mhm", "uh", "huh", "oh", "cool", "nice", "good", "fine", "alright",
+               "i", "see", "understood", "makes", "sense", "true", "exactly", "haan", "han", "ji", "acha", "accha", "theek", "thik", "hai"}
+
+
+def is_backchannel(text: str, p: float = 1.0) -> bool:
+    """"yeah", "ok ok", "mm-hm", "got it": the athlete is only listening. A short, low-confidence sound ("But hi" for "okay") counts too."""
+    w = _norm(text).split()
+    if not w or len(w) > 4 or any(ch.isdigit() for ch in text) or "?" in text:
+        return False
+    return all(x in _BACK_WORDS for x in w) or (len(w) <= 2 and p < 0.6)
+
+
 class Gate(FrameProcessor):
     """Half-duplex safety. With echo cancelling working (most phones) you can talk over the coach. On a phone where it is weak the coach would hear itself and
     cut itself off, so the app can switch "talk over the coach" off: microphone audio is then dropped while the coach speaks (and a moment after)."""
@@ -566,6 +592,8 @@ class EarlyTurn(FrameProcessor):
         await super().process_frame(frame, direction)
         if isinstance(frame, TranscriptionFrame) and direction == FrameDirection.DOWNSTREAM:
             self.clock.transcript_at = time.time()
+            if frame.text.strip():
+                self.brain.transcribing = True               # words exist: the turn logic (not the "no words" timer) decides whether to carry on
             try:
                 self.brain.speculate(frame.text)
             except Exception as e:                                       # noqa: BLE001 (speculation is an extra: it must never break the turn)
@@ -576,7 +604,7 @@ class EarlyTurn(FrameProcessor):
 # ---- what is not a command ----
 # A lone "copy" / "right" / "okay" is the athlete talking to themselves or answering the coach's last line; the coach must not give a speech to it.
 _IDLE = {"copy", "right", "ok", "okay", "yeah", "yep", "yes", "no", "hmm", "alright", "cool", "nice", "sure", "thanks", "thank you", "got it", "good", "fine", "oh", "wow", "huh", "hm", "mm"}
-_PAUSE = re.compile(r"^(?:(?:wait|weight(?=\W+stop)|hold on|hang on|stop|stop it|pause|ruko|rukna|ruk ja|ruk jao|thehro|one sec(?:ond)?|just a (?:sec|second|minute|moment)|ek (?:minute|second|sec|min))\W*)+(?:please|coach|bhai|yaar|ji)?\W*$")
+_PAUSE = re.compile(r"^(?:(?:wait|weight(?=\W+stop)|(?:give me )?(?:a|one) (?:sec|second|minute|moment)|coach|hold on|hang on|stop|stop it|pause|ruko|rukna|ruk ja|ruk jao|thehro|one sec(?:ond)?|just a (?:sec|second|minute|moment)|ek (?:minute|second|sec|min))\W*)+(?:please|coach|bhai|yaar|ji)?\W*$")
 _HELLO = {"hello", "hi", "hey", "coach", "hello coach", "hey coach", "hi coach"}
 # narration like "Boxing, wipes hands, adjust straps": third-person stage directions, never something to answer
 _STAGE = re.compile(r"\b(?:wipes?|wiping|adjusts?|adjusting|grunts?|sighs?|exhales?|inhales?|chalks?|chalking|claps?|nods?|mumbles?|laughs?|clears? (?:his |my |the )?throat|steps? back|"
@@ -700,6 +728,10 @@ class Brain(FrameProcessor):
         self.committed = ""                  # text of a speculative turn that already wrote something: never run it a second time
         self.committed_at = 0.0
         self.rec: TurnRec | None = None
+        self.resume: tuple[str, str, float] | None = None      # (turn_id, text to carry on with, when): set when a sound cut the coach off
+        self.resume_timer: asyncio.Task | None = None
+        self.transcribing = False
+        self.user_started_at = 0.0
         self.set_active: bool | None = None
         self.rest_remaining: int | None = None
         self.lang_pref: str | None = None
@@ -721,12 +753,15 @@ class Brain(FrameProcessor):
             return
         if isinstance(frame, UserStartedSpeakingFrame):
             self.user_speaking = True
+            self.user_started_at = time.time()
             self._on_user_resumed()
             await self.push_frame(frame, direction)
             return
         if isinstance(frame, UserStoppedSpeakingFrame):
             self.user_speaking = False
             self.user_stopped_at = time.time()
+            if self.resume:
+                self._arm_resume_timer()
             await self.push_frame(frame, direction)
             return
         if isinstance(frame, InputTransportMessageFrame):
@@ -744,7 +779,7 @@ class Brain(FrameProcessor):
                 if msg.get("lang") in ("en", "hinglish", "hi"):
                     self.lang_pref = msg["lang"]
             elif msg.get("type") == "interrupt":                       # a tap on the phone: stop talking now, keep listening
-                await self._on_interrupted()
+                await self._on_interrupted(tap=True)
                 await self.push_interruption_task_frame_and_wait()
             return
         if isinstance(frame, InterruptionFrame):
@@ -769,6 +804,36 @@ class Brain(FrameProcessor):
                 self._turn_released(text)
             return
         await self.push_frame(frame, direction)
+
+    # ------------------------------------------------------------------ carrying on after a sound that was not an interruption
+    def _arm_resume_timer(self):
+        if self.resume_timer and not self.resume_timer.done():
+            self.resume_timer.cancel()
+        self.resume_timer = asyncio.create_task(self._resume_if_no_words())
+
+    async def _resume_if_no_words(self):
+        """A cough or noise cut the coach off and no words followed: say the rest. If words ARE coming (the speech stage is working on them) the turn logic decides instead."""
+        try:
+            await asyncio.sleep(RESUME_AFTER_S)
+            # still talking (the turn model can hold "yeah" open for seconds, so not for ever), or the words are being worked out: the turn logic decides
+            while (self.user_speaking and time.time() - self.user_started_at < 4.0) or self.transcribing:
+                if time.time() - (self.resume[2] if self.resume else 0) > RESUME_MAX_AGE_S:
+                    return
+                await asyncio.sleep(0.3)
+        except asyncio.CancelledError:
+            return
+        if self.resume and not self.transcribing and not (self.work and not self.work.done()):
+            await self._resume("no words")
+
+    async def _resume(self, why: str):
+        r, self.resume = self.resume, None
+        if not r or time.time() - r[2] > RESUME_MAX_AGE_S or not r[1] or self.bot_speaking:
+            return
+        rec = TurnRec(r[0], "")
+        self.rec = rec
+        self.last_bot = (r[1], time.time())
+        print(f"[voice {self.cid}] carrying on after {why}: {r[1][:70]!r}", flush=True)
+        await self._speak(r[1], rec)
 
     def _turn_released(self, text: str):
         """The turn model says the athlete is done. A half-said set is held back a moment first (the pause-in-the-middle bug); everything else goes to the brain."""
@@ -871,13 +936,17 @@ class Brain(FrameProcessor):
         return text
 
     # ------------------------------------------------------------------ interruption
-    async def _on_interrupted(self):
+    async def _on_interrupted(self, tap: bool = False):
         """The athlete started talking over the coach (or tapped the phone). Tell the Core what was actually heard, and stop working."""
         rec = self.rec
         if rec and not rec.reported and (self.bot_speaking or (self.work and not self.work.done())):
             rec.reported = True
             played = (time.time() - rec.started_at) if rec.started_at else 0.0
             spoken = spoken_prefix(rec.items, played) if rec.started_at else ""
+            rest = unspoken_from(rec.items, played) if (rec.started_at and not tap) else ""
+            self.resume = (rec.turn_id, rest, time.time()) if rest else None
+            if self.resume:
+                self._arm_resume_timer()
             self.last_bot = (spoken, time.time())
             if "?" not in spoken:
                 self.follow = False
@@ -938,6 +1007,15 @@ class Brain(FrameProcessor):
             return
         full = (self.carry + " " + text).strip()
         kind = classify_turn(full, self.follow) if not self.carry else "pass"
+        self.transcribing = False
+        if kind in ("idle", "pass") and self.resume and is_backchannel(full, float((STT_STATS["last"] or {}).get("p") or 1.0)) and not (self.follow and "?" in self.resume[1]):
+            if run:
+                run.cancel()
+            print(f"[voice {self.cid}] backchannel {full!r} cut the coach off: carrying on", flush=True)
+            await self._resume("a backchannel")
+            return
+        if kind == "pass" or kind == "hello" or not is_backchannel(full, float((STT_STATS["last"] or {}).get("p") or 1.0)):
+            self.resume = None                                          # a real question, "wait, stop" or narration: do not carry on with the old answer
         if kind != "pass":
             if run:
                 run.cancel()

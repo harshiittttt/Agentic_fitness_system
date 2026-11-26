@@ -160,3 +160,28 @@ def test_convo_run_reports_an_unreachable_core():
         return await run.q.get()
 
     assert asyncio.run(go())["t"] == "_http_error"
+
+
+def test_unspoken_from_restarts_at_the_cut_sentence():
+    items = [["", 0.4], ["First sentence.", 2.0], ["Second one here.", 2.0], ["Third.", 1.0]]
+    assert S.unspoken_from(items, 0.2) == "First sentence. Second one here. Third."        # still in the ack clip: everything
+    assert S.unspoken_from(items, 1.5) == "First sentence. Second one here. Third."        # cut inside the first sentence: that sentence again
+    assert S.unspoken_from(items, 3.0) == "Second one here. Third."
+    assert S.unspoken_from(items, 5.4) == ""                                                # all played
+
+
+def test_backchannels_are_known_words_not_pause_cues():
+    assert S.is_backchannel("Yeah.") and S.is_backchannel("Okay") and not S.is_backchannel("Wait, stop.") and not S.is_backchannel("what weight")
+
+
+def test_backchannel_words_and_mishearings():
+    for t in ["Yeah.", "Ok ok", "Mm-hm.", "Got it.", "Ya ok.", "yeah okay"]:
+        assert S.is_backchannel(t), t
+    assert S.is_backchannel("But hi.", 0.42) and not S.is_backchannel("But hi.", 1.0)       # a short, doubtful sound while the coach talks
+    for t in ["What weight?", "Sixty for five", "yeah what about squats", "ok?", "wait stop"]:
+        assert not S.is_backchannel(t), t
+
+
+@pytest.mark.parametrize("text", ["Hold on a second.", "Coach, one moment.", "give me a second", "one minute"])
+def test_more_pause_cues(text):
+    assert S.classify_turn(text, False) == "idle" and not S.is_backchannel(text)

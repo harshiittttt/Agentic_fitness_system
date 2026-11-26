@@ -91,3 +91,9 @@ Any real phone: echo cancelling on the user's handset, mic/speaker latency over 
 real Haryanvi/Hinglish accents will score lower than Kokoro's clean Hindi), barge-in with the speaker playing (tests use recorded audio, no acoustic echo),
 the 0.4 s "Got it." wording on a real set (the app still gets the same result object it always got), the log-confidence limits (`-1.05`) on real, noisy gym audio:
 they were set from clean speech (-0.15..-0.65), so check `[voice N] unclear speech` lines in the first real session and loosen `STT_LOGPROB_MIN` if good speech is refused.
+
+## Barge-in speed and carrying on (2026-11-26)
+Speech must last `VOICE_BARGE_START_SECS` (default 0.15 s) while the coach talks before it counts as talking over it; the coach then stops about 0.3-0.33 s after you start (was 0.52-0.57 s with 0.4 s).
+A sound that was not an interruption is put right afterwards: if what follows is a backchannel ("yeah", "mm-hm", "okay", a short doubtful sound) or no words at all, the coach carries on from the START of the sentence it was cut in (`unspoken_from`, `Brain._resume`);
+"wait / stop / hold on" and real questions do not resume. `VOICE_RESUME_AFTER` (default 2.2 s) is how long it waits for words before carrying on. `python voice_agent/barge_test.py` measures it (10 backchannels, 3 coughs, 5 real interruptions).
+Measured on synthetic speech (throwaway agent): stop 301-330 ms; 8/10 backchannels carried on by itself ("Hmm." and a Whisper mishearing like "Shim." are not recognised); coughs of 0.28 s are not heard as speech at all. NOT verified with a real speaker/phone echo or gym noise: if noise cuts the coach off too often, raise `VOICE_BARGE_START_SECS` to 0.25-0.4.
