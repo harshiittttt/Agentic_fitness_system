@@ -1,5 +1,5 @@
 """Interruption test for the voice agent: does a "yeah" / "mm-hm" / cough while the coach talks leave it talking, and how fast does a real "wait, stop" stop it?
-    D:\\voice-proto\\venv\\Scripts\\python voice_agent\\barge_test.py [ws_url] [trials]
+    D:\\voice-proto\\venv\\Scripts\\python voice_agent\\barge_check.py [ws_url] [trials]
 Use a THROWAWAY agent and backend (see voice_agent/README.md): it makes the coach give a long answer, then plays the sound at a fixed moment of that answer.
 Prints one line per trial and a summary. A trial 'stopped' when the agent sent {"t":"clear"} (= stop the speaker) within 1.5 s of the sound."""
 import asyncio
