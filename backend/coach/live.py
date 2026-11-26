@@ -29,6 +29,7 @@ NO_RE = re.compile(r"^\W*(?:no|nope|nah|don'?t|do not|never ?mind|cancel|stay|no
 # What the mic hears around a workout that is not a command: a greeting gets a short nudge, filler and "copy" get nothing, and a line of
 # stage directions ("wipes hands, adjusts straps") is not speech to the coach at all.
 GREET_RE = re.compile(r"^\W*(?:(?:hello|hi|hey|yo|namaste|hii+|helo)(?:\s+(?:coach|there|buddy))?)\W*$")
+PAUSE_RE = re.compile(r"^\W*(?:(?:wait|weight(?=\W+stop)|hold on|hang on|stop|stop it|pause|ruko|rukna|ruk ja|ruk jao|thehro|one sec(?:ond)?|just a (?:sec|second|minute|moment)|ek (?:minute|second|sec|min))\W*)+(?:please|coach|bhai|yaar|ji)?\W*$")
 SILENT_RE = re.compile(r"^\W*(?:hm+|um+|uh+|ah+|oh+|right|copy|got it|thanks|thank you|thanks coach|bye|goodbye|cool|nice|alright|haan|han|ji|acha|accha|theek hai|thik hai|ok thanks|okay thanks)\W*$")
 STAGE_RE = re.compile(r"\b(?:wipes?|wiping|adjust(?:s|ing)|chalks?|chalking|takes? a (?:deep )?breath|exhales?|inhales?|grunts?|sighs?|laughs?|nods?|claps?|"
                       r"steps? (?:up|back|away)|walks? (?:to|over|away)|picks? up|puts? down|grabs? (?:the|a|his|water)|unracks?|boxing)\b|\*[^*]+\*")
@@ -800,7 +801,7 @@ def _handle(transcript: str, ambient: bool = False, allow_chat: bool = True) -> 
 
     if STAGE_RE.search(low) and not STAGE_COMMAND_RE.search(low):
         return _result("ignored", "")      # "wipes hands, adjusts straps": stage directions heard as speech, not a message to the coach
-    if SILENT_RE.match(low):
+    if SILENT_RE.match(low) or PAUSE_RE.match(low):      # "wait, stop" is the athlete cutting the coach off: the agent already stopped the audio, say nothing
         return _result("ignored", "")
     if GREET_RE.match(low):                # "Hello." gets one short line (where you are), not a paragraph from the model
         c = (session_state() or {}).get("current")

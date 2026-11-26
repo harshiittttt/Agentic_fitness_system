@@ -576,6 +576,7 @@ class EarlyTurn(FrameProcessor):
 # ---- what is not a command ----
 # A lone "copy" / "right" / "okay" is the athlete talking to themselves or answering the coach's last line; the coach must not give a speech to it.
 _IDLE = {"copy", "right", "ok", "okay", "yeah", "yep", "yes", "no", "hmm", "alright", "cool", "nice", "sure", "thanks", "thank you", "got it", "good", "fine", "oh", "wow", "huh", "hm", "mm"}
+_PAUSE = re.compile(r"^(?:(?:wait|weight(?=\W+stop)|hold on|hang on|stop|stop it|pause|ruko|rukna|ruk ja|ruk jao|thehro|one sec(?:ond)?|just a (?:sec|second|minute|moment)|ek (?:minute|second|sec|min))\W*)+(?:please|coach|bhai|yaar|ji)?\W*$")
 _HELLO = {"hello", "hi", "hey", "coach", "hello coach", "hey coach", "hi coach"}
 # narration like "Boxing, wipes hands, adjust straps": third-person stage directions, never something to answer
 _STAGE = re.compile(r"\b(?:wipes?|wiping|adjusts?|adjusting|grunts?|sighs?|exhales?|inhales?|chalks?|chalking|claps?|nods?|mumbles?|laughs?|clears? (?:his |my |the )?throat|steps? back|"
@@ -593,7 +594,7 @@ def classify_turn(text: str, follow: bool) -> str:
         return "pass"
     if low in _HELLO:
         return "hello"
-    if low in _IDLE:
+    if low in _IDLE or _PAUSE.match(low):
         return "idle"
     if _STAGE.search(text) and len(low.split()) <= 14 and not re.search(r"\b(?:i|my|me|we|let'?s|coach|can|should|please|do)\b", low):
         return "stage"
@@ -975,6 +976,7 @@ class Brain(FrameProcessor):
         if not pcm:
             return
         rec.add("", len(pcm) / (2.0 * OUT_RATE))
+        await say(self, t="ack", kind=kind, ms=round(len(pcm) / (2.0 * OUT_RATE) * 1000))      # lets a test tell this clip from the composed answer (the app ignores it)
         fr = OutputAudioRawFrame(audio=pcm, sample_rate=OUT_RATE, num_channels=1)
         fr.metadata["ack"] = True
         await self.push_frame(fr)

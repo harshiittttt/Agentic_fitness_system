@@ -16,6 +16,7 @@ from faster_whisper.transcribe import Segment  # noqa: E402
     ("Boxing, wipes hands, adjust straps.", False, "stage"), ("Chalks up and grunts.", False, "stage"),
     ("60 kilos 5 reps", False, "pass"), ("Okay.", True, "pass"), ("Yes", True, "pass"), ("Skip this exercise", False, "pass"), ("What is next?", False, "pass"),
     ("I need to stretch my hamstrings first", False, "pass"), ("Let's stretch", False, "pass"), ("next set", False, "pass"), ("wrap up", False, "pass"),
+    ("Wait, stop.", False, "idle"), ("Weight stop.", False, "idle"), ("hold on", False, "idle"), ("Stop", False, "idle"), ("stop the workout", False, "pass"), ("wait, sixty for five", False, "pass"),
 ])
 def test_what_is_a_command(text, follow, kind):
     assert S.classify_turn(text, follow) == kind

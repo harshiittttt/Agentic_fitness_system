@@ -152,6 +152,8 @@ class AudioExecutor:
                         self.state["user"] = (self.state["user"] + " " if self.state["user"] else "") + d["text"]
                     elif d.get("t") == "bot":
                         self.state["bot"] = {**d, "at": now}
+                    elif d.get("t") == "ack":
+                        self.state.setdefault("acks", []).append((now, float(d.get("ms") or 0) / 1000.0))
                     elif d.get("t") == "clear":
                         self.state["clear_at"].append(now)
         except (asyncio.CancelledError, websockets.ConnectionClosed):
@@ -182,7 +184,7 @@ class AudioExecutor:
             barge_at = time.time()
             st.update(bot=None, user=None, clear_at=[])
         else:
-            st.update(audio_times=[], bot=None, user=None, clear_at=[])
+            st.update(audio_times=[], bot=None, user=None, clear_at=[], acks=[])
             await self._silence(0.3)
         sent_end = barge_at or time.time()
         for i, p in enumerate(parts):
@@ -210,8 +212,13 @@ class AudioExecutor:
         heard = st["user"] or ""
         a = after()
         res = {"reply": bot.get("text") or "", "intent": bot.get("intent"), "actions": bot.get("actions") or [], "expects": bot.get("expects"),
-               "ms": (bot["at"] - sent_end) * 1000 if bot else None, "first_word_ms": (bot["at"] - sent_end) * 1000 if bot else None,
+               "ms": (bot["at"] - sent_end) * 1000 if bot else None, "first_word_ms": None,
                "first_sound_ms": (a[0] - sent_end) * 1000 if a else None, "heard": heard, "wer": wer(" ".join(parts), heard), "raw": bot}
+        # first composed word = the first audio that is not the short acknowledgement clip (its chunks arrive in one burst right after the `ack` message)
+        acks = [x for x in st.get("acks", []) if x[0] >= sent_end - 0.5]
+        comp = [t for t in a if not any(t0 - 0.05 <= t <= t0 + 0.4 for t0, _ in acks)]
+        res["first_word_ms"] = (comp[0] - sent_end) * 1000 if comp else None
+        st["acks"] = []
         if barge_at is not None:
             c = [x for x in st["clear_at"] if x >= barge_at]
             res["barge_stop_ms"] = round((c[0] - barge_at) * 1000) if c else None

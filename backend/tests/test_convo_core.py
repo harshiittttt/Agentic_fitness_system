@@ -557,3 +557,15 @@ def test_skip_naming_an_exercise_outside_the_plan_skips_nothing(env, monkeypatch
     script(monkeypatch, lambda u, m, t: [tool("skip_exercise", exercise="calf raise")] if not any(x["role"] == "tool" for x in m) else [text("Calf raise is not in today's plan, so nothing is skipped.")])
     ev = run("Skip the calf raise.")
     assert skipped() == [] and names(ev, "tool")[0]["status"] == "invalid"
+
+
+@pytest.mark.parametrize("sentence", ["Wait, stop.", "hold on", "Stop!", "Weight, stop.", "ruko ruko", "wait wait wait", "just a second please", "ek minute"])
+def test_pause_cues_get_no_reply_and_no_model_call(env, monkeypatch, sentence):
+    monkeypatch.setattr(llm, "stream", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no model call for a pause cue")))
+    ev = run(sentence)
+    assert ev[-1]["intent"] == "ignored" and not names(ev, "say") and not names(ev, "tool")
+
+
+def test_stop_inside_a_real_sentence_is_not_a_pause_cue():
+    assert not live.PAUSE_RE.match("stop the workout and wrap up")
+    assert not live.PAUSE_RE.match("wait, sixty five for five")

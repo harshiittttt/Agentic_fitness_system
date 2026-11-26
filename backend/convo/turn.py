@@ -311,7 +311,7 @@ def _run(req: dict, dlg, t: _T, override: str | None) -> Iterator[dict]:
         t.intent, t.expects = "fragment", "answer"
         yield _done(t, "converse")
         return
-    if live.STAGE_RE.search(low) and not live.STAGE_COMMAND_RE.search(low) or live.SILENT_RE.match(low):
+    if live.STAGE_RE.search(low) and not live.STAGE_COMMAND_RE.search(low) or live.SILENT_RE.match(low) or live.PAUSE_RE.match(low):
         t.intent = "ignored"
         yield _done(t, "converse")
         return
