@@ -551,3 +551,9 @@ def test_model_line_is_not_repeated_by_the_exercise_done_tail():
     assert said.count("Romanian") == 1 and "Ready for" not in said
     kept = tools._speak(ctx, "Strong set.", "Squat: 60 for 5.", tools._tail(facts, "en"), facts)
     assert kept.startswith("Strong set.")
+
+
+def test_skip_naming_an_exercise_outside_the_plan_skips_nothing(env, monkeypatch):
+    script(monkeypatch, lambda u, m, t: [tool("skip_exercise", exercise="calf raise")] if not any(x["role"] == "tool" for x in m) else [text("Calf raise is not in today's plan, so nothing is skipped.")])
+    ev = run("Skip the calf raise.")
+    assert skipped() == [] and names(ev, "tool")[0]["status"] == "invalid"

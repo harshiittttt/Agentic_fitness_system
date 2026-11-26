@@ -299,6 +299,8 @@ def _skip_target(args: dict, ctx: Ctx) -> tuple[str | None, str | None]:
     said = set_slots.find_exercise(ctx.text.lower(), names)
     raw = said or (ex.resolve_exercise(str(args["exercise"]), names) if args.get("exercise") else None)
     row = next((r for r in st["exercises"] if r["name"] == raw), None)
+    if row is None and said:                       # the sentence names an exercise that is not in today's plan: never skip the current one instead
+        return said, "not in today's plan"
     if row is None:
         cur = st.get("current")
         row = next((r for r in st["exercises"] if cur and r["name"] == cur["name"]), None)

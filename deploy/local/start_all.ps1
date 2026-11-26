@@ -46,6 +46,7 @@ $voicePy = "D:\voice-proto\venv\Scripts\python.exe"
 $voicePort = 8765
 if (Test-Path $voicePy) {
   if (-not (Listening $voicePort)) {
+    if (-not $env:VOICE_BRAIN) { $env:VOICE_BRAIN = "converse" }   # the Conversation Core (docs/CONVO_CONTRACTS.md); set VOICE_BRAIN=legacy before starting to go back
     Start-Process $voicePy -ArgumentList "voice_agent\server.py" -WindowStyle Hidden `
       -RedirectStandardOutput "$logs\voice.out.log" -RedirectStandardError "$logs\voice.err.log" | Out-Null
     $t = 0
